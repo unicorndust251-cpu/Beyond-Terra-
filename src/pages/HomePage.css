@@ -1,252 +1,30 @@
+/* Full screen, above the map it zooms into */
 .bt-home {
-  position: relative;
-  min-height: 100%;
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  transform-origin: 50% 50%;
+}
+
+/* The camera pushes into Mars, accelerating, while the globe dissolves into the map */
+.bt-home.is-zooming {
+  transform: scale(2.8);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform 1.7s cubic-bezier(0.55, 0, 0.75, 0.35),
+    opacity 0.9s ease-in 0.75s;
+}
+
+.bt-home.is-reduced.is-zooming {
+  transform: none;
+  transition: opacity 0.4s ease;
 }
 
 .bt-home__content {
   position: relative;
   z-index: 1;
-}
-
-/* ----- Entrance ------------------------------------------------------------ */
-
-.bt-rise,
-.bt-header,
-.bt-about,
-.bt-footer {
-  opacity: 0;
-}
-
-.bt-rise {
-  transform: translateY(16px);
-}
-
-.is-revealed .bt-rise {
-  opacity: 1;
-  transform: none;
-  transition:
-    opacity 1s var(--ease-out) calc(var(--d, 0s) + 0.35s),
-    transform 1.2s var(--ease-out) calc(var(--d, 0s) + 0.35s);
-}
-
-.is-revealed .bt-header,
-.is-revealed .bt-about,
-.is-revealed .bt-footer {
-  opacity: 1;
-  transition: opacity 1s ease 0.3s;
-}
-
-.is-still .bt-rise {
-  transform: none;
-}
-
-.is-still.is-revealed .bt-rise,
-.is-still.is-revealed .bt-header {
-  transition: opacity 0.4s ease;
-}
-
-/* ----- Hero ---------------------------------------------------------------- */
-
-.bt-hero {
-  min-height: calc(100svh - 92px);
-  display: flex;
-  align-items: center;
-  padding: 0 clamp(20px, 5vw, 72px) clamp(48px, 10vh, 120px);
-}
-
-.bt-hero__text {
-  max-width: min(36rem, 44vw);
-}
-
-.bt-eyebrow {
-  margin: 0 0 18px;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--copper);
-}
-
-.bt-hero__title {
-  margin: 0;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: clamp(40px, 5.2vw, 76px);
-  line-height: 1.02;
-  letter-spacing: -0.01em;
-  color: var(--ivory);
-  text-wrap: balance;
-}
-
-.bt-hero__lede {
-  margin: 24px 0 0;
-  max-width: 34rem;
-  font-size: clamp(16px, 1.25vw, 18px);
-  line-height: 1.65;
-  color: rgba(243, 229, 220, 0.78);
-}
-
-.bt-hero__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
-  margin-top: 36px;
-}
-
-.bt-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  min-height: 48px;
-  padding: 0 26px;
-  border-radius: 999px;
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  text-decoration: none;
-  transition:
-    background 0.2s,
-    border-color 0.2s,
-    transform 0.2s var(--ease-out);
-}
-
-.bt-button:active {
-  transform: translateY(1px);
-}
-
-.bt-button--primary {
-  background: var(--terracotta);
-  color: var(--obsidian);
-}
-
-.bt-button--primary:hover {
-  background: var(--copper);
-}
-
-.bt-button--primary span {
-  transition: transform 0.25s var(--ease-out);
-}
-
-.bt-button--primary:hover span {
-  transform: translateX(4px);
-}
-
-.bt-button--ghost {
-  border: 1px solid rgba(232, 194, 173, 0.35);
-  color: var(--ivory);
-}
-
-.bt-button--ghost:hover {
-  border-color: var(--copper);
-  background: rgba(99, 80, 74, 0.25);
-}
-
-/* ----- About --------------------------------------------------------------- */
-
-.bt-about {
-  position: relative;
-  padding: clamp(72px, 12vh, 140px) clamp(20px, 5vw, 72px);
-  background: linear-gradient(to bottom, rgba(23, 20, 19, 0) 0, var(--obsidian) 120px);
-}
-
-.bt-about__inner {
-  max-width: 1120px;
-  margin: 0 auto;
-}
-
-.bt-about__title {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: clamp(28px, 3vw, 40px);
-  font-weight: 700;
-  color: var(--ivory);
-}
-
-.bt-about__intro {
-  max-width: 44rem;
-  margin: 16px 0 0;
-  font-size: 17px;
-  line-height: 1.65;
-  color: rgba(243, 229, 220, 0.75);
-}
-
-.bt-cards {
-  list-style: none;
-  margin: 48px 0 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 20px;
-}
-
-.bt-card {
-  padding: 28px;
-  border-radius: 16px;
-  background: var(--espresso);
-  border: 1px solid rgba(141, 117, 110, 0.25);
-}
-
-.bt-card h3 {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: 19px;
-  font-weight: 700;
-  color: var(--dust-rose);
-}
-
-.bt-card p {
-  margin: 12px 0 0;
-  font-size: 15px;
-  line-height: 1.6;
-  color: rgba(243, 229, 220, 0.72);
-}
-
-.bt-footer {
-  position: relative;
-  padding: 32px clamp(20px, 5vw, 72px) 48px;
-  background: var(--obsidian);
-  border-top: 1px solid rgba(141, 117, 110, 0.2);
-  font-size: 13px;
-  line-height: 1.6;
-  color: var(--taupe);
-}
-
-.bt-footer p {
-  max-width: 64rem;
-  margin: 0 auto;
-}
-
-.bt-footer__credits {
-  margin-top: 8px !important;
-  font-size: 12px;
-}
-
-/* ----- Portrait and narrow screens: planet above, text below ---------------- */
-
-@media (max-aspect-ratio: 23/20) {
-  .bt-hero {
-    align-items: flex-end;
-    min-height: calc(100svh - 80px);
-    padding-bottom: clamp(36px, 7vh, 80px);
-  }
-  .bt-hero__text {
-    max-width: 40rem;
-  }
-}
-
-@media (max-width: 860px) {
-  .bt-cards {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 520px) {
-  .bt-hero__actions {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .bt-button {
-    justify-content: center;
-  }
+  height: 100%;
+  pointer-events: none;
 }

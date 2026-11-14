@@ -20,7 +20,8 @@
   --title-ivory: #f5f1ed;
 
   --font-display: 'Exo 2', system-ui, sans-serif;
-  --font-body: 'Exo 2', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-ui: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-body: var(--font-ui);
 
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   color-scheme: dark;

@@ -3,23 +3,23 @@ import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeom
 import { createFabricNormal } from './textures';
 
 /**
- * A future Mars surface suit, built from optimised primitives (no external model).
- * Loosely based on current exploration-suit layouts: hard upper torso, rear-entry
- * life-support pack, bearing rings at shoulders, waist, elbows and wrists, and a
- * helmet with a gold reflective visor. It is a concept, not a model of flight hardware.
+ * A future Mars surface suit, built in code (no external model): hard upper torso,
+ * rear-entry life-support pack, bearing rings at shoulders, waist, elbows and wrists, and a
+ * helmet with a gold reflective visor. The intro shows it when no rigged astronaut model
+ * is supplied. It is a concept, not a model of flight hardware.
  *
  * Coordinates: metres, astronaut standing at the origin and facing −Z (right hand at +X).
  */
 
 export interface SuitMaterials {
-  fabric: THREE.MeshStandardMaterial;
-  shell: THREE.MeshPhysicalMaterial;
-  metal: THREE.MeshStandardMaterial;
-  rubber: THREE.MeshStandardMaterial;
-  visor: THREE.MeshPhysicalMaterial;
-  accent: THREE.MeshStandardMaterial;
-  panel: THREE.MeshStandardMaterial;
-  glove: THREE.MeshStandardMaterial;
+  fabric: THREE.Material;
+  shell: THREE.Material;
+  metal: THREE.Material;
+  rubber: THREE.Material;
+  visor: THREE.Material;
+  accent: THREE.Material;
+  panel: THREE.Material;
+  glove: THREE.Material;
 }
 
 /** Dust settles on the lower suit: tint by world height. */

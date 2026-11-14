@@ -27,13 +27,32 @@ export const HERO = {
   letterSpacing: 0.12,
   spinRate: 0.045, // rad/s — about 2.3 minutes per turn
   sunColor: '#FFD8B2',
-  sunIntensity: 2.9,
+  sunIntensity: 3.6,
   /** Direction towards the sun, in camera space: from the left, slightly above and in front. */
   sunDir: new THREE.Vector3(-0.93, 0.26, 0.42).normalize(),
   rimInner: '#C06A40', // burnt orange
   rimOuter: '#D6A38B', // copper glow
   terminator: '#B87860', // muted terracotta
 } as const;
+
+/**
+ * The original four-second reveal, as three progress values (0 → 1). The intro plays it
+ * on the tablet; a direct visit plays it full-screen. Once complete it stays complete:
+ * the hero then holds its final composition and the planet keeps rotating.
+ */
+export interface HeroReveal {
+  /** Warm sunlight rising on the planet out of darkness. */
+  light: number;
+  /** A restrained camera push-in that settles into the final framing. */
+  push: number;
+  /** BEYOND TERRA fading in, rising slightly and sharpening from a soft blur. */
+  title: number;
+}
+
+export const REVEAL_COMPLETE: Readonly<HeroReveal> = { light: 1, push: 1, title: 1 };
+
+/** Disc size at the start of the push-in, relative to the final framing. */
+const PUSH_FROM = 0.88;
 
 export interface PlanetLayout {
   /** Disc centre as a fraction of viewport width (0 = left). */
@@ -52,34 +71,14 @@ export function heroLayout(width: number, height: number): PlanetLayout {
   };
 }
 
-/** Where the planet settles once the homepage content is shown. */
-export function homeLayout(width: number, height: number): PlanetLayout {
-  const aspect = width / height;
-  if (aspect >= 1.15) {
-    return { cx: 0.7, cy: 0.53, diameter: Math.min(height * 0.84, width * 0.5) };
-  }
-  if (aspect >= 0.85) {
-    return { cx: 0.5, cy: 0.36, diameter: Math.min(height * 0.52, width * 0.7) };
-  }
-  return { cx: 0.5, cy: 0.25, diameter: Math.min(width * 0.8, height * 0.36) };
-}
-
-export function lerpLayout(a: PlanetLayout, b: PlanetLayout, t: number): PlanetLayout {
-  return {
-    cx: a.cx + (b.cx - a.cx) * t,
-    cy: a.cy + (b.cy - a.cy) * t,
-    diameter: a.diameter + (b.diameter - a.diameter) * t,
-  };
-}
-
 /** Spin that puts a given longitude (degrees east) at the centre of the disc. */
 function spinForLongitude(lonDeg: number): number {
   return -THREE.MathUtils.degToRad(lonDeg + 90);
 }
 
-// At about 5.5 s after page load (the hero moment of the intro), Valles Marineris sits
-// just left of centre, in the sunlit half.
-const SPIN_AT_ZERO = spinForLongitude(-52) - HERO.spinRate * 5.5;
+// At about 8 s after page load (the tablet's hero moment, just before the camera enters
+// the screen), Valles Marineris sits just left of centre, in the sunlit half.
+const SPIN_AT_ZERO = spinForLongitude(-52) - HERO.spinRate * 8;
 
 export function heroSpinAt(seconds: number): number {
   return SPIN_AT_ZERO + seconds * HERO.spinRate;
@@ -108,20 +107,25 @@ export class MarsHero {
   readonly camera = new THREE.PerspectiveCamera(HERO.fov, 1, 0.1, 400);
   readonly target: THREE.WebGLRenderTarget;
 
-  titleOpacity = 1;
+  readonly reveal: HeroReveal = { ...REVEAL_COMPLETE };
   layout: PlanetLayout = { cx: 0.5, cy: 0.5, diameter: 100 };
 
   private readonly renderer: THREE.WebGLRenderer;
   private readonly planetGroup = new THREE.Group();
   private readonly spinGroup = new THREE.Group();
   private readonly sun: THREE.DirectionalLight;
+  private readonly ambient: THREE.AmbientLight;
+  private readonly atmosphereMaterial: THREE.ShaderMaterial;
   private readonly marsUniforms: Record<string, THREE.IUniform>;
   private readonly starMaterial: THREE.ShaderMaterial;
+  private readonly marsMaterial: THREE.MeshStandardMaterial;
   private readonly textures: THREE.Texture[] = [];
 
   private readonly titleScene = new THREE.Scene();
   private readonly titleCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, -1, 1);
-  private titleMesh: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial> | null = null;
+  private titleMesh: THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial> | null = null;
+  private titleBaseY = 0;
+  private titleRise = 0;
   private readonly wantsTitle: boolean;
 
   private readonly presentScene = new THREE.Scene();
@@ -157,6 +161,7 @@ export class MarsHero {
     this.textures.push(color, normal);
 
     const { material, uniforms } = createMarsMaterial(color, normal);
+    this.marsMaterial = material;
     this.marsUniforms = uniforms;
     const planet = new THREE.Mesh(
       new THREE.SphereGeometry(1, high ? 192 : 128, high ? 128 : 96),
@@ -164,9 +169,10 @@ export class MarsHero {
     );
     this.spinGroup.add(planet);
 
+    this.atmosphereMaterial = createAtmosphereMaterial(1.05);
     const atmosphere = new THREE.Mesh(
       new THREE.SphereGeometry(1.05, high ? 128 : 96, high ? 96 : 64),
-      createAtmosphereMaterial(1.05),
+      this.atmosphereMaterial,
     );
 
     // Axial tilt, framed so a little more of the northern hemisphere faces us
@@ -181,7 +187,8 @@ export class MarsHero {
     this.sun.target = this.planetGroup;
     this.scene.add(this.sun);
     // The faintest bounce, so the night side melts into space rather than cutting out
-    this.scene.add(new THREE.AmbientLight('#3a2620', 0.035));
+    this.ambient = new THREE.AmbientLight('#3a2620', 0.035);
+    this.scene.add(this.ambient);
 
     // --- Stars ------------------------------------------------------------------
     this.starMaterial = createStarMaterial();
@@ -198,6 +205,19 @@ export class MarsHero {
         }),
       ),
     );
+  }
+
+  /** Swaps in a higher-resolution colour map (uploaded now, so the next frame uses it). */
+  setColorImage(image: HTMLImageElement) {
+    const previous = this.marsMaterial.map;
+    const color = makeTexture(image, this.renderer, THREE.SRGBColorSpace);
+    this.renderer.initTexture(color);
+    this.marsMaterial.map = color;
+    this.textures.push(color);
+    if (previous) {
+      previous.dispose();
+      this.textures.splice(this.textures.indexOf(previous), 1);
+    }
   }
 
   /** Size in CSS pixels. The target always matches the drawing buffer exactly. */
@@ -227,8 +247,13 @@ export class MarsHero {
 
   /** Draws the hero into its render target. */
   render(seconds: number) {
+    const { light, push, title } = this.reveal;
+    this.applyLayout(PUSH_FROM + (1 - PUSH_FROM) * push);
     this.spinGroup.rotation.y = heroSpinAt(seconds);
     this.sun.position.copy(this.planetGroup.position).addScaledVector(HERO.sunDir, 20);
+    this.sun.intensity = HERO.sunIntensity * light;
+    this.ambient.intensity = 0.035 * light;
+    this.atmosphereMaterial.uniforms.uStrength.value = light;
 
     const r = this.renderer;
     const prevTarget = r.getRenderTarget();
@@ -238,8 +263,11 @@ export class MarsHero {
     r.autoClear = true;
     r.render(this.scene, this.camera);
 
-    if (this.titleMesh && this.titleOpacity > 0.001) {
-      this.titleMesh.material.opacity = this.titleOpacity;
+    if (this.titleMesh && title > 0.001) {
+      const u = this.titleMesh.material.uniforms;
+      u.uOpacity.value = THREE.MathUtils.smoothstep(title, 0, 0.85);
+      u.uSharp.value = title;
+      this.titleMesh.position.y = this.titleBaseY - this.titleRise * (1 - title);
       r.autoClear = false;
       r.render(this.titleScene, this.titleCamera);
     }
@@ -265,6 +293,7 @@ export class MarsHero {
           if (!m) return;
           const basic = m as THREE.MeshBasicMaterial;
           if (basic.map && basic.map !== this.target.texture) basic.map.dispose();
+          disposeUniformTextures(m);
           m.dispose();
         });
       });
@@ -276,8 +305,9 @@ export class MarsHero {
     this.target.dispose();
   }
 
-  private applyLayout() {
-    const { cx, cy, diameter } = this.layout;
+  private applyLayout(scale = 1) {
+    const { cx, cy } = this.layout;
+    const diameter = this.layout.diameter * scale;
     const tanHalf = Math.tan(THREE.MathUtils.degToRad(HERO.fov / 2));
     // Angular radius that makes the disc `diameter` pixels tall
     const alpha = Math.atan((diameter / this.height) * tanHalf);
@@ -296,7 +326,7 @@ export class MarsHero {
   private buildTitle() {
     if (this.titleMesh) {
       this.titleMesh.geometry.dispose();
-      this.titleMesh.material.map?.dispose();
+      disposeUniformTextures(this.titleMesh.material);
       this.titleMesh.material.dispose();
       this.titleScene.remove(this.titleMesh);
       this.titleMesh = null;
@@ -321,57 +351,45 @@ export class MarsHero {
     const pad = fontSize * 0.6;
     const cssW = targetWidth + pad * 2;
     const cssH = fontSize * 2.2;
-    const canvas = document.createElement('canvas');
-    canvas.width = Math.ceil(cssW * dpr);
-    canvas.height = Math.ceil(cssH * dpr);
-    const ctx = canvas.getContext('2d')!;
-    ctx.scale(dpr, dpr);
-    ctx.font = `800 ${fontSize}px ${family}`;
-    ctx.textBaseline = 'alphabetic';
 
-    // Centre the capitals' box on the planet's centre
-    const metrics = ctx.measureText(text);
-    const capHeight = metrics.actualBoundingBoxAscent || fontSize * 0.7;
-    const baseline = cssH / 2 + capHeight / 2;
-    const left = pad;
+    const paint = (blurPx: number) => {
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.ceil(cssW * dpr);
+      canvas.height = Math.ceil(cssH * dpr);
+      const ctx = canvas.getContext('2d')!;
+      ctx.scale(dpr, dpr);
+      ctx.font = `800 ${fontSize}px ${family}`;
+      ctx.textBaseline = 'alphabetic';
+      if (blurPx > 0) ctx.filter = `blur(${blurPx}px)`;
 
-    const draw = () => drawSpaced(ctx, text, left, baseline, spacing);
+      // Centre the capitals' box on the planet's centre
+      const metrics = ctx.measureText(text);
+      const capHeight = metrics.actualBoundingBoxAscent || fontSize * 0.7;
+      const baseline = cssH / 2 + capHeight / 2;
+      ctx.fillStyle = '#fff';
+      drawSpaced(ctx, text, pad, baseline, spacing);
 
-    // 1. a soft, low shadow that seats the letters in front of the planet
-    ctx.save();
-    ctx.fillStyle = HERO.title;
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.32)';
-    ctx.shadowBlur = fontSize * 0.07;
-    ctx.shadowOffsetY = fontSize * 0.025;
-    draw();
-    ctx.restore();
-    // 2. an extremely restrained copper glow
-    ctx.save();
-    ctx.fillStyle = HERO.title;
-    ctx.shadowColor = 'rgba(214, 163, 139, 0.16)';
-    ctx.shadowBlur = fontSize * 0.5;
-    draw();
-    ctx.restore();
-    // 3. the crisp letterforms
-    ctx.fillStyle = HERO.title;
-    draw();
+      // Only the coverage (alpha) is used: colour, glow and shadow are added in the shader
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.colorSpace = THREE.NoColorSpace;
+      texture.minFilter = THREE.LinearFilter;
+      texture.generateMipmaps = false;
+      return texture;
+    };
 
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.colorSpace = THREE.SRGBColorSpace;
-    texture.minFilter = THREE.LinearFilter;
-    texture.generateMipmaps = false;
+    // Sharp letterforms; a soft copy for the blur-to-sharp reveal and the drop shadow; a
+    // wide copy for the faint copper glow. Canvas filters are missing on older Safari:
+    // there the title simply fades and rises, without glow.
+    const sharp = paint(0);
+    const canBlur = 'filter' in measure;
+    const soft = canBlur ? paint(fontSize * 0.08) : sharp;
+    const wide = canBlur ? paint(fontSize * 0.32) : null;
 
-    const mesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(canvas.width / dpr, canvas.height / dpr),
-      new THREE.MeshBasicMaterial({
-        map: texture,
-        transparent: true,
-        toneMapped: false,
-        depthTest: false,
-        depthWrite: false,
-      }),
-    );
-    mesh.position.set(hero.cx * w - w / 2, h / 2 - hero.cy * h, 0);
+    const material = createTitleMaterial(sharp, soft, wide, (fontSize * 0.03) / cssH);
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(cssW, cssH), material);
+    this.titleBaseY = h / 2 - hero.cy * h;
+    this.titleRise = fontSize * 0.16;
+    mesh.position.set(hero.cx * w - w / 2, this.titleBaseY, 0);
     this.titleMesh = mesh;
     this.titleScene.add(mesh);
 
@@ -406,6 +424,9 @@ function drawSpaced(
 // Materials. All output linear light (no tone mapping), so every view matches.
 // ---------------------------------------------------------------------------------
 
+/** Negative = sharper. -0.6 keeps the full-resolution level at hero size without shimmer. */
+const MAP_LOD_BIAS = '-0.6';
+
 function createMarsMaterial(color: THREE.Texture, normal: THREE.Texture) {
   const uniforms: Record<string, THREE.IUniform> = {
     uSunDirView: { value: HERO.sunDir.clone() },
@@ -417,15 +438,26 @@ function createMarsMaterial(color: THREE.Texture, normal: THREE.Texture) {
   const material = new THREE.MeshStandardMaterial({
     map: color,
     normalMap: normal,
-    normalScale: new THREE.Vector2(1.1, 1.1),
+    normalScale: new THREE.Vector2(1.3, 1.3),
     roughness: 0.97,
     metalness: 0,
     toneMapped: false,
   });
 
+  // Sample the colour and relief maps with a negative LOD bias: at hero size the GPU
+  // would otherwise blend in the half-resolution mip level and soften the surface
+  const sharpMap = THREE.ShaderChunk.map_fragment.replace(
+    'texture2D( map, vMapUv )',
+    `texture2D( map, vMapUv, ${MAP_LOD_BIAS} )`,
+  );
+  const sharpNormal = THREE.ShaderChunk.normal_fragment_maps
+    .split('texture2D( normalMap, vNormalMapUv )')
+    .join(`texture2D( normalMap, vNormalMapUv, ${MAP_LOD_BIAS} )`);
+
   material.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, uniforms);
     shader.fragmentShader = shader.fragmentShader
+      .replace('#include <normal_fragment_maps>', sharpNormal)
       .replace(
         '#include <common>',
         /* glsl */ `#include <common>
@@ -436,12 +468,14 @@ function createMarsMaterial(color: THREE.Texture, normal: THREE.Texture) {
       )
       .replace(
         '#include <map_fragment>',
-        /* glsl */ `#include <map_fragment>
+        /* glsl */ `${sharpMap}
         {
-          // Pull the albedo toward the dusty, slightly desaturated tone of calibrated imagery
+          // Defined colour: natural saturation, and contrast that deepens the dark
+          // basaltic markings while lifting the bright dusty plains
           float luma = dot(diffuseColor.rgb, vec3(0.2126, 0.7152, 0.0722));
-          diffuseColor.rgb = mix(vec3(luma), diffuseColor.rgb, 0.72);
-          diffuseColor.rgb *= vec3(1.0, 0.94, 0.89);
+          diffuseColor.rgb = mix(vec3(luma), diffuseColor.rgb, 0.98);
+          diffuseColor.rgb = pow(max(diffuseColor.rgb, 0.0), vec3(1.18)) * 1.32;
+          diffuseColor.rgb *= vec3(1.0, 0.95, 0.9);
         }`,
       )
       .replace(
@@ -462,7 +496,7 @@ function createMarsMaterial(color: THREE.Texture, normal: THREE.Texture) {
         #include <tonemapping_fragment>`,
       );
   };
-  material.customProgramCacheKey = () => 'beyond-terra-mars-v2';
+  material.customProgramCacheKey = () => 'beyond-terra-mars-v4';
   return { material, uniforms };
 }
 
@@ -473,6 +507,7 @@ function createAtmosphereMaterial(shell: number) {
       uInner: { value: new THREE.Color(HERO.rimInner) },
       uOuter: { value: new THREE.Color(HERO.rimOuter) },
       uShell: { value: shell },
+      uStrength: { value: 1 },
     },
     vertexShader: /* glsl */ `
       varying vec3 vNormalView;
@@ -489,6 +524,7 @@ function createAtmosphereMaterial(shell: number) {
       uniform vec3 uInner;
       uniform vec3 uOuter;
       uniform float uShell;
+      uniform float uStrength;
       varying vec3 vNormalView;
       varying vec3 vPosView;
       void main() {
@@ -501,7 +537,7 @@ function createAtmosphereMaterial(shell: number) {
         float glow = pow(t, 3.0);
         float sun = smoothstep(-0.3, 0.8, dot(n, uSunDir));
         vec3 col = mix(uOuter, uInner, t);
-        float a = glow * (0.06 + 0.94 * sun) * 0.42;
+        float a = glow * (0.06 + 0.94 * sun) * 0.42 * uStrength;
         gl_FragColor = vec4(col * a, a);
         #include <colorspace_fragment>
       }
@@ -510,6 +546,72 @@ function createAtmosphereMaterial(shell: number) {
     transparent: true,
     depthWrite: false,
     blending: THREE.AdditiveBlending,
+    toneMapped: false,
+  });
+}
+
+function disposeUniformTextures(material: THREE.Material) {
+  const uniforms = (material as THREE.ShaderMaterial).uniforms;
+  if (!uniforms) return;
+  new Set(Object.values(uniforms).map((u) => u.value)).forEach((v) => {
+    if (v instanceof THREE.Texture) v.dispose();
+  });
+}
+
+/**
+ * The title from coverage masks: ivory letters (soft → sharp during the reveal) over an
+ * extremely restrained copper glow and a soft, low shadow. Output is premultiplied linear.
+ */
+function createTitleMaterial(
+  sharp: THREE.Texture,
+  soft: THREE.Texture,
+  wide: THREE.Texture | null,
+  shadowDrop: number,
+) {
+  return new THREE.ShaderMaterial({
+    uniforms: {
+      uSharpTex: { value: sharp },
+      uSoftTex: { value: soft },
+      uWideTex: { value: wide ?? soft },
+      uGlowStrength: { value: wide ? 0.06 : 0 },
+      uShadowDrop: { value: shadowDrop },
+      uTitle: { value: new THREE.Color(HERO.title) },
+      uGlow: { value: new THREE.Color(HERO.rimOuter) },
+      uSharp: { value: 1 },
+      uOpacity: { value: 1 },
+    },
+    vertexShader: /* glsl */ `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: /* glsl */ `
+      uniform sampler2D uSharpTex;
+      uniform sampler2D uSoftTex;
+      uniform sampler2D uWideTex;
+      uniform float uGlowStrength;
+      uniform float uShadowDrop;
+      uniform vec3 uTitle;
+      uniform vec3 uGlow;
+      uniform float uSharp;
+      uniform float uOpacity;
+      varying vec2 vUv;
+      void main() {
+        float text = mix(texture2D(uSoftTex, vUv).a, texture2D(uSharpTex, vUv).a, uSharp);
+        float glow = texture2D(uWideTex, vUv).a * uGlowStrength;
+        float shadow = texture2D(uSoftTex, vUv + vec2(0.0, uShadowDrop)).a * 0.22;
+        vec4 col = vec4(0.0, 0.0, 0.0, shadow);
+        col = vec4(uGlow * glow, glow) + col * (1.0 - glow);
+        col = vec4(uTitle * text, text) + col * (1.0 - text);
+        gl_FragColor = col * uOpacity;
+      }
+    `,
+    transparent: true,
+    premultipliedAlpha: true,
+    depthTest: false,
+    depthWrite: false,
     toneMapped: false,
   });
 }

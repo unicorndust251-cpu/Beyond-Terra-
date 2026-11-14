@@ -4,8 +4,9 @@ import type { SuitMaterials } from './astronaut';
 
 /**
  * A rugged field tablet for surface operations (a concept device, not NASA hardware):
- * matte dark-metal chassis, rubber corner bumpers and grip rails, a hardware wake key
- * and two warm status lights.
+ * matte dark-metal chassis, rubber corner bumpers and grip rails, a hardware wake key,
+ * two warm status lights and a clamp on the back for the suit's chest-mounted arm.
+ * The gloves use whatever material they are given (in the intro: shadow only).
  *
  * Local frame: the screen faces +Z and its top edge points +Y. The screen always has the
  * same aspect ratio as the browser viewport, so when the camera is square-on to it the
@@ -20,7 +21,6 @@ export interface TabletState {
   screenOn: number; // 0 → 1
   led: number; // 0 → 1
   glare: number; // reflection strength on the glass
-  press: number; // 0 → 1, right thumb on the wake key
 }
 
 export class Tablet {
@@ -28,6 +28,8 @@ export class Tablet {
   /** Wrist positions, children of the tablet, for the arm IK. */
   readonly leftWrist = new THREE.Object3D();
   readonly rightWrist = new THREE.Object3D();
+  /** Where the chest-mount strut meets the clamp on the back. */
+  readonly mountPoint = new THREE.Object3D();
 
   screenW = 0.36;
   screenH = 0.2;
@@ -39,11 +41,13 @@ export class Tablet {
   private readonly ledMat: THREE.MeshStandardMaterial;
   private readonly screenMat: THREE.MeshBasicMaterial;
   private readonly glassMat: THREE.MeshStandardMaterial;
-  private thumb: THREE.Group | null = null;
-  private keyCap: THREE.Mesh | null = null;
 
-  constructor(mats: SuitMaterials, heroTexture: THREE.Texture) {
+  private readonly withGloves: boolean;
+
+  /** `gloves: false` when a character model holds the tablet with its own hands. */
+  constructor(mats: SuitMaterials, heroTexture: THREE.Texture, options: { gloves?: boolean } = {}) {
     this.mats = mats;
+    this.withGloves = options.gloves ?? true;
     this.chassis = new THREE.MeshStandardMaterial({ color: '#2C2A28', metalness: 0.65, roughness: 0.52 });
     this.bumper = new THREE.MeshStandardMaterial({ color: '#1D1B1A', metalness: 0.05, roughness: 0.78 });
     this.ledMat = new THREE.MeshStandardMaterial({
@@ -72,7 +76,7 @@ export class Tablet {
       fog: false,
       envMapIntensity: 1,
     });
-    this.root.add(this.build, this.leftWrist, this.rightWrist);
+    this.root.add(this.build, this.leftWrist, this.rightWrist, this.mountPoint);
   }
 
   /** Rebuilds the device so its screen matches the viewport aspect ratio. */
@@ -88,8 +92,11 @@ export class Tablet {
     this.ledMat.emissiveIntensity = s.led * 2.2;
     this.glassMat.opacity = s.glare;
     this.glassMat.visible = s.glare > 0.001;
-    if (this.thumb) this.thumb.position.z = -0.0045 * s.press;
-    if (this.keyCap) this.keyCap.position.z = DEPTH / 2 + 0.002 - 0.0015 * s.press;
+  }
+
+  /** The chassis material, shared with the mount hardware so it matches. */
+  get metal() {
+    return this.chassis;
   }
 
   /** Distance from the screen at which a camera with this vertical FOV sees exactly the screen. */
@@ -145,8 +152,15 @@ export class Tablet {
     });
 
     // Wake key on the right bezel
-    this.keyCap = new THREE.Mesh(new RoundedBoxGeometry(0.012, 0.03, 0.005, 1, 0.002), this.bumper);
-    this.keyCap.position.set(W / 2 + BEZEL * 0.5, -H * 0.18, DEPTH / 2 + 0.002);
+    const keyCap = new THREE.Mesh(new RoundedBoxGeometry(0.012, 0.03, 0.005, 1, 0.002), this.bumper);
+    keyCap.position.set(W / 2 + BEZEL * 0.5, -H * 0.18, DEPTH / 2 + 0.002);
+
+    // Clamp for the chest-mount arm, low on the back
+    const clampY = -H * 0.2;
+    const clamp = new THREE.Mesh(new RoundedBoxGeometry(0.09, 0.05, 0.014, 2, 0.005), this.bumper);
+    clamp.position.set(0, clampY, -DEPTH / 2 - 0.007);
+    clamp.castShadow = true;
+    this.mountPoint.position.set(0, clampY, -DEPTH / 2 - 0.016);
 
     // Back plate with a heat-spreader rib pattern
     const ribs: THREE.Mesh[] = [];
@@ -157,18 +171,25 @@ export class Tablet {
       ribs.push(rib);
     }
 
-    this.build.add(body, screen, glass, ...corners, ...rails, ...leds, this.keyCap, ...ribs);
+    this.build.add(body, screen, glass, ...corners, ...rails, ...leds, keyCap, clamp, ...ribs);
     this.buildGloves(outerW);
   }
 
   private buildGloves(outerW: number) {
     const m = this.mats;
     const H = this.screenH;
-    this.thumb = null;
     for (const side of [-1, 1] as const) {
       const g = new THREE.Group();
       const edge = side * (outerW / 2);
       const gripY = side === 1 ? -H * 0.18 : -H * 0.08;
+
+      // A character model brings its own hands: only the grip points are needed
+      if (!this.withGloves) {
+        // Wrists out beyond the edge and behind the device, so the fingers wrap its
+        // back and sides rather than crossing the screen
+        (side === 1 ? this.rightWrist : this.leftWrist).position.set(edge + side * 0.075, gripY - 0.02, -DEPTH / 2 - 0.045);
+        continue;
+      }
 
       // Palm wraps the side edge from behind
       const palm = new THREE.Mesh(new RoundedBoxGeometry(0.048, 0.1, 0.056, 3, 0.018), m.glove);
@@ -190,7 +211,6 @@ export class Tablet {
       t.position.set(edge - side * 0.0105, gripY + 0.02, DEPTH / 2 + 0.0125);
       t.castShadow = true;
       thumb.add(t);
-      if (side === 1) this.thumb = thumb;
       // Gauntlet towards the wrist bearing
       const wristLocal = new THREE.Vector3(edge + side * 0.078, gripY - 0.03, -0.06);
       const palmCentre = palm.position.clone();

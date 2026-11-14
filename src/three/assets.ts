@@ -1,11 +1,20 @@
 import * as THREE from 'three';
 
 /**
- * Globe textures. Colour: Solar System Scope (CC BY 4.0), built from NASA imagery.
- * Relief: normal map derived from MOLA elevation data (NASA/GSFC).
+ * Globe textures. Colour: Solar System Scope (CC BY 4.0), built from NASA imagery; the
+ * 4k and 6k maps are their 8k map resampled. Relief: normal map derived from MOLA
+ * elevation data (NASA/GSFC).
+ *
+ * The 4k map loads first, so the planet appears quickly. On large or high-density
+ * screens the 6k map then loads in the background and replaces it in every view at
+ * once, keeping about two texels per device pixel at the centre of the disc.
  */
 export const MARS_TEXTURE_URLS = {
-  color: '/textures/mars_color_2k.jpg',
+  color: '/textures/mars_color_4k.jpg',
+  /** For GPUs that cannot hold a 4096-pixel texture. */
+  colorSmall: '/textures/mars_color_2k.jpg',
+  /** Background upgrade for large or high-density screens. */
+  colorLarge: '/textures/mars_color_6k.jpg',
   normal: '/textures/mars_normal_2k.jpg',
 } as const;
 
@@ -34,15 +43,51 @@ function loadImage(url: string): Promise<HTMLImageElement> {
 export function loadMarsImages(): Promise<MarsImages> {
   if (!marsImagesPromise) {
     marsImagesPromise = Promise.all([
-      loadImage(MARS_TEXTURE_URLS.color),
+      loadImage(maxTextureSize() >= 4096 ? MARS_TEXTURE_URLS.color : MARS_TEXTURE_URLS.colorSmall),
       loadImage(MARS_TEXTURE_URLS.normal),
     ]).then(([color, normal]) => ({ color, normal }));
-    // Allow a retry on a later call if this attempt failed
-    marsImagesPromise.catch(() => {
+    marsImagesPromise.then(loadLargeColor, () => {
+      // Allow a retry on a later call if this attempt failed
       marsImagesPromise = null;
     });
   }
   return marsImagesPromise;
+}
+
+let largeColor: HTMLImageElement | null = null;
+let largeColorRequested = false;
+const largeColorListeners = new Set<(image: HTMLImageElement) => void>();
+
+/** Disc diameter in device pixels at the hero framing (see heroLayout). */
+function heroDiscDevicePixels(): number {
+  const css = Math.min(window.innerHeight * 0.7, window.innerWidth * 0.84);
+  return css * Math.min(window.devicePixelRatio || 1, 2);
+}
+
+function loadLargeColor() {
+  if (largeColorRequested) return;
+  largeColorRequested = true;
+  // The 4k map gives about 1.3 texels per pixel at a 1000-pixel disc: upgrade beyond ~800
+  if (maxTextureSize() < 8192 || getQuality() !== 'high' || heroDiscDevicePixels() < 800) return;
+  loadImage(MARS_TEXTURE_URLS.colorLarge)
+    .then((img) => img.decode().then(() => img))
+    .then((img) => {
+      largeColor = img;
+      largeColorListeners.forEach((cb) => cb(img));
+    })
+    .catch(() => {
+      /* keep the 4k map */
+    });
+}
+
+/**
+ * Calls `cb` with the 6k colour map once it is ready (immediately if it already is).
+ * Every view of the planet subscribes, so they all switch together.
+ */
+export function onLargeMarsColor(cb: (image: HTMLImageElement) => void): () => void {
+  if (largeColor) cb(largeColor);
+  else largeColorListeners.add(cb);
+  return () => largeColorListeners.delete(cb);
 }
 
 let titleFontPromise: Promise<void> | null = null;
@@ -61,6 +106,7 @@ export function loadTitleFont(timeoutMs = 2500): Promise<void> {
 }
 
 let webglSupport: boolean | null = null;
+let webglMaxTexture = 0;
 
 export function isWebGLAvailable(): boolean {
   if (webglSupport !== null) return webglSupport;
@@ -68,11 +114,17 @@ export function isWebGLAvailable(): boolean {
     const canvas = document.createElement('canvas');
     const gl = canvas.getContext('webgl2');
     webglSupport = !!gl;
-    (gl as WebGL2RenderingContext | null)?.getExtension('WEBGL_lose_context')?.loseContext();
+    webglMaxTexture = gl ? gl.getParameter(gl.MAX_TEXTURE_SIZE) : 0;
+    gl?.getExtension('WEBGL_lose_context')?.loseContext();
   } catch {
     webglSupport = false;
   }
   return webglSupport;
+}
+
+function maxTextureSize(): number {
+  isWebGLAvailable();
+  return webglMaxTexture;
 }
 
 /** Coarse device tier used to scale shadow maps, geometry density and pixel ratio. */

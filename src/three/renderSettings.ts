@@ -4,8 +4,9 @@ import * as THREE from 'three';
  * The intro and the homepage must render Mars at the same pixel ratio, so the moment
  * one hands over to the other is invisible.
  */
-export function renderPixelRatio(quality: 'high' | 'low'): number {
-  return Math.min(window.devicePixelRatio || 1, quality === 'high' ? 2 : 1.5);
+export function renderPixelRatio(): number {
+  // Up to 2x on every device: the planet and title stay crisp on phones and tablets too
+  return Math.min(window.devicePixelRatio || 1, 2);
 }
 
 export function createRenderer(canvas: HTMLCanvasElement): THREE.WebGLRenderer {

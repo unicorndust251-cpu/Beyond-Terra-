@@ -1,36 +1,52 @@
 import { useEffect, useRef, useState } from 'react';
 import type * as THREE from 'three';
 import { gsap } from 'gsap';
-import { getQuality, isWebGLAvailable, loadMarsImages, sharedSeconds } from '../three/assets';
-import { heroLayout, homeLayout, lerpLayout, MarsHero } from '../three/marsHero';
+import {
+  getQuality,
+  isWebGLAvailable,
+  loadMarsImages,
+  loadTitleFont,
+  onLargeMarsColor,
+  sharedSeconds,
+} from '../three/assets';
+import { addHeroReveal, hiddenReveal, REVEAL_SETTLED_AT } from '../three/heroReveal';
+import { heroLayout, MarsHero, REVEAL_COMPLETE } from '../three/marsHero';
 import { createRenderer, renderPixelRatio, viewportSize } from '../three/renderSettings';
 import './MarsBackdrop.css';
 
-export type BackdropMode = 'standby' | 'hero' | 'home';
-
 interface Props {
   /**
-   * standby: built and warmed up, not animating (the intro is covering it)
-   * hero:    rotating at the hero framing, exactly as the intro's full-screen view
-   * home:    glides into the homepage composition
+   * false: built and warmed up, but not animating (the intro is covering it).
+   * true:  rotating continuously at the hero framing.
    */
-  mode: BackdropMode;
+  live: boolean;
+  /** Play the four-second reveal when it goes live (a visit without the astronaut intro). */
+  playReveal: boolean;
   reducedMotion: boolean;
+  /** The final composition is in place: the credit line may appear. */
+  onRevealed: () => void;
 }
 
 /**
- * The homepage's own rotating Mars. It uses the same scene as the intro, without the
- * title, and works on its own: the site never depends on the intro having played.
+ * The homepage's rotating Mars with the BEYOND TERRA title: the same scene the intro shows
+ * on the tablet, at the same framing, rotation and lighting. It works on its own, so the
+ * site never depends on the intro having played.
  */
-export default function MarsBackdrop({ mode, reducedMotion }: Props) {
+export default function MarsBackdrop({ live, playReveal, reducedMotion, onRevealed }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
-  const modeRef = useRef(mode);
-  const apiRef = useRef<{ setMode: (m: BackdropMode) => void } | null>(null);
+  const liveRef = useRef(live);
+  const playRevealRef = useRef(playReveal);
+  const revealedRef = useRef(onRevealed);
+  revealedRef.current = onRevealed;
+  const apiRef = useRef<{ setLive: (on: boolean) => void } | null>(null);
   const [fallback, setFallback] = useState(() => !isWebGLAvailable());
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (fallback) return;
+    if (fallback) {
+      revealedRef.current();
+      return;
+    }
     const host = hostRef.current!;
     const canvas = document.createElement('canvas');
     canvas.className = 'bt-backdrop__canvas';
@@ -45,27 +61,26 @@ export default function MarsBackdrop({ mode, reducedMotion }: Props) {
       return;
     }
     const quality = getQuality();
-    const pixelRatio = renderPixelRatio(quality);
+    const pixelRatio = renderPixelRatio();
     renderer.setPixelRatio(pixelRatio);
 
     let hero: MarsHero | null = null;
     let disposed = false;
     let looping = false;
-    const layoutT = { value: modeRef.current === 'home' && reducedMotion ? 1 : 0 };
+    let revealTl: gsap.core.Timeline | null = null;
+    let revealed = false;
+    let stopUpgrade = () => {};
     // A still planet when the visitor prefers reduced motion
-    const stillSeconds = 5.5;
+    const stillSeconds = 8;
 
-    const applyLayout = () => {
-      if (!hero) return;
-      const { width, height } = viewportSize();
-      hero.setLayout(lerpLayout(heroLayout(width, height), homeLayout(width, height), layoutT.value));
+    const markRevealed = () => {
+      if (revealed) return;
+      revealed = true;
+      revealedRef.current();
     };
 
     const draw = () => {
       if (!hero) return;
-      // Covered by the content below the fold: no need to draw
-      if (window.scrollY > window.innerHeight * 1.2 && modeRef.current === 'home') return;
-      applyLayout();
       hero.render(reducedMotion ? stillSeconds : sharedSeconds());
       hero.present();
     };
@@ -77,29 +92,31 @@ export default function MarsBackdrop({ mode, reducedMotion }: Props) {
       else gsap.ticker.remove(draw);
     };
 
-    const setMode = (m: BackdropMode) => {
-      modeRef.current = m;
+    const setLive = (on: boolean) => {
+      liveRef.current = on;
       if (!hero) return;
-      if (m === 'home') {
-        if (reducedMotion) {
-          layoutT.value = 1;
+      if (on && !revealed) {
+        if (playRevealRef.current && !reducedMotion) {
+          Object.assign(hero.reveal, hiddenReveal());
+          revealTl = addHeroReveal(gsap.timeline(), hero.reveal);
+          revealTl.call(markRevealed, undefined, REVEAL_SETTLED_AT);
         } else {
-          gsap.to(layoutT, { value: 1, duration: 1.8, ease: 'power3.inOut', overwrite: true });
+          Object.assign(hero.reveal, REVEAL_COMPLETE);
+          markRevealed();
         }
-      } else {
-        layoutT.value = 0;
       }
       // With reduced motion, draw on demand only
-      setLooping(m !== 'standby' && !reducedMotion);
-      if (reducedMotion || m === 'standby') draw();
+      setLooping(on && !reducedMotion);
+      draw();
     };
-    apiRef.current = { setMode };
+    apiRef.current = { setLive };
 
     const resize = () => {
       if (!hero) return;
       const { width, height } = viewportSize();
       renderer.setSize(width, height);
       hero.setSize(width, height, pixelRatio);
+      hero.setLayout(heroLayout(width, height));
       draw();
     };
 
@@ -110,13 +127,17 @@ export default function MarsBackdrop({ mode, reducedMotion }: Props) {
     canvas.addEventListener('webglcontextlost', onLost);
     window.addEventListener('resize', resize);
 
-    loadMarsImages()
-      .then((images) => {
+    Promise.all([loadMarsImages(), loadTitleFont()])
+      .then(([images]) => {
         if (disposed) return;
-        hero = new MarsHero(renderer, images, { title: false, quality });
+        hero = new MarsHero(renderer, images, { title: true, quality });
         resize();
-        setMode(modeRef.current);
+        setLive(liveRef.current);
         setReady(true);
+        stopUpgrade = onLargeMarsColor((image) => {
+          hero?.setColorImage(image);
+          draw();
+        });
       })
       .catch(() => {
         if (!disposed) setFallback(true);
@@ -124,9 +145,10 @@ export default function MarsBackdrop({ mode, reducedMotion }: Props) {
 
     return () => {
       disposed = true;
+      stopUpgrade();
       apiRef.current = null;
       setLooping(false);
-      gsap.killTweensOf(layoutT);
+      revealTl?.kill();
       window.removeEventListener('resize', resize);
       canvas.removeEventListener('webglcontextlost', onLost);
       hero?.dispose();
@@ -137,17 +159,22 @@ export default function MarsBackdrop({ mode, reducedMotion }: Props) {
   }, [fallback, reducedMotion]);
 
   useEffect(() => {
-    modeRef.current = mode;
-    apiRef.current?.setMode(mode);
-  }, [mode]);
+    liveRef.current = live;
+    apiRef.current?.setLive(live);
+  }, [live]);
 
   return (
     <div
       ref={hostRef}
-      className={`bt-backdrop${ready ? ' is-ready' : ''}${fallback ? ' is-fallback' : ''}${mode === 'home' ? ' is-home' : ''}`}
+      className={`bt-backdrop${ready ? ' is-ready' : ''}${fallback ? ' is-fallback' : ''}`}
       aria-hidden="true"
     >
-      {fallback && <div className="bt-backdrop__planet" />}
+      {fallback && (
+        <>
+          <div className="bt-backdrop__planet" />
+          <p className="bt-backdrop__title">Beyond Terra</p>
+        </>
+      )}
     </div>
   );
 }
