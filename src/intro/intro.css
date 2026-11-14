@@ -19,14 +19,15 @@
   display: block;
 }
 
-/* Lens-like falloff for the surface scenes; gone before the screen fills the frame */
+/* Falloff of the helmet's field of view, heavier along the out-of-focus lower rim of the
+   visor; gone before the screen fills the frame */
 .bt-intro__vignette {
   position: absolute;
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 120% 95% at 50% 45%, transparent 55%, rgba(5, 5, 7, 0.55) 100%),
-    linear-gradient(to bottom, rgba(5, 5, 7, 0.18), transparent 22%, transparent 78%, rgba(5, 5, 7, 0.28));
+    radial-gradient(ellipse 125% 100% at 50% 40%, transparent 52%, rgba(5, 5, 7, 0.6) 100%),
+    linear-gradient(to bottom, rgba(5, 5, 7, 0.16), transparent 20%, transparent 70%, rgba(5, 5, 7, 0.5));
 }
 
 .bt-intro__fade {
@@ -102,5 +103,13 @@
 @media (pointer: coarse) {
   .bt-intro__skip kbd {
     display: none;
+  }
+}
+
+/* Narrow screens: the caption sits above the skip button instead of beside it */
+@media (max-width: 600px) {
+  .bt-intro__caption {
+    bottom: calc(clamp(16px, 4vh, 36px) + 56px);
+    max-width: calc(100vw - 32px);
   }
 }

@@ -1,0 +1,44 @@
+/* Full screen, underneath the globe (the map itself is position: fixed, inset 0) */
+.bt-trek {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: var(--obsidian);
+}
+
+.bt-trek__failed {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 16px;
+  padding: 16px;
+  text-align: center;
+  font-family: var(--font-ui);
+  color: var(--ivory);
+}
+
+.bt-trek__failed p {
+  margin: 0;
+  font-size: 15px;
+}
+
+.bt-trek__failed button {
+  min-height: 44px;
+  padding: 0 22px;
+  border: 1px solid var(--terracotta);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ivory);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.bt-trek__failed button:hover {
+  background: var(--terracotta);
+  color: var(--obsidian);
+}

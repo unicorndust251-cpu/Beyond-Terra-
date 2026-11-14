@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import { getQuality, loadMarsImages, loadTitleFont, sharedSeconds } from '../three/assets';
+import { getQuality, loadMarsImages, loadTitleFont, onLargeMarsColor, sharedSeconds } from '../three/assets';
 import { heroLayout, MarsHero } from '../three/marsHero';
 import { createRenderer, renderPixelRatio, viewportSize } from '../three/renderSettings';
 import { SurfaceScene } from './scene/surfaceScene';
@@ -76,17 +76,18 @@ export default function AstronautIntro({ onHandoff, onComplete }: AstronautIntro
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     const quality = getQuality();
-    const pixelRatio = renderPixelRatio(quality);
+    const pixelRatio = renderPixelRatio();
     renderer.setPixelRatio(pixelRatio);
 
     const state = createInitialState();
     let hero: MarsHero | null = null;
+    let stopUpgrade = () => {};
     let surface: SurfaceScene | null = null;
     let tl: ReturnType<typeof createIntroTimeline> | null = null;
     let raf = 0;
     let playing = false;
     // The timeline follows the wall clock (not GSAP's lag-smoothed ticker), so the
-    // sequence lasts about seven seconds even on slow devices; slow frames are skipped,
+    // sequence lasts about ten seconds even on slow devices; slow frames are skipped,
     // and only a long stall (over 0.25 s) is absorbed.
     let clock = 0;
     let last = 0;
@@ -108,7 +109,6 @@ export default function AstronautIntro({ onHandoff, onComplete }: AstronautIntro
         surface.render();
       } else {
         handoff();
-        hero.titleOpacity = state.title;
         hero.render(seconds);
         hero.present();
       }
@@ -168,6 +168,8 @@ export default function AstronautIntro({ onHandoff, onComplete }: AstronautIntro
       .then(([images]) => {
         if (disposed) return;
         hero = new MarsHero(renderer, images, { title: true, quality });
+        // Switches to the 6k map at the same moment as the homepage's globe
+        stopUpgrade = onLargeMarsColor((image) => hero?.setColorImage(image));
         surface = new SurfaceScene(renderer, hero.target.texture, quality);
         resize();
 
@@ -177,7 +179,7 @@ export default function AstronautIntro({ onHandoff, onComplete }: AstronautIntro
         surface.update(state, 0);
         surface.render();
 
-        tl = createIntroTimeline(state);
+        tl = createIntroTimeline(state, hero.reveal);
         tl.eventCallback('onComplete', finish);
         started = true;
         window.clearTimeout(timeout);
@@ -204,6 +206,7 @@ export default function AstronautIntro({ onHandoff, onComplete }: AstronautIntro
 
     return () => {
       disposed = true;
+      stopUpgrade();
       window.clearTimeout(timeout);
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('resize', resize);
@@ -241,7 +244,7 @@ export default function AstronautIntro({ onHandoff, onComplete }: AstronautIntro
         onPointerDown={(e) => e.stopPropagation()}
         onClick={onSkipClick}
       >
-        Skip intro
+        Skip cinematic
         <kbd aria-hidden="true">Enter</kbd>
       </button>
     </div>

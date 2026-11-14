@@ -1,23 +1,26 @@
 import { gsap } from 'gsap';
+import { addHeroReveal, hiddenReveal } from '../three/heroReveal';
+import type { HeroReveal } from '../three/marsHero';
 import type { SurfaceState } from './scene/surfaceScene';
 
 /**
- * The astronaut-to-website sequence, about 7.3 s.
+ * The astronaut-to-website sequence, about 9.9 s.
  *
- *  0.0–1.2  Martian arrival: fade up, the camera starts a slow push-in, the tablet rises
- *  1.2–2.2  Activation: thumb on the wake key, status lights, Beyond Terra fades up
- *  2.2–4.2  The camera travels over the shoulder towards the screen
- *  4.2–5.0  The camera squares up; the bezel slides out of frame; the screen fills the view
- *  5.0      Handoff: the same hero image is now drawn full-screen (no cut, same pixels)
- *  5.0–6.3  Hero moment: Mars rotating behind BEYOND TERRA
- *  6.3–7.3  The title fades and the homepage takes over
+ *  0.0–1.5  Fade up on the Martian plain through the astronaut's eyes; a slow look across it
+ *  1.5–3.0  The tablet swings up from the chest and locks; the status lights and screen wake
+ *  3.0–7.0  On the screen, the original four-second Beyond Terra reveal: Mars out of darkness,
+ *           then BEYOND TERRA (4.5–5.3)
+ *  5.0–7.5  The astronaut leans in; the tablet grows in the frame
+ *  7.5–9.0  The camera squares up and enters the screen; the bezel leaves the frame
+ *  9.0      Handoff: the screen exactly fills the viewport and the website takes over
+ *           (the same image: same planet, rotation, lighting and title)
+ *  9.35–9.85 The intro dissolves onto the identical homepage, which then stays
  */
 export const TIMING = {
-  camera: [0, 5.0],
-  handoff: 5.0,
-  titleFade: [6.3, 7.0],
-  exit: [6.75, 7.3],
-  total: 7.3,
+  revealAt: 3.0,
+  dolly: [5.0, 9.0],
+  handoff: 9.0,
+  exit: [9.35, 9.85],
   skipFade: 0.55,
   loadTimeout: 9,
 } as const;
@@ -27,54 +30,58 @@ export interface IntroState extends SurfaceState {
   vignette: number;
   caption: number;
   heroMode: number;
-  title: number;
   exit: number;
 }
 
 export function createInitialState(): IntroState {
   return {
-    cam: 0,
+    look: 0,
+    pan: 1,
     raise: 0,
-    press: 0,
+    settle: 0,
+    dolly: 0,
     screenOn: 0,
     led: 0,
-    glare: 0.12,
+    glare: 0.05,
     fadeIn: 1,
     vignette: 1,
     caption: 0,
     heroMode: 0,
-    title: 1,
     exit: 0,
   };
 }
 
-export function createIntroTimeline(state: IntroState): gsap.core.Timeline {
+/** `reveal` is the tablet hero's reveal state; it starts hidden and plays on the screen. */
+export function createIntroTimeline(state: IntroState, reveal: HeroReveal): gsap.core.Timeline {
+  Object.assign(reveal, hiddenReveal());
   const tl = gsap.timeline({ paused: true });
-  const [camStart, camEnd] = TIMING.camera;
 
-  tl.to(state, { fadeIn: 0, duration: 1.0, ease: 'power1.out' }, 0);
-  tl.to(state, { caption: 1, duration: 0.6, ease: 'power1.out' }, 0.5);
-  tl.to(state, { caption: 0, duration: 0.5, ease: 'power1.in' }, 3.0);
+  // Establishing shot
+  tl.to(state, { fadeIn: 0, duration: 1.4, ease: 'power1.out' }, 0);
+  tl.to(state, { pan: 0, duration: 2.6, ease: 'sine.inOut' }, 0);
+  tl.to(state, { caption: 1, duration: 0.6, ease: 'power1.out' }, 0.6);
+  tl.to(state, { caption: 0, duration: 0.5, ease: 'power1.in' }, 3.6);
 
-  // One continuous camera move from the medium shot to square-on with the screen
-  tl.to(state, { cam: 1, duration: camEnd - camStart, ease: 'power3.inOut' }, camStart);
-
-  // The astronaut lifts the tablet into reading position
-  tl.to(state, { raise: 1, duration: 1.5, ease: 'power2.inOut' }, 0.1);
+  // The tablet comes up and the eyes follow it down
+  tl.to(state, { raise: 1, duration: 1.5, ease: 'power2.inOut' }, 1.4);
+  tl.to(state, { look: 1, duration: 1.8, ease: 'power2.inOut' }, 1.3);
+  tl.to(state, { settle: 1, duration: 0.1, ease: 'power2.out' }, 2.86);
+  tl.to(state, { settle: 0, duration: 0.35, ease: 'power2.inOut' }, 2.96);
 
   // Activation
-  tl.to(state, { press: 1, duration: 0.14, ease: 'power2.in' }, 1.24);
-  tl.to(state, { press: 0, duration: 0.24, ease: 'power2.out' }, 1.42);
-  tl.to(state, { led: 1, duration: 0.25, ease: 'power1.out' }, 1.36);
-  tl.to(state, { screenOn: 1, duration: 0.8, ease: 'power2.out' }, 1.42);
+  tl.to(state, { led: 1, duration: 0.25, ease: 'power1.out' }, 2.8);
+  tl.to(state, { screenOn: 1, duration: 0.5, ease: 'power2.out' }, 2.95);
+  addHeroReveal(tl, reveal, TIMING.revealAt);
 
-  // Reflections and the cinematic grade leave before the screen fills the view
-  tl.to(state, { glare: 0, duration: 1.1, ease: 'power1.in' }, 3.4);
-  tl.to(state, { vignette: 0, duration: 1.0, ease: 'power1.inOut' }, 3.7);
+  // One continuous lean into the screen
+  const [d0, d1] = TIMING.dolly;
+  tl.to(state, { dolly: 1, duration: d1 - d0, ease: 'power2.inOut' }, d0);
+
+  // Reflections and the lens grade leave before the screen fills the view
+  tl.to(state, { glare: 0, duration: 1.6, ease: 'power1.in' }, 6.6);
+  tl.to(state, { vignette: 0, duration: 1.6, ease: 'power1.inOut' }, 7.0);
 
   tl.set(state, { heroMode: 1 }, TIMING.handoff);
-
-  tl.to(state, { title: 0, duration: TIMING.titleFade[1] - TIMING.titleFade[0], ease: 'power1.inOut' }, TIMING.titleFade[0]);
   tl.to(state, { exit: 1, duration: TIMING.exit[1] - TIMING.exit[0], ease: 'power1.inOut' }, TIMING.exit[0]);
   return tl;
 }

@@ -23,15 +23,13 @@ export function markIntroSeen() {
 }
 
 /**
- * The cinematic opening plays once per browsing session, on the homepage only.
+ * The cinematic opening plays once per browsing session.
  * `?intro` replays it; `?nointro` skips it. It never plays with reduced motion or
  * without WebGL: visitors go straight to the website.
  */
 export function shouldPlayIntro(): boolean {
   const params = new URLSearchParams(window.location.search);
   if (params.has('nointro')) return false;
-  const onHome = !window.location.hash.startsWith('#/') || window.location.hash === '#/';
-  if (!onHome) return false;
   if (prefersReducedMotion()) return false;
   if (!isWebGLAvailable()) return false;
   if (!params.has('intro') && readSeen()) return false;

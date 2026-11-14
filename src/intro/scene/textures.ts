@@ -86,23 +86,3 @@ export function createRegolithNormal(size = 512): THREE.DataTexture {
   }
   return heightToNormalTexture(h, size, 2.2);
 }
-
-/** Suit outer layer: a fine ripstop weave. Tiles seamlessly. */
-export function createFabricNormal(size = 256): THREE.DataTexture {
-  const h = new Float32Array(size * size);
-  const weave = 48;
-  const grid = 8;
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      const u = (x / size) * weave * Math.PI * 2;
-      const v = (y / size) * weave * Math.PI * 2;
-      let val = Math.sin(u) * Math.sin(v) * 0.5;
-      // Ripstop reinforcement threads
-      const gu = Math.abs(Math.sin((x / size) * grid * Math.PI));
-      const gv = Math.abs(Math.sin((y / size) * grid * Math.PI));
-      val += (Math.pow(1 - gu, 24) + Math.pow(1 - gv, 24)) * 0.9;
-      h[y * size + x] = val;
-    }
-  }
-  return heightToNormalTexture(h, size, 1.4);
-}

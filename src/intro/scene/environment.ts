@@ -9,8 +9,11 @@ import { createRegolithNormal } from './textures';
  */
 
 export const SURFACE = {
-  /** Direction towards the sun: low (≈17°) and from the right of the shot. */
-  sunDir: new THREE.Vector3(0.84, 0.31, -0.2).normalize(),
+  /**
+   * Direction towards the sun: low (≈19°), behind the astronaut and a little to the
+   * right, so their long shadow falls ahead of them into the shot.
+   */
+  sunDir: new THREE.Vector3(0.36, 0.34, 0.87).normalize(),
   sunColor: '#FFD3A8',
   skyZenith: '#5E4237',
   skyHorizon: '#C49476',
