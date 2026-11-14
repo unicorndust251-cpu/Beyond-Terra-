@@ -1,12 +1,12 @@
+import MissionPlannerPanel from './components/MissionPlannerPanel';
+
 /**
  * Mission planning's entry point, rendered inside the map (see components/MarsMapWithFeatures).
- * Routes, checkpoints, equipment and mission state are built from here.
  *
- * Use the map through `useMapBridge()` and the visitor's picks through
- * `useSelectedLocation()`, both from `../shared`. Do not import from `../scientific-data`.
- *
- * Not implemented yet: renders nothing.
+ * Uses the map only through `useMapBridge()` and the visitor's picks through
+ * `useSelectedLocation()`, both from `../shared`. Does not import `../scientific-data`:
+ * the planner works without elevation, terrain or hazard layers.
  */
 export default function MissionPlanningLayer() {
-  return null;
+  return <MissionPlannerPanel />;
 }
