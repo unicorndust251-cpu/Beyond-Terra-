@@ -56,13 +56,6 @@ export default function HomePage({ phase, playReveal, reducedMotion, zooming, on
             An interactive Mars exploration and mission-planning platform built on NASA mission data.
           </p>
         </main>
-
-        <footer className="bt-home__credits">
-          <p>
-            A concept project for a NASA Mars exploration challenge, not an official NASA product. Mars imagery: Solar
-            System Scope (CC BY 4.0), from NASA data; relief from MOLA (NASA/GSFC).
-          </p>
-        </footer>
       </div>
     </div>
   );

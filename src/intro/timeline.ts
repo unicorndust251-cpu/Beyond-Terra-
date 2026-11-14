@@ -27,7 +27,6 @@ export const TIMING = {
 export interface IntroState extends ThirdPersonState {
   fadeIn: number;
   vignette: number;
-  caption: number;
   heroMode: number;
   exit: number;
 }
@@ -43,7 +42,6 @@ export function createInitialState(): IntroState {
     glare: 0.05,
     fadeIn: 1,
     vignette: 1,
-    caption: 0,
     heroMode: 0,
     exit: 0,
   };
@@ -56,8 +54,6 @@ export function createIntroTimeline(state: IntroState, reveal: HeroReveal): gsap
 
   // Scene 1: observing Mars. A slow camera drift and a gentle look to the left and back
   tl.to(state, { fadeIn: 0, duration: 1.4, ease: 'power1.out' }, 0);
-  tl.to(state, { caption: 1, duration: 0.6, ease: 'power1.out' }, 0.6);
-  tl.to(state, { caption: 0, duration: 0.5, ease: 'power1.in' }, 3.8);
   tl.to(state, { cam: 0.12, duration: 3.6, ease: 'sine.inOut' }, 0);
   tl.to(state, { headYaw: 0.38, duration: 1.3, ease: 'sine.inOut' }, 0.8);
   tl.to(state, { headYaw: 0, duration: 1.1, ease: 'sine.inOut' }, 2.3);

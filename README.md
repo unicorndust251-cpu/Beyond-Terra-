@@ -5,7 +5,7 @@ Beyond Terra is an interactive Mars exploration and mission-planning platform po
 This build has the globe and, below it, the NASA Mars Trek map:
 
 1. **The astronaut opening.** Through an astronaut's eyes on Mars, a field tablet swings up and wakes with Beyond Terra on it, and the camera moves into the screen until the screen *is* the website.
-2. **The globe.** A full-screen, slowly rotating 3D Mars with BEYOND TERRA across it, and a one-line credit for the imagery. It stays for as long as the visitor likes; nothing redirects.
+2. **The globe.** A full-screen, slowly rotating 3D Mars with BEYOND TERRA across it. It stays for as long as the visitor likes; nothing redirects.
 3. **The Mars Trek map.** About 2.5 s after the globe settles, the camera zooms into Mars and lands on a full-screen map drawn from NASA Mars Trek's imagery (see below).
 
 Built with React 18, TypeScript, Three.js and GSAP, bundled with Vite.
@@ -25,15 +25,14 @@ The opening plays every time the site is opened or reloaded. Add `?nointro` to t
 
 | Time | Beat |
 | --- | --- |
-| 0.0–1.5 s | Fade up on the Martian plain through the astronaut's eyes, with a slow look across it. Their long shadow lies on the regolith ahead |
-| 1.5–3.0 s | The chest-mounted tablet swings up into reading position and locks; status lights and screen wake |
-| 3.0–7.0 s | On the tablet, the original four-second reveal: Mars rises out of darkness, the camera pushes in, BEYOND TERRA fades up and sharpens |
-| 5.0–7.5 s | The astronaut leans in; the tablet grows in the frame |
-| 7.5–9.0 s | The camera squares up to the screen; the bezel leaves the frame |
-| 9.0 s | Handoff: the screen exactly fills the viewport, and the same image is now drawn full-screen |
-| 9.35–9.85 s | The intro dissolves onto the identical globe page, which then stays |
+| 0.0–3.2 s | Three-quarter shot of the astronaut's upper body and helmet; the astronaut looks out over the plain with a gentle head turn, the visor reflecting the landscape |
+| 3.0–4.6 s | The astronaut raises the tablet and looks down at it; the screen wakes |
+| 4.5–8.5 s | On the tablet, the original four-second reveal: Mars rises out of darkness, the camera pushes in, BEYOND TERRA fades up and sharpens |
+| 5.0–9.6 s | The camera moves round over the right shoulder onto the screen; the astronaut and then the bezel leave the frame |
+| 9.6 s | Handoff: the screen exactly fills the viewport, and the same image is now drawn full-screen |
+| 9.95–10.45 s | The intro dissolves onto the identical globe, which holds for 2.5 s and then zooms into the Mars Trek map |
 
-**Skip cinematic** (the button, Enter, Space, Escape, or a click or tap anywhere) dissolves straight to the globe in about half a second.
+The intro always plays through; there is no skip. If it cannot load, hits an error or is still running after 25 s, the site appears anyway.
 
 ### The globe reveal
 
@@ -60,7 +59,7 @@ The opening has two versions, chosen automatically:
 
 This lives in `src/intro/scene/astronautRig.ts`, `thirdPersonScene.ts` and `createThirdPersonTimeline` in `timeline.ts`.
 
-**2. The astronaut's own view (fallback).** With no model, or one that cannot be used, the intro is the earlier point-of-view shot. The suit appears only as a shadow, so no placeholder figure is ever shown.
+**2. The built-in suit (default).** With no model, or one that cannot be used, the same sequence plays with the suit modelled in code (`astronaut.ts`, shown via `proceduralAstronaut.ts`), holding the tablet in its gloved hands.
 
 ### What the model needs
 
@@ -101,7 +100,9 @@ src/
     timeline.ts               GSAP timeline and timing
     introGate.ts              When the intro plays: ?nointro, reduced motion, WebGL
     scene/
-      surfaceScene.ts         Scene assembly, point-of-view camera, tablet mount, poses
+      thirdPersonScene.ts     Scene assembly, camera path, tablet poses
+      astronautRig.ts         Loads and poses a supplied rigged model
+      proceduralAstronaut.ts  The built-in suit, used when no model is supplied
       environment.ts          Terrain, sky, rocks, dust, lighting
       astronaut.ts            Suit silhouette from primitives (casts the shadow only)
       tablet.ts               Rugged field tablet
@@ -143,7 +144,7 @@ Route planning, waypoints, information panels and other Explorer features are no
 
 ## Scientific honesty
 
-The astronaut, suit, tablet and mount are a concept visualization of a possible future, not existing NASA hardware. The intro says so on screen. No telemetry or environmental readings are shown.
+The astronaut, suit, tablet and mount are a concept visualization of a possible future, not existing NASA hardware. No telemetry or environmental readings are shown.
 
 ## Credits
 

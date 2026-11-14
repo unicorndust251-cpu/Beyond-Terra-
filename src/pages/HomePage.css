@@ -17,11 +17,6 @@
     opacity 0.9s ease-in 0.75s;
 }
 
-.bt-home.is-zooming .bt-home__credits {
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
 .bt-home.is-reduced.is-zooming {
   transform: none;
   transition: opacity 0.4s ease;
@@ -32,43 +27,4 @@
   z-index: 1;
   height: 100%;
   pointer-events: none;
-}
-
-/* Attribution for the globe imagery (required by its CC BY licence) */
-.bt-home__credits {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: max(14px, env(safe-area-inset-bottom));
-  padding: 0 16px;
-  text-align: center;
-  opacity: 0;
-}
-
-.bt-home__credits p {
-  max-width: 62rem;
-  margin: 0 auto;
-  font-family: var(--font-ui);
-  font-size: 11px;
-  line-height: 1.5;
-  letter-spacing: 0.02em;
-  color: rgba(141, 117, 110, 0.85);
-}
-
-.is-revealed .bt-home__credits {
-  opacity: 1;
-  transition: opacity 1.2s ease 0.7s;
-}
-
-.is-quick.is-revealed .bt-home__credits {
-  transition-delay: 0.35s;
-}
-
-@media (max-height: 520px) {
-  .bt-home__credits {
-    bottom: 8px;
-  }
-  .bt-home__credits p {
-    font-size: 10px;
-  }
 }

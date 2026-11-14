@@ -35,21 +35,3 @@
   background: var(--space);
   pointer-events: none;
 }
-
-.bt-intro__caption {
-  position: absolute;
-  left: clamp(16px, 4vw, 48px);
-  bottom: clamp(18px, 4vh, 40px);
-  max-width: min(46ch, calc(100vw - 32px));
-  margin: 0;
-  font-family: var(--font-body);
-  font-size: clamp(10px, 1.05vw, 12px);
-  font-weight: 500;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  line-height: 1.6;
-  color: rgba(243, 229, 220, 0.72);
-  text-shadow: 0 1px 8px rgba(5, 5, 7, 0.6);
-  opacity: 0;
-  pointer-events: none;
-}

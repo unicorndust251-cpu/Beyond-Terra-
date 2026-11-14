@@ -3,7 +3,7 @@ import type { MarsMapHandle } from '../map/MarsMap';
 import './MarsTrekSection.css';
 
 // Leaflet and the map load separately, after the introduction, so they never slow it down
-const MarsMap = lazy(() => import('../map/MarsMap'));
+const MarsMap = lazy(() => import('./MarsMapWithFeatures'));
 
 interface Props {
   /** Mount the map (underneath the globe, out of focus) so its tiles load in advance. */

@@ -35,7 +35,6 @@ export default function AstronautIntro({ onHandoff, onComplete }: AstronautIntro
   const stageRef = useRef<HTMLDivElement>(null);
   const fadeRef = useRef<HTMLDivElement>(null);
   const vignetteRef = useRef<HTMLDivElement>(null);
-  const captionRef = useRef<HTMLParagraphElement>(null);
   const handoffRef = useRef(onHandoff);
   const completeRef = useRef(onComplete);
   handoffRef.current = onHandoff;
@@ -115,7 +114,6 @@ export default function AstronautIntro({ onHandoff, onComplete }: AstronautIntro
       }
       if (fadeRef.current) fadeRef.current.style.opacity = String(state.fadeIn);
       if (vignetteRef.current) vignetteRef.current.style.opacity = String(state.vignette);
-      if (captionRef.current) captionRef.current.style.opacity = String(state.caption);
       root.style.opacity = String(1 - state.exit);
     };
 
@@ -219,9 +217,6 @@ export default function AstronautIntro({ onHandoff, onComplete }: AstronautIntro
     <div ref={rootRef} className="bt-intro" role="region" aria-label="Beyond Terra introduction">
       <div ref={stageRef} className="bt-intro__stage" aria-hidden="true" />
       <div ref={vignetteRef} className="bt-intro__vignette" aria-hidden="true" />
-      <p ref={captionRef} className="bt-intro__caption">
-        Concept visualization · a possible future of Mars surface operations, not current NASA hardware
-      </p>
       <div ref={fadeRef} className="bt-intro__fade" aria-hidden="true" />
     </div>
   );
