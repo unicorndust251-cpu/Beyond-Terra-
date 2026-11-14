@@ -77,6 +77,13 @@ export async function loadManifest(id: string, signal?: AbortSignal): Promise<De
 
 /* ----------------------------------------------------------------- decoding */
 
+/** Downloads a gzipped data file and returns its bytes, decompressed. */
+export async function fetchGzipped(url: string, signal?: AbortSignal): Promise<ArrayBuffer> {
+  const res = await fetch(url, { signal });
+  if (!res.ok) throw new Error(`${url}: HTTP ${res.status}`);
+  return gunzipIfNeeded(await res.arrayBuffer());
+}
+
 async function gunzipIfNeeded(buf: ArrayBuffer): Promise<ArrayBuffer> {
   const head = new Uint8Array(buf, 0, 2);
   // Some hosts serve .gz with Content-Encoding: gzip and the browser has already inflated it

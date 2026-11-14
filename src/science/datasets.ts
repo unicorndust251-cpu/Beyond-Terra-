@@ -12,8 +12,17 @@ export const DATASETS = {
     ],
     access: 'NASA Mars Trek WMTS (RESTful), https://trek.nasa.gov/tiles/Mars/EQ/',
     crs: 'Equirectangular, Mars 2000 sphere (IAU2000:49900), planetocentric, −180…180° E',
-    resolution: 'Viking 232 m/px global; CTX and HiRISE regional (Jezero)',
+    resolution: 'Viking 232 m/px source, 326 m/px at Trek’s deepest level (7); CTX and HiRISE regional (Jezero)',
     licence: 'NASA imagery, public domain; credit NASA/USGS, NASA/JPL-Caltech/MSSS, NASA/JPL-Caltech/UArizona',
+  },
+  ctxGlobal: {
+    shortName: 'CTX global mosaic',
+    products: ['CTX_beta01_uncontrolled_5m_Caltech (Murray Lab, beta01)'],
+    access:
+      'Listed by Mars Trek; tiles from Esri, https://astro.arcgis.com/arcgis/rest/services/OnMars/CTX/MapServer (CORS open, 512-px tiles, levels 0–12 with data)',
+    crs: 'Geographic, Mars 2000 sphere (wkid 104971), origin −180°, 90°',
+    resolution: '5 m/px source, 5.1 m/px at level 12',
+    licence: 'NASA/JPL/MSSS/Caltech Murray Lab/Esri; uncontrolled (frames may be offset from true positions)',
   },
   mola: {
     shortName: 'MGS MOLA MEGDR',

@@ -15,7 +15,7 @@ import './map.css';
 import {
   BASE_LAYER_KEY,
   IMAGERY_PANE,
-  JEZERO_CENTER,
+  HOME_CENTER,
   MAP_LIMITS,
   MarsCRS,
   TREK_LAYERS,
@@ -83,7 +83,7 @@ const MarsMap = forwardRef<MarsMapHandle, MarsMapProps>(function MarsMap(
 
     const map = L.map(el, {
       crs: MarsCRS,
-      center: JEZERO_CENTER,
+      center: HOME_CENTER,
       zoom: 3,
       minZoom: minZoomForViewport(el.clientHeight || window.innerHeight),
       maxZoom: MAP_LIMITS.maxZoom,
@@ -122,10 +122,10 @@ const MarsMap = forwardRef<MarsMapHandle, MarsMapProps>(function MarsMap(
 
     const orbit = jezeroOrbitZoom(map);
     const first = Math.max(map.getMinZoom(), startZoom ?? orbit - startLevelsAbove);
-    map.setView(JEZERO_CENTER, first, { animate: false });
+    map.setView(HOME_CENTER, first, { animate: false });
     syncOpacity();
     // Starting high above Jezero: warm the cache with the tiles the descent will land on
-    if (orbit - first > 0.5) prefetchView(map, JEZERO_CENTER, orbit);
+    if (orbit - first > 0.5) prefetchView(map, HOME_CENTER, orbit);
 
     const smooth = new SmoothZoom(map, { instant: reducedRef.current });
     map.on('dblclick', (e: L.LeafletMouseEvent) => smooth.zoomBy(e.originalEvent.shiftKey ? -1 : 1, e.containerPoint));
@@ -159,7 +159,7 @@ const MarsMap = forwardRef<MarsMapHandle, MarsMapProps>(function MarsMap(
   const flyHome = useCallback((duration: number) => {
     const map = parts?.map;
     if (!map) return;
-    const center = L.latLng(JEZERO_CENTER[0], nearestWorldLng(JEZERO_CENTER[1], map.getCenter().lng));
+    const center = L.latLng(HOME_CENTER[0], nearestWorldLng(HOME_CENTER[1], map.getCenter().lng));
     const zoom = jezeroOrbitZoom(map);
     map.stop();
     if (duration <= 0 || reducedRef.current) map.setView(center, zoom, { animate: false });
@@ -170,7 +170,7 @@ const MarsMap = forwardRef<MarsMapHandle, MarsMapProps>(function MarsMap(
     const map = parts?.map;
     if (!map) return;
     // Longer flights for longer journeys, so crossing the planet never feels rushed
-    const far = map.getCenter().distanceTo(L.latLng(JEZERO_CENTER)) / 1000; // km on Mars
+    const far = map.getCenter().distanceTo(L.latLng(HOME_CENTER)) / 1000; // km on Mars
     flyHome(Math.min(3.2, 1.4 + far / 2500));
   }, [flyHome, parts]);
 

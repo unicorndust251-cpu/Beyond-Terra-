@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Converts a PDS MOLA MEGDR topography product (MEGT*.IMG + .LBL) into the tiles the
+ * Converts a PDS MOLA MEGDR topography (MEGT*) or shot-count (MEGC*) product into the tiles the
  * browser reads (public/data/mola/<id>/). PDS does not send CORS headers, so the data
  * cannot be fetched from the browser directly.
  *
@@ -54,9 +54,11 @@ const expect = (cond, what) => {
   if (!cond) throw new Error(`unexpected product: ${what}`);
 };
 expect(kw('DATA_SET_ID') === 'MGS-M-MOLA-5-MEGDR-L3-V1.0', 'DATA_SET_ID');
-expect(kw('NAME') === 'MEDIAN_TOPOGRAPHY', 'not a topography (MEGT) product');
+// MEGT: median topography (m). MEGC: number of MOLA shots in each bin (0 = interpolated value).
+const kind = kw('NAME');
+expect(kind === 'MEDIAN_TOPOGRAPHY' || kind === 'COUNTS_PER_BIN', 'not a topography (MEGT) or count (MEGC) product');
 expect(kw('SAMPLE_TYPE') === 'MSB_INTEGER' && num('SAMPLE_BITS') === 16, 'sample type');
-expect(kw('UNIT') === 'METER', 'unit');
+if (kind === 'MEDIAN_TOPOGRAPHY') expect(kw('UNIT') === 'METER', 'unit');
 expect(kw('MAP_PROJECTION_TYPE') === 'SIMPLE CYLINDRICAL', 'projection');
 expect(kw('POSITIVE_LONGITUDE_DIRECTION') === 'EAST', 'longitude direction');
 expect(kw('COORDINATE_SYSTEM_NAME') === 'PLANETOCENTRIC', 'latitude system');
@@ -106,8 +108,16 @@ expect(360 % tileDeg === 0 && 180 % tileDeg === 0, 'tile size must divide 180');
 const tilePx = tileDeg * ppd;
 const cols = 360 / tileDeg;
 const rows = 180 / tileDeg;
-const halo = 1;
+// Shot counts are only looked up bin by bin, so they need no halo
+const isCount = kind === 'COUNTS_PER_BIN';
+const halo = isCount ? 0 : 1;
 const w = tilePx + 2 * halo;
+/**
+ * Shot counts are stored as categories: exact counts are noisy and would take 17 MB, while
+ * these keep what matters (measured or interpolated, and how well sampled) in about 1 MB.
+ */
+const COUNT_CATEGORIES = ['0 (interpolated)', '1', '2–4', '5–9', '10 or more'];
+const countCategory = (v) => (v <= 0 ? 0 : v === 1 ? 1 : v < 5 ? 2 : v < 10 ? 3 : 4);
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'data', 'mola', outId);
 mkdirSync(root, { recursive: true });
@@ -120,6 +130,14 @@ const at = (i, j) => {
 };
 for (let r = 0; r < rows; r++) {
   for (let c = 0; c < cols; c++) {
+    if (isCount) {
+      const out = new Uint8Array(w * w);
+      for (let y = 0; y < w; y++) for (let x = 0; x < w; x++) out[y * w + x] = countCategory(at(r * tilePx + y, c * tilePx + x));
+      const gz = gzipSync(out, { level: 9 });
+      bytes += gz.length;
+      writeFileSync(join(root, `${r}_${c}.u8.gz`), gz);
+      continue;
+    }
     const out = new Int16Array(w * w);
     for (let y = 0; y < w; y++) {
       let prev = 0;
@@ -143,8 +161,12 @@ const manifest = {
   pixelsPerDegree: ppd,
   mapScaleKm: num('MAP_SCALE'),
   radiusM: radiusKm * 1000,
-  unit: 'm',
-  verticalDatum: 'MOLA areoid (GMM3 / mgm1025, degree and order 50); topography = planetary radius − areoid radius',
+  kind,
+  unit: kind === 'MEDIAN_TOPOGRAPHY' ? 'm' : 'count',
+  verticalDatum:
+    kind === 'MEDIAN_TOPOGRAPHY'
+      ? 'MOLA areoid (GMM3 / mgm1025, degree and order 50); topography = planetary radius − areoid radius'
+      : null,
   latitude: 'planetocentric',
   longitude: 'east-positive, −180…180 (re-ordered from the product’s 0…360)',
   tileDegrees: tileDeg,
@@ -152,10 +174,11 @@ const manifest = {
   halo,
   rows,
   cols,
-  encoding: 'int16 little-endian, row delta, gzip',
+  encoding: isCount ? 'uint8 category index, gzip' : 'int16 little-endian, row delta, gzip',
+  ...(isCount ? { categories: COUNT_CATEGORIES } : {}),
   min,
   max,
   source: `https://pds-geosciences.wustl.edu/mgs/mgs-m-mola-5-megdr-l3-v1/mgsl_300x/meg${String(ppd).padStart(3, '0')}/`,
 };
 writeFileSync(join(root, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
-console.log(`${outId}: ${rows * cols} tiles, ${(bytes / 1e6).toFixed(2)} MB, elevation ${min}…${max} m`);
+console.log(`${outId}: ${rows * cols} tiles, ${(bytes / 1e6).toFixed(2)} MB, values ${min}…${max} ${manifest.unit}`);

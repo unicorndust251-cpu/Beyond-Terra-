@@ -1,0 +1,29 @@
+{
+  "product": "MEGC90N000EB.IMG",
+  "dataSetId": "MGS-M-MOLA-5-MEGDR-L3-V1.0",
+  "productVersion": "2.0",
+  "pixelsPerDegree": 16,
+  "mapScaleKm": 3.705,
+  "radiusM": 3396000,
+  "kind": "COUNTS_PER_BIN",
+  "unit": "count",
+  "verticalDatum": null,
+  "latitude": "planetocentric",
+  "longitude": "east-positive, −180…180 (re-ordered from the product’s 0…360)",
+  "tileDegrees": 30,
+  "tilePixels": 480,
+  "halo": 0,
+  "rows": 6,
+  "cols": 12,
+  "encoding": "uint8 category index, gzip",
+  "categories": [
+    "0 (interpolated)",
+    "1",
+    "2–4",
+    "5–9",
+    "10 or more"
+  ],
+  "min": 0,
+  "max": 326,
+  "source": "https://pds-geosciences.wustl.edu/mgs/mgs-m-mola-5-megdr-l3-v1/mgsl_300x/meg016/"
+}

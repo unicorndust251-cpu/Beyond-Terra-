@@ -1,0 +1,264 @@
+/* Terrain inspection panel: top right of the map. Tokens from src/map/map.css. */
+.sd-inspect {
+  position: absolute;
+  top: max(16px, env(safe-area-inset-top, 0px));
+  right: var(--bt-edge);
+  width: 320px;
+  max-width: calc(100% - 32px);
+  max-height: calc(100% - 32px - 170px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  border-radius: 12px;
+  background: rgba(48, 39, 37, 0.9);
+  border: 1px solid rgba(141, 117, 110, 0.32);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: var(--bt-ivory);
+  font-family: var(--bt-font-ui);
+  pointer-events: auto;
+}
+
+.bt-map--blurred .sd-inspect { opacity: 0; }
+.bt-map--sharpening .sd-inspect { opacity: 0; animation: bt-chrome-in 0.8s ease 1.4s forwards; }
+
+.sd-inspect:not(.is-open) { width: auto; }
+
+.sd-inspect__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 0;
+  background: none;
+  color: var(--bt-ivory);
+  font: 600 13px/1 var(--bt-font-ui);
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.sd-inspect__head span { flex: 1; text-align: left; }
+
+.sd-inspect__head svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: var(--bt-copper);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+}
+
+.sd-inspect__chev { transition: transform 0.2s ease; }
+.sd-inspect.is-open .sd-inspect__chev { transform: rotate(180deg); }
+
+.sd-inspect__head:focus-visible,
+.sd-btn:focus-visible,
+.sd-link:focus-visible {
+  outline: 2px solid var(--bt-copper);
+  outline-offset: -2px;
+  border-radius: 10px;
+}
+
+.sd-inspect__body {
+  padding: 4px 12px 12px;
+  border-top: 1px solid rgba(141, 117, 110, 0.24);
+}
+
+/* ------------------------------------------------------------------ inputs */
+.sd-pick { display: flex; flex-direction: column; gap: 8px; padding-top: 8px; }
+.sd-coords { display: flex; flex-direction: column; gap: 8px; }
+.sd-coords__row { display: flex; gap: 8px; }
+.sd-coords__row .sd-field { flex: 1; min-width: 0; }
+
+.sd-field { display: flex; flex-direction: column; gap: 3px; }
+
+.sd-field span {
+  font: 400 10px/1.2 var(--bt-font-data);
+  color: rgba(243, 229, 220, 0.6);
+}
+
+.sd-field input,
+.sd-field select {
+  width: 100%;
+  min-height: 32px;
+  padding: 0 8px;
+  border: 1px solid rgba(141, 117, 110, 0.4);
+  border-radius: 8px;
+  background: rgba(23, 20, 19, 0.55);
+  color: var(--bt-ivory);
+  font: 500 12.5px/1 var(--bt-font-ui);
+}
+
+.sd-field select option,
+.sd-field select optgroup { background: #302725; color: var(--bt-ivory); }
+
+.sd-field input:focus-visible,
+.sd-field select:focus-visible {
+  outline: 2px solid var(--bt-copper);
+  outline-offset: 0;
+}
+
+.sd-btn {
+  min-height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--bt-terracotta);
+  color: var(--bt-obsidian);
+  font: 600 12.5px/1 var(--bt-font-ui);
+  cursor: pointer;
+}
+
+.sd-btn:hover { background: var(--bt-copper); }
+.sd-btn:disabled { opacity: 0.5; cursor: default; }
+
+.sd-error {
+  margin: 0;
+  font-size: 11.5px;
+  color: #f0a08e;
+}
+
+.sd-hint {
+  margin: 0;
+  font-size: 11px;
+  color: rgba(243, 229, 220, 0.6);
+}
+
+.sd-inspect__loading {
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: var(--bt-dust-rose);
+}
+
+/* ----------------------------------------------------------------- results */
+.sd-results {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(141, 117, 110, 0.24);
+}
+
+.sd-results__point {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sd-results__name {
+  margin: 0 0 2px;
+  font: 600 13.5px/1.25 var(--bt-font-display);
+}
+
+.sd-results__coord {
+  margin: 0;
+  font: 500 12px/1.4 var(--bt-font-data);
+}
+
+.sd-results__alt {
+  margin: 0;
+  font: 400 10px/1.4 var(--bt-font-data);
+  color: rgba(243, 229, 220, 0.55);
+}
+
+.sd-link {
+  flex: none;
+  padding: 3px 6px;
+  border: 0;
+  background: none;
+  color: var(--bt-copper);
+  font: 500 11.5px/1 var(--bt-font-ui);
+  cursor: pointer;
+}
+
+.sd-group { margin-top: 12px; }
+
+.sd-group h3 {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 0 4px;
+  font: 600 11px/1.3 var(--bt-font-ui);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--bt-dust-rose);
+}
+
+.sd-group h3 a {
+  font: 400 10px/1.3 var(--bt-font-data);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--bt-copper);
+  text-decoration: none;
+}
+
+.sd-group h3 a:hover { text-decoration: underline; }
+
+.sd-group dl { margin: 0; }
+
+.sd-row {
+  display: grid;
+  grid-template-columns: 84px 1fr;
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(141, 117, 110, 0.14);
+}
+
+.sd-row dt {
+  font-size: 11.5px;
+  color: rgba(243, 229, 220, 0.7);
+}
+
+.sd-row dd {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  min-width: 0;
+}
+
+.sd-row__value { font: 600 12.5px/1.3 var(--bt-font-data); }
+.sd-row__detail,
+.sd-row__note {
+  font-size: 10.5px;
+  line-height: 1.4;
+  color: rgba(243, 229, 220, 0.6);
+}
+
+.sd-chip {
+  align-self: flex-start;
+  padding: 1px 7px;
+  border-radius: 99px;
+  font: 500 10.5px/1.6 var(--bt-font-ui);
+}
+
+.sd-chip--unavailable { background: rgba(224, 106, 90, 0.22); color: #f0a08e; }
+.sd-chip--not-mapped { background: rgba(141, 117, 110, 0.3); color: var(--bt-ivory); }
+.sd-chip--outside-coverage { background: rgba(141, 117, 110, 0.3); color: var(--bt-ivory); }
+.sd-chip--not-assessed { background: rgba(224, 176, 74, 0.2); color: #e9c77e; }
+
+.sd-caveat,
+.sd-datum {
+  margin: 6px 0 0;
+  font-size: 10.5px;
+  line-height: 1.45;
+  color: rgba(243, 229, 220, 0.6);
+}
+
+.sd-datum { margin-top: 12px; }
+
+/* Phones: a corner button beside the search; opens as a sheet below it */
+@media (max-width: 720px) {
+  .sd-inspect:not(.is-open) .sd-inspect__head span,
+  .sd-inspect:not(.is-open) .sd-inspect__chev { display: none; }
+  .sd-inspect:not(.is-open) .sd-inspect__head { padding: 0 11px; }
+  .sd-inspect.is-open {
+    top: calc(max(16px, env(safe-area-inset-top, 0px)) + 48px);
+    left: max(16px, env(safe-area-inset-left, 0px));
+    width: auto;
+    max-height: calc(100% - 64px - 32px - 190px);
+    z-index: 2;
+  }
+}

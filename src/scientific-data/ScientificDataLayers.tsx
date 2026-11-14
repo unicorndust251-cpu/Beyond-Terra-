@@ -1,3 +1,5 @@
+import TerrainInspector from './TerrainInspector';
+
 /**
  * Scientific data's entry point, rendered inside the map (see components/MarsMapWithFeatures).
  * Dataset adapters, scientific layers, terrain sampling and hazards are built from here.
@@ -6,8 +8,9 @@
  * through `useSelectedLocation()`, both from `../shared`. Describe every dataset with a
  * `ScientificDataset`, limitations included. Do not import from `../mission-planning`.
  *
- * Not implemented yet: renders nothing.
+ * Built so far: terrain inspection (TerrainInspector) — elevation, slope, relief, MOLA shot
+ * coverage and mapped geology at any point, from numerical datasets only.
  */
 export default function ScientificDataLayers() {
-  return null;
+  return <TerrainInspector />;
 }
