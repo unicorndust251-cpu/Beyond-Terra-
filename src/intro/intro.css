@@ -1,0 +1,106 @@
+.bt-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: var(--space);
+  overflow: hidden;
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bt-intro__stage,
+.bt-intro__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Lens-like falloff for the surface scenes; gone before the screen fills the frame */
+.bt-intro__vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 120% 95% at 50% 45%, transparent 55%, rgba(5, 5, 7, 0.55) 100%),
+    linear-gradient(to bottom, rgba(5, 5, 7, 0.18), transparent 22%, transparent 78%, rgba(5, 5, 7, 0.28));
+}
+
+.bt-intro__fade {
+  position: absolute;
+  inset: 0;
+  background: var(--space);
+  pointer-events: none;
+}
+
+.bt-intro__caption {
+  position: absolute;
+  left: clamp(16px, 4vw, 48px);
+  bottom: clamp(18px, 4vh, 40px);
+  max-width: min(46ch, calc(100vw - 200px));
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: clamp(10px, 1.05vw, 12px);
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  line-height: 1.6;
+  color: rgba(243, 229, 220, 0.72);
+  text-shadow: 0 1px 8px rgba(5, 5, 7, 0.6);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.bt-intro__skip {
+  position: absolute;
+  right: clamp(16px, 4vw, 48px);
+  bottom: clamp(16px, 4vh, 36px);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px 9px 16px;
+  border: 1px solid rgba(214, 163, 139, 0.35);
+  border-radius: 999px;
+  background: rgba(23, 20, 19, 0.45);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: var(--ivory);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  opacity: 0;
+  animation: bt-skip-in 0.6s var(--ease-out) 0.5s forwards;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.bt-intro__skip:hover {
+  border-color: var(--copper);
+  background: rgba(48, 39, 37, 0.7);
+}
+
+.bt-intro__skip kbd {
+  font-family: inherit;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  padding: 3px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(243, 229, 220, 0.25);
+  color: var(--dust-rose);
+}
+
+@keyframes bt-skip-in {
+  to {
+    opacity: 1;
+  }
+}
+
+@media (pointer: coarse) {
+  .bt-intro__skip kbd {
+    display: none;
+  }
+}
