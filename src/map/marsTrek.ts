@@ -1,4 +1,5 @@
 import * as L from 'leaflet';
+import { SCREEN_TILE, screenTileOptions, sharpTileZoom, sharpenTileZoom } from './sharpTiles';
 
 /**
  * NASA Mars Trek tile services.
@@ -88,6 +89,9 @@ export const TREK_LAYERS: TrekLayerDef[] = [
 
 export const BASE_LAYER_KEY = 'viking';
 
+/** All Trek imagery draws in this pane, so overlays can sit above it and the imagery can be shown or hidden as one. */
+export const IMAGERY_PANE = 'btImagery';
+
 export function trekTileTemplate(def: TrekLayerDef): string {
   return `${TREK_TILE_ROOT}/${def.product}/1.0.0/default/default028mm/{z}/{y}/{x}.${def.ext}`;
 }
@@ -98,9 +102,9 @@ export function trekTileUrl(def: TrekLayerDef, z: number, x: number, y: number):
 }
 
 export function createTrekLayer(def: TrekLayerDef): L.TileLayer {
-  return L.tileLayer(trekTileTemplate(def), {
-    tileSize: 256,
-    maxNativeZoom: def.maxNativeZoom,
+  const layer = L.tileLayer(trekTileTemplate(def), {
+    // Crisp at fractional zoom and on high-density screens (see sharpTiles.ts)
+    ...screenTileOptions(def.maxNativeZoom),
     minZoom: def.minZoom ?? 0,
     maxZoom: MAP_LIMITS.maxZoom,
     bounds: def.bounds ? L.latLngBounds(def.bounds) : undefined,
@@ -110,10 +114,12 @@ export function createTrekLayer(def: TrekLayerDef): L.TileLayer {
     updateWhenZooming: true,
     updateInterval: 120,
     zIndex: def.zIndex,
+    pane: IMAGERY_PANE,
     opacity: def.fadeIn ? 0 : 1,
     className: `bt-trek-layer bt-trek-layer--${def.key}`,
     attribution: '', // the custom attribution label handles credits
   });
+  return sharpenTileZoom(layer);
 }
 
 /** 0 → 1 opacity for a layer at a given zoom. */
@@ -156,10 +162,24 @@ export function visibleLayers(map: L.Map): TrekLayerDef[] {
 
 /** Crater centre, IAU Gazetteer of Planetary Nomenclature (planetocentric, east positive). */
 export const JEZERO_CENTER: LatLngTuple = [18.41, 77.69];
-/** Rim to rim (47.5 km wide crater) with a little room for the western delta. */
-export const JEZERO_FRAME: BoundsTuple = [
-  [18.0, 77.22],
-  [18.82, 78.12],
+
+/**
+ * Perseverance's landing point, Octavia E. Butler Landing: 18.44462715° N, 77.45088572° E
+ * (planetocentric, east positive), NASA Mars 2020 localization, site 3 drive 0
+ * (mars.nasa.gov/mmgis-maps/M20/Layers/json/M20_waypoints.json).
+ */
+export const PERSEVERANCE_LANDING: LatLngTuple = [18.4446, 77.4509];
+
+/** Where the map opens and returns to: the landing point. */
+export const HOME_CENTER: LatLngTuple = PERSEVERANCE_LANDING;
+/**
+ * About 120 × 135 km centred on the landing point: all of Jezero (47.5 km), its western
+ * delta and the plains around it. On a laptop screen this opens near zoom 8.3, where
+ * the 200 m relief shading is drawn close to its native resolution.
+ */
+export const HOME_FRAME: BoundsTuple = [
+  [17.4446, 76.2509],
+  [19.4446, 78.6509],
 ];
 
 export const MAP_LIMITS = {
@@ -172,9 +192,9 @@ export function minZoomForViewport(heightPx: number): number {
   return Math.max(0, Math.log2(heightPx / 256));
 }
 
-/** Zoom that frames Jezero Crater in the current viewport. */
+/** Zoom that frames the landing point and Jezero Crater in the current viewport. */
 export function jezeroOrbitZoom(map: L.Map): number {
-  const z = map.getBoundsZoom(L.latLngBounds(JEZERO_FRAME), false, L.point(32, 32));
+  const z = map.getBoundsZoom(L.latLngBounds(HOME_FRAME), false, L.point(32, 32));
   return Math.min(MAP_LIMITS.orbitZoomMax, Math.max(map.getMinZoom(), z));
 }
 
@@ -193,7 +213,8 @@ export function prefetchView(map: L.Map, center: L.LatLngExpression, zoom: numbe
   for (const def of TREK_LAYERS) {
     if (def.minZoom !== undefined && zoom < def.minZoom) continue;
     if (layerOpacityAt(def, zoom) <= 0.02) continue;
-    const z = Math.min(Math.round(zoom), def.maxNativeZoom);
+    // The level the layer itself will request (see sharpTiles.ts)
+    const z = Math.min(sharpTileZoom(zoom) + SCREEN_TILE.levelOffset, def.maxNativeZoom);
     const scale = Math.pow(2, zoom - z);
     const c = map.project(center, z);
     const half = size.divideBy(2 * scale);

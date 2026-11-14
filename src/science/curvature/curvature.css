@@ -1,0 +1,336 @@
+/* CURVATURE investigation sites. Burgundy palette for this layer only; panels follow map.css. */
+:root {
+  --bt-burgundy: #800020;
+  --bt-burgundy-deep: #570018;
+  --bt-burgundy-wine: #9b2948;
+  --bt-burgundy-rose: #c77b90;
+  --bt-burgundy-light: #e7b7c4;
+}
+
+/* ------------------------------------------------------------------ markers */
+.bt-curv-marker {
+  display: grid;
+  place-items: center;
+  background: none;
+  border: 0;
+}
+
+.bt-curv-marker span {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--bt-burgundy);
+  border: 2px solid var(--bt-burgundy-deep);
+  /* A thin light ring keeps the dot readable over dark terrain */
+  box-shadow: 0 0 0 1.5px rgba(231, 183, 196, 0.85), 0 1px 4px rgba(0, 0, 0, 0.45);
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.bt-curv-marker:hover span,
+.bt-curv-marker:focus-visible span {
+  background: var(--bt-burgundy-wine);
+  transform: scale(1.15);
+}
+
+.bt-curv-marker:focus-visible {
+  outline: none;
+}
+
+.bt-curv-marker:focus-visible span {
+  box-shadow: 0 0 0 2px var(--bt-burgundy-light), 0 0 0 4px rgba(23, 20, 19, 0.7);
+}
+
+.bt-curv-marker.is-selected span {
+  background: var(--bt-burgundy-wine);
+  border-width: 3px;
+  transform: scale(1.3);
+  box-shadow: 0 0 0 2px var(--bt-burgundy-light), 0 1px 6px rgba(0, 0, 0, 0.5);
+}
+
+/* -------------------------------------------------------------------- panel */
+.bt-curv {
+  width: 268px;
+  max-width: 100%;
+  flex: none;
+  border-radius: var(--bt-radius);
+  background: rgba(28, 26, 25, 0.94);
+  border: 1px solid var(--bt-border);
+  box-shadow: var(--bt-shadow);
+  color: var(--bt-text);
+  font-family: var(--bt-font-ui);
+}
+
+.bt-curv:not(.is-open) {
+  width: auto;
+  border-radius: 999px;
+}
+
+.bt-curv__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 34px;
+  padding: 0 10px 0 12px;
+  border: 0;
+  border-radius: inherit;
+  background: none;
+  color: var(--bt-text);
+  cursor: pointer;
+}
+
+.bt-curv__head:focus-visible {
+  outline: 1.5px solid var(--bt-burgundy-rose);
+  outline-offset: 2px;
+}
+
+.bt-curv__head h2 {
+  flex: 1;
+  margin: 0;
+  font: 500 12.5px/1 var(--bt-font-ui);
+  text-align: left;
+}
+
+.bt-curv__n {
+  font: 400 10.5px/1 var(--bt-font-data);
+  color: var(--bt-text-3);
+}
+
+.bt-curv__chev {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: var(--bt-text-3);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  transition: transform 0.2s ease;
+}
+
+.bt-curv.is-open .bt-curv__chev {
+  transform: rotate(180deg);
+}
+
+.bt-curv__body {
+  padding: 2px 12px 12px;
+  max-height: calc(100vh - var(--bt-topbar) - 260px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bt-border) transparent;
+}
+
+.bt-curv__dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--bt-burgundy);
+  border: 2px solid var(--bt-burgundy-deep);
+  box-shadow: 0 0 0 1px rgba(231, 183, 196, 0.8);
+}
+
+.bt-curv__legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 4px;
+  font-size: 11.5px;
+}
+
+.bt-curv__note {
+  margin: 0 0 8px;
+  font-size: 10.5px;
+  line-height: 1.45;
+  color: var(--bt-text-3);
+}
+
+.bt-curv__search input {
+  width: 100%;
+  min-height: 30px;
+  padding: 0 9px;
+  border: 1px solid var(--bt-border);
+  border-radius: 8px;
+  background: var(--bt-surface);
+  color: var(--bt-ivory);
+  font: 500 12px/1 var(--bt-font-ui);
+}
+
+.bt-curv__search input:focus-visible {
+  outline: 2px solid var(--bt-burgundy-rose);
+  outline-offset: 0;
+}
+
+.bt-curv__list {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  max-height: 188px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.bt-curv__list button {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: 100%;
+  padding: 5px 8px;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--bt-ivory);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.bt-curv__list button:hover {
+  background: rgba(155, 41, 72, 0.22);
+}
+
+.bt-curv__list button.is-selected {
+  background: rgba(155, 41, 72, 0.4);
+}
+
+.bt-curv__list button:focus-visible {
+  outline: 2px solid var(--bt-burgundy-rose);
+  outline-offset: -2px;
+}
+
+.bt-curv__name {
+  font-size: 12.5px;
+}
+
+.bt-curv__coord {
+  font: 400 10px/1.3 var(--bt-font-data);
+  color: var(--bt-text-3);
+}
+
+.bt-curv__coord em {
+  font-style: normal;
+  color: var(--bt-burgundy-light);
+}
+
+.bt-curv__empty {
+  padding: 6px 8px;
+  font-size: 11.5px;
+  color: var(--bt-text-2);
+}
+
+/* ---------------------------------------------------------------- details */
+.bt-curv__card {
+  margin-top: 8px;
+  padding: 10px 10px 10px;
+  border-radius: 10px;
+  background: var(--bt-surface);
+  border: 1px solid rgba(199, 123, 144, 0.35);
+}
+
+.bt-curv__card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.bt-curv__card h3 {
+  margin: 0;
+  font: 600 14px/1.25 var(--bt-font-display);
+  letter-spacing: 0.02em;
+}
+
+.bt-curv__back {
+  padding: 2px 4px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--bt-burgundy-light);
+  font: 500 11.5px/1.2 var(--bt-font-ui);
+  cursor: pointer;
+}
+
+.bt-curv__back:hover {
+  color: var(--bt-ivory);
+}
+
+.bt-curv__back:focus-visible {
+  outline: 2px solid var(--bt-burgundy-rose);
+}
+
+.bt-curv__card dl {
+  margin: 6px 0 0;
+}
+
+.bt-curv__card dt {
+  margin-top: 7px;
+  font: 400 9.5px/1.3 var(--bt-font-data);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--bt-burgundy-rose);
+}
+
+.bt-curv__card dd {
+  margin: 1px 0 0;
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+
+.bt-curv__card a {
+  color: var(--bt-copper);
+  text-decoration: none;
+}
+
+.bt-curv__card a:hover {
+  text-decoration: underline;
+}
+
+.bt-curv__sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 10.5px;
+  color: var(--bt-text-3);
+}
+
+.bt-curv__approx {
+  display: inline-block;
+  margin: 3px 0 0 6px;
+  padding: 0 6px;
+  border-radius: 99px;
+  background: rgba(155, 41, 72, 0.35);
+  font-size: 10px;
+  line-height: 1.6;
+  color: var(--bt-burgundy-light);
+}
+
+.bt-curv__status {
+  color: var(--bt-burgundy-light);
+}
+
+.bt-curv__view {
+  width: 100%;
+  min-height: 32px;
+  margin-top: 10px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--bt-burgundy);
+  color: var(--bt-ivory);
+  font: 600 12px/1 var(--bt-font-ui);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.bt-curv__view:hover {
+  background: var(--bt-burgundy-wine);
+}
+
+.bt-curv__view:focus-visible {
+  outline: 2px solid var(--bt-burgundy-light);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bt-curv-marker span,
+  .bt-curv__list button,
+  .bt-curv__view {
+    transition: none;
+  }
+}

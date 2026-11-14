@@ -1,0 +1,100 @@
+/*
+ * Scientific layers on the map: the Layers button (top left), the legend and credits
+ * (bottom left). The top bar, search, menu and legend styles are in workspace/workspace.css.
+ */
+.bt-sci {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  font-family: var(--bt-font-ui);
+  color: var(--bt-text);
+}
+
+.bt-sci > * > * {
+  pointer-events: auto;
+}
+
+.bt-map--blurred .bt-sci-top,
+.bt-map--blurred .bt-sci-bottom {
+  opacity: 0;
+}
+
+.bt-map--sharpening .bt-sci-top,
+.bt-map--sharpening .bt-sci-bottom {
+  opacity: 0;
+  animation: bt-chrome-in 0.8s ease 1.4s forwards;
+}
+
+.bt-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Slope is shown bin by bin: keep the cells crisp when Leaflet scales tiles up */
+.bt-sci-tile--slope {
+  image-rendering: pixelated;
+}
+
+/* Top left, under the bar: the Layers button, and curvature sites when that layer is on */
+.bt-sci-top {
+  position: absolute;
+  top: calc(var(--bt-topbar) + env(safe-area-inset-top, 0px) + 12px);
+  left: max(14px, env(safe-area-inset-left, 0px));
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: calc(100% - 28px);
+}
+
+/* Bottom left: the legend of the data layer on screen, and credits */
+.bt-sci-bottom {
+  position: absolute;
+  left: max(14px, env(safe-area-inset-left, 0px));
+  bottom: var(--bt-edge-bottom);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  max-width: calc(100% - 96px);
+}
+
+.bt-sci-credit {
+  margin: 0;
+  padding: 3px 7px;
+  border-radius: 6px;
+  background: rgba(17, 17, 16, 0.6);
+  font: 400 10px/1.4 var(--bt-font-data);
+  color: var(--bt-text-3);
+  pointer-events: none;
+}
+
+/* View resolution, at the foot of the Layers menu */
+.bt-sci-res {
+  margin: 0;
+  font: 400 10px/1.45 var(--bt-font-data);
+  color: var(--bt-text-3);
+}
+
+.bt-sci-res__warn {
+  color: #d6b36a;
+}
+
+@media (max-width: 760px) {
+  .bt-sci-bottom {
+    bottom: calc(var(--bt-edge-bottom) + 34px);
+    max-width: calc(100% - 76px);
+  }
+  .bt-sci-credit {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bt-map--sharpening .bt-sci-top,
+  .bt-map--sharpening .bt-sci-bottom { animation-delay: 0s; animation-duration: 0.3s; }
+}

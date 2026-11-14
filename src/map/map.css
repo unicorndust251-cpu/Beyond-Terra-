@@ -1,17 +1,38 @@
 /* The map is the page. Palette applies to the interface only; NASA imagery is never tinted. */
 :root {
-  --bt-obsidian: #171413;
-  --bt-espresso: #302725;
-  --bt-mocha: #63504a;
-  --bt-terracotta: #b87860;
-  --bt-dust-rose: #e8c2ad;
-  --bt-taupe: #8d756e;
-  --bt-copper: #d6a38b;
-  --bt-ivory: #f3e5dc;
+  /* Map workspace palette: quiet surfaces, warm copper only where it matters */
+  --bt-bg: #111110;
+  --bt-surface: #25211f;
+  --bt-panel: #1c1a19;
+  --bt-border: #38312e;
+  --bt-border-soft: rgba(56, 49, 46, 0.6);
+  --bt-text: #f3eae4;
+  --bt-text-2: #aaa09a;
+  --bt-text-3: #7f7772;
+  --bt-accent: #c58b70;
+  --bt-accent-soft: #d7ad96;
+  --bt-hover: rgba(243, 234, 228, 0.05);
+  --bt-active: rgba(197, 139, 112, 0.12);
+  --bt-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 30px rgba(0, 0, 0, 0.28);
+  --bt-radius: 10px;
+
+  /* Earlier names, kept as aliases of the palette above */
+  --bt-obsidian: var(--bt-bg);
+  --bt-espresso: var(--bt-panel);
+  --bt-mocha: var(--bt-border);
+  --bt-terracotta: var(--bt-accent);
+  --bt-dust-rose: var(--bt-accent-soft);
+  --bt-taupe: var(--bt-text-3);
+  --bt-copper: var(--bt-accent);
+  --bt-ivory: var(--bt-text);
 
   --bt-font-display: 'Exo 2', 'Segoe UI', system-ui, sans-serif;
-  --bt-font-ui: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --bt-font-ui: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --bt-font-science: var(--bt-font-ui);
   --bt-font-data: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+
+  /* Height of the top bar; overlays start below it */
+  --bt-topbar: 44px;
 
   --bt-edge: max(16px, env(safe-area-inset-right, 0px));
   --bt-edge-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
@@ -115,42 +136,41 @@
 .bt-map-controls {
   display: flex;
   flex-direction: column;
-  padding: 3px;
-  border-radius: 12px;
-  background: rgba(48, 39, 37, 0.84);
-  border: 1px solid rgba(141, 117, 110, 0.32);
-  box-shadow: 0 6px 24px rgba(10, 8, 7, 0.35);
-  -webkit-backdrop-filter: blur(10px) saturate(120%);
-  backdrop-filter: blur(10px) saturate(120%);
+  padding: 2px;
+  border-radius: var(--bt-radius);
+  background: rgba(28, 26, 25, 0.94);
+  border: 1px solid var(--bt-border);
+  box-shadow: var(--bt-shadow);
 }
 
 .bt-map-controls__rule {
   height: 1px;
-  margin: 3px 7px;
-  background: rgba(141, 117, 110, 0.35);
+  margin: 2px 6px;
+  background: var(--bt-border);
 }
 
 .bt-map-btn {
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   padding: 0;
   border: 0;
-  border-radius: 9px;
+  border-radius: 6px;
   background: transparent;
-  color: var(--bt-ivory);
+  color: var(--bt-text-2);
   cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .bt-map-btn svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   fill: none;
   stroke: currentColor;
   stroke-width: 1.5;
   stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .bt-map-btn svg .bt-fill {
@@ -159,17 +179,18 @@
 }
 
 .bt-map-btn:hover:not(:disabled) {
-  background: var(--bt-terracotta);
-  color: var(--bt-obsidian);
+  background: var(--bt-hover);
+  color: var(--bt-text);
 }
 
-.bt-map-btn:active:not(:disabled) {
-  background: var(--bt-copper);
-  color: var(--bt-obsidian);
+.bt-map-btn:active:not(:disabled),
+.bt-map-btn.is-active {
+  background: var(--bt-active);
+  color: var(--bt-accent-soft);
 }
 
 .bt-map-btn:focus-visible {
-  outline: 1.5px solid var(--bt-copper);
+  outline: 1.5px solid var(--bt-accent);
   outline-offset: -1.5px;
 }
 
@@ -179,20 +200,17 @@
 }
 
 @media (pointer: coarse) {
-  .bt-map-btn { width: 44px; height: 44px; }
+  .bt-map-btn { width: 40px; height: 40px; }
 }
 
 .bt-map-attribution {
   margin: 0;
   max-width: min(520px, 100%);
-  padding: 5px 9px;
-  border-radius: 7px;
-  background: rgba(23, 20, 19, 0.58);
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
-  font: 400 10.5px/1.45 var(--bt-font-data);
-  letter-spacing: 0.01em;
-  color: rgba(243, 229, 220, 0.66);
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(17, 17, 16, 0.72);
+  font: 400 10px/1.45 var(--bt-font-data);
+  color: var(--bt-text-3);
   text-align: right;
 }
 
@@ -250,7 +268,7 @@
   padding: 24px 22px 22px;
   border-radius: 14px;
   background: var(--bt-espresso);
-  border: 1px solid rgba(141, 117, 110, 0.32);
+  border: 1px solid var(--bt-border);
   text-align: center;
   color: var(--bt-ivory);
   font-family: var(--bt-font-ui);
@@ -258,7 +276,7 @@
 
 .bt-map__error-title {
   margin: 0;
-  font: 600 17px/1.3 var(--bt-font-display);
+  font: 600 15px/1.3 var(--bt-font-ui);
   letter-spacing: 0.02em;
 }
 

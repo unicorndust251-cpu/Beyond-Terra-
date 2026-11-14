@@ -74,14 +74,14 @@ Because the map is our own code, the site controls it fully. These were tested l
 | Custom markers | Works, with labels and click actions. A marker click does not also count as a map click |
 | Routes | Works. Polylines in travel order, drawn the short way across ±180° |
 | Custom scientific layers | Works for any Trek WMTS product. Tested with `Mars_MGS_MOLA_ClrShade_merge_global_463m`: 25/25 tiles loaded |
-| Inspect selected terrain (elevation, slope) | Not available. See below |
+| Inspect selected terrain (elevation, slope) | Works, from numerical data bundled with the site, not from Trek. See below |
 
-**Limitation: terrain values.** Trek publishes images of the terrain (for example the MOLA colour hillshade), not elevation values. Its documented API has no elevation or height query, and no raw DEM product was found at the expected Trek path. Reading elevation from image colours would be inaccurate and is not acceptable for planning. `TerrainSample` therefore has no producer yet. A raw elevation source must be chosen first, for example:
-- **MOLA MEGDR elevation grids** from the PDS Geosciences Node, preprocessed into tiles or a lookup served with the site;
-- **a regional HiRISE or CTX DTM** for a landing site;
-- **an elevation service** maintained by the team.
+**Terrain values.** Trek publishes images of the terrain (for example the MOLA colour hillshade), not elevation values. Its documented API has no elevation or height query, and reading elevation from image colours would be inaccurate. Terrain values therefore come from numeric rasters, preprocessed into `public/data` by the scripts in `scripts/`:
+- **MOLA MEGDR** (global, 3.7 km bins), with its per-bin shot counts;
+- **the USGS Jezero CTX DTM** (20 m, western Jezero);
+- **the USGS Geologic Map of Mars**, SIM 3292 (mapped units).
 
-Each option has different resolution, coverage and hosting cost.
+`src/scientific-data/terrain.ts` (`inspectTerrain`) produces `TerrainSample` records from them, relative to the MOLA areoid. Each reading has an explicit status: available, unavailable, not mapped, outside coverage or not assessed. They are not yet published to a shared store. Add one (for example `terrainSampleStore`) when mission planning needs them.
 
 **Other limitations to state in the interface:**
 - Imagery outside the regional CTX/HiRISE mosaics is the global Viking mosaic (about 232 m per pixel).

@@ -1,0 +1,196 @@
+{
+  "product": "SIM3292_Global_Geology",
+  "title": "Geologic Map of Mars (Tanaka, K.L., et al., 2014), USGS Scientific Investigations Map 3292",
+  "source": "https://pubs.usgs.gov/sim/3292/",
+  "mapScale": "1:20,000,000",
+  "pixelsPerDegree": 32,
+  "tileDegrees": 30,
+  "tilePixels": 960,
+  "rows": 6,
+  "cols": 12,
+  "latitude": "planetocentric (Mars 2000 sphere)",
+  "longitude": "east-positive, −180…180",
+  "encoding": "uint8 unit index (0 = not mapped), gzip",
+  "units": [
+    {
+      "code": "",
+      "description": "Not mapped"
+    },
+    {
+      "code": "lApc",
+      "description": "Late Amazonian polar cap unit"
+    },
+    {
+      "code": "Hpe",
+      "description": "Hesperian polar edifice unit"
+    },
+    {
+      "code": "Hp",
+      "description": "Hesperian polar unit"
+    },
+    {
+      "code": "lNh",
+      "description": "Late Noachian highland unit"
+    },
+    {
+      "code": "mNh",
+      "description": "Middle Noachian highland unit"
+    },
+    {
+      "code": "AHi",
+      "description": "Amazonian and Hesperian impact unit"
+    },
+    {
+      "code": "Ap",
+      "description": "Amazonian polar unit"
+    },
+    {
+      "code": "Apu",
+      "description": "Amazonian polar undivided unit"
+    },
+    {
+      "code": "eNh",
+      "description": "Early Noachian highland unit"
+    },
+    {
+      "code": "Nhe",
+      "description": "Noachian highland edifice unit"
+    },
+    {
+      "code": "Nhu",
+      "description": "Noachian highland undivided unit"
+    },
+    {
+      "code": "eHh",
+      "description": "Early Hesperian highland unit"
+    },
+    {
+      "code": "Nve",
+      "description": "Noachian volcanic edifice unit"
+    },
+    {
+      "code": "eHb",
+      "description": "Early Hesperian basin unit"
+    },
+    {
+      "code": "HNhu",
+      "description": "Hesperian and Noachian highland undivided unit"
+    },
+    {
+      "code": "lNv",
+      "description": "Late Noachian volcanic unit"
+    },
+    {
+      "code": "ANa",
+      "description": "Amazonian and Noachian apron unit"
+    },
+    {
+      "code": "HNb",
+      "description": "Hesperian and Noachian basin unit"
+    },
+    {
+      "code": "eHv",
+      "description": "Early Hesperian volcanic unit"
+    },
+    {
+      "code": "HNt",
+      "description": "Hesperian and Noachian transition unit"
+    },
+    {
+      "code": "eAb",
+      "description": "Early Amazonian basin unit"
+    },
+    {
+      "code": "mNhm",
+      "description": "Middle Noachian highland massif unit"
+    },
+    {
+      "code": "eNhm",
+      "description": "Early Noachian highland massif unit"
+    },
+    {
+      "code": "lHv",
+      "description": "Late Hesperian volcanic unit"
+    },
+    {
+      "code": "lHb",
+      "description": "Late Hesperian basin unit"
+    },
+    {
+      "code": "Hve",
+      "description": "Hesperian volcanic edifice unit"
+    },
+    {
+      "code": "Aa",
+      "description": "Amazonian apron unit"
+    },
+    {
+      "code": "Htu",
+      "description": "Hesperian transition undivided unit"
+    },
+    {
+      "code": "lHt",
+      "description": "Late Hesperian transition unit"
+    },
+    {
+      "code": "Ht",
+      "description": "Hesperian transition unit"
+    },
+    {
+      "code": "Hto",
+      "description": "Hesperian transition outflow unit"
+    },
+    {
+      "code": "lHvf",
+      "description": "Late Hesperian volcanic field unit"
+    },
+    {
+      "code": "lAvf",
+      "description": "Late Amazonian volcanic field unit"
+    },
+    {
+      "code": "AHv",
+      "description": "Amazonian and Hesperian volcanic"
+    },
+    {
+      "code": "Ave",
+      "description": "Amazonian volcanic edifice"
+    },
+    {
+      "code": "AHtu",
+      "description": "Amazonian and Hesperian transition undivided unit"
+    },
+    {
+      "code": "eHt",
+      "description": "Early Hesperian transition unit"
+    },
+    {
+      "code": "lAa",
+      "description": "Late Amazonian apron unit"
+    },
+    {
+      "code": "lAv",
+      "description": "Late Amazonian volcanic unit"
+    },
+    {
+      "code": "lHl",
+      "description": "Late Hesperian lowland unit"
+    },
+    {
+      "code": "mAl",
+      "description": "Middle Amazonian lowland unit"
+    },
+    {
+      "code": "Av",
+      "description": "Amazonian volcanic unit"
+    },
+    {
+      "code": "lApd",
+      "description": "Late Amazonian polar dunes unit"
+    },
+    {
+      "code": "Hpu",
+      "description": "Hesperian polar undivided unit"
+    }
+  ]
+}

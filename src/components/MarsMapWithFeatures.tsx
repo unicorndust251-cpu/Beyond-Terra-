@@ -3,6 +3,7 @@ import MarsMap, { type MarsMapHandle, type MarsMapProps } from '../map/MarsMap';
 import MapBridgeProvider from '../shared/map/MapBridgeProvider';
 import { MissionPlanningLayer } from '../mission-planning';
 import { ScientificDataLayers } from '../scientific-data';
+import ScienceLayers from '../science/ScienceLayers';
 
 /**
  * The Mars Trek map with the feature modules mounted inside it. Each module has its own
@@ -16,6 +17,7 @@ const MarsMapWithFeatures = forwardRef<MarsMapHandle, Omit<MarsMapProps, 'childr
         <MapBridgeProvider />
         <ScientificDataLayers />
         <MissionPlanningLayer />
+        <ScienceLayers />
       </MarsMap>
     );
   },
