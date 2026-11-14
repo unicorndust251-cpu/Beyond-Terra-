@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import {
   normalizeLongitudeEast,
   selectedLocationStore,
@@ -8,25 +8,22 @@ import {
   type MarsCoordinate,
   type SelectedLocation,
 } from '../../shared';
-import { formatDuration, formatKm } from '../geo';
-import {
-  durationSummary,
-  initialMissionState,
-  massBreakdown,
-  missionReducer,
-  routeMetrics,
-  routeStops,
-  type StopKey,
-} from '../model';
+import { durationSummary, initialMissionState, missionReducer, routeMetrics, routeStops, type StopKey } from '../model';
 import { useMapSync } from '../useMapSync';
 import EquipmentSection from './EquipmentSection';
-import { MissionConfigSection, ObjectivesSection } from './MissionConfigSection';
-import RouteSection from './RouteSection';
+import RouteSection, { type RouteRow } from './RouteSection';
 import RouteSummary from './RouteSummary';
-import { ReviewSection, TasksSection } from './TasksAndReview';
+import { SavedRoutesSection, SaveControls, useSavedRoutes } from './SavedRoutes';
+import { ReviewSection } from './TasksAndReview';
 import '../missionPlanner.css';
 
-type SectionId = 'route' | 'config' | 'objectives' | 'equipment' | 'tasks' | 'review';
+type Tab = 'route' | 'equipment' | 'summary' | 'saved';
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'route', label: 'Route' },
+  { id: 'equipment', label: 'Equipment' },
+  { id: 'summary', label: 'Summary' },
+  { id: 'saved', label: 'Saved' },
+];
 
 /** A box around the points, unwrapped so routes crossing ±180° stay compact. */
 function boundsAround(points: MarsCoordinate[]): CoordinateBounds {
@@ -89,12 +86,11 @@ export default function MissionPlannerPanel() {
     setSummaryOpen(v);
     if (v && isPhone()) setOpen(false);
   };
-  const [section, setSection] = useState<SectionId | null>(() => 'route');
+  // The open tab and the open row of the Route tab; switching tabs keeps every value,
+  // since all mission state lives here, above the tabs
+  const [tab, setTab] = useState<Tab>('route');
+  const [openRow, setOpenRow] = useState<RouteRow>(null);
   const [picking, setPicking] = useState<StopKey | null>(null);
-
-  useEffect(() => {
-    if (!section) setSection('route');
-  }, [section]);
   const bridge = useMapBridge();
   const selection = useSelectedLocation();
   const armedWith = useRef<SelectedLocation | null>(null);
@@ -102,8 +98,15 @@ export default function MissionPlannerPanel() {
 
   const metrics = useMemo(() => routeMetrics(state), [state]);
   const duration = useMemo(() => durationSummary(state, metrics), [state, metrics]);
-  const mass = useMemo(() => massBreakdown(state), [state]);
   const hasRoute = metrics.segments.length > 0;
+  // Opening a saved route shows it on the Route tab and frames it on the map
+  const onOpened = useCallback(() => {
+    setPicking(null);
+    setTab('route');
+    setOpenRow(null);
+    setFitRequest((n) => n + 1);
+  }, []);
+  const saved = useSavedRoutes(state, dispatch, onOpened);
 
   // The summary appears with the route: open on desktop so the results are in view at once;
   // on phones it opens when the route is calculated, taking turns with the planner
@@ -139,8 +142,9 @@ export default function MissionPlannerPanel() {
     dispatch({ type: 'reset-route' });
     setPicking(null);
     showPanel(true);
-    setSection('route');
-    requestAnimationFrame(() => document.querySelector<HTMLInputElement>('.mp-loc--start .mp-loc__inputs input')?.focus());
+    setTab('route');
+    setOpenRow('start');
+    requestAnimationFrame(() => document.querySelector<HTMLInputElement>('.mp-loc--start .mp-loc__search input')?.focus());
   };
 
   const pick = (stop: StopKey) => {
@@ -199,47 +203,6 @@ export default function MissionPlannerPanel() {
 
   const pickingLabel = picking ? routeStops(state).find((s) => s.key === picking)?.label : null;
 
-  const sections: { id: SectionId; title: string; summary: string; body: ReactNode }[] = [
-    {
-      id: 'route',
-      title: 'Route',
-      summary: metrics.segments.length ? `${formatKm(metrics.totalKm)} · ${formatDuration(metrics.travelHours)}` : 'Set start and destination',
-      body: (
-        <RouteSection state={state} dispatch={dispatch} picking={picking} onPick={pick} onCalculate={calculate} onReset={resetRoute} />
-      ),
-    },
-    {
-      id: 'config',
-      title: 'Mission configuration',
-      summary: `${state.crew} astronaut${state.crew > 1 ? 's' : ''} · ${state.availableHours} h available`,
-      body: <MissionConfigSection state={state} dispatch={dispatch} />,
-    },
-    {
-      id: 'objectives',
-      title: 'Scientific objectives',
-      summary: state.objectives.length ? `${state.objectives.length} selected` : 'None selected',
-      body: <ObjectivesSection state={state} dispatch={dispatch} />,
-    },
-    {
-      id: 'equipment',
-      title: 'Scientific equipment & mission loadout',
-      summary: `${Object.keys(state.equipment).length} items · ${mass.carriedKg.toFixed(1)} kg`,
-      body: <EquipmentSection state={state} dispatch={dispatch} />,
-    },
-    {
-      id: 'tasks',
-      title: 'Checkpoint tasks',
-      summary: `${Object.values(state.tasks).flat().length} assigned · ${formatDuration(duration.taskHours)}`,
-      body: <TasksSection state={state} dispatch={dispatch} />,
-    },
-    {
-      id: 'review',
-      title: 'Review route',
-      summary: metrics.segments.length ? `${formatDuration(duration.totalHours)} estimated` : 'Plan incomplete',
-      body: <ReviewSection state={state} metrics={metrics} duration={duration} />,
-    },
-  ];
-
   return (
     <>
       {pickingLabel && (
@@ -247,40 +210,67 @@ export default function MissionPlannerPanel() {
           Click the map to set <strong>{pickingLabel}</strong> · <kbd>Esc</kbd> to cancel
         </p>
       )}
-      <aside ref={panelRef} className={`mp-panel${open ? ' is-open' : ''}`} aria-label="Route planner">
+      <aside ref={panelRef} className={`mp-panel${open ? ' is-open' : ''}${open && tab === 'equipment' ? ' is-wide' : ''}`} aria-label="Route planner">
         <header className="mp-panel__header">
           <div>
-            <h2 className="mp-panel__title">Route Planner</h2>
+            <p className="mp-panel__eyebrow">
+              Beyond Terra <span aria-hidden="true">/</span> Missions
+            </p>
+            <h2 className="mp-panel__title">Plan a Marswalk</h2>
           </div>
           <button
             type="button"
-            className="mp-btn mp-btn--icon"
+            className="mp-icon-btn mp-panel__collapse"
             onClick={() => showPanel(!open)}
             aria-expanded={open}
-            aria-label={open ? 'Collapse mission planner' : 'Expand mission planner'}
+            aria-label={open ? 'Collapse route planner' : 'Expand route planner'}
           >
-            {open ? '‹' : '›'}
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d={open ? 'M10 4L6 8l4 4' : 'M6 4l4 4-4 4'} />
+            </svg>
           </button>
         </header>
 
         {open && (
-          <div className="mp-panel__body">
-            {sections.map((s, i) => {
-              const expanded = section === s.id;
-              return (
-                <section key={s.id} className={`mp-section${expanded ? ' is-open' : ''}`}>
-                  <h3>
-                    <button type="button" aria-expanded={expanded} onClick={() => setSection(expanded ? null : s.id)}>
-                      <span className="mp-section__index">{String(i + 1).padStart(2, '0')}</span>
-                      <span className="mp-section__title">{s.title}</span>
-                      <span className="mp-section__summary">{s.summary}</span>
-                    </button>
-                  </h3>
-                  {expanded && <div className="mp-section__body">{s.body}</div>}
-                </section>
-              );
-            })}
-          </div>
+          <>
+            <div className="mp-tabs" role="tablist" aria-label="Planner sections">
+              {TABS.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  role="tab"
+                  id={`mp-tab-${t.id}`}
+                  aria-selected={tab === t.id}
+                  aria-controls="mp-tabpanel"
+                  className={tab === t.id ? 'is-active' : ''}
+                  onClick={() => setTab(t.id)}
+                >
+                  {t.label}
+                  {t.id === 'saved' && saved.routes.length > 0 && <span className="mp-tabs__count">{saved.routes.length}</span>}
+                </button>
+              ))}
+            </div>
+            <div className="mp-panel__body" id="mp-tabpanel" role="tabpanel" aria-labelledby={`mp-tab-${tab}`}>
+              {tab === 'route' && (
+                <RouteSection
+                  state={state}
+                  dispatch={dispatch}
+                  duration={duration}
+                  picking={picking}
+                  onPick={pick}
+                  onCalculate={calculate}
+                  onReset={resetRoute}
+                  onOpenEquipment={() => setTab('equipment')}
+                  openRow={openRow}
+                  setOpenRow={setOpenRow}
+                  saveControls={<SaveControls api={saved} state={state} />}
+                />
+              )}
+              {tab === 'equipment' && <EquipmentSection state={state} dispatch={dispatch} duration={duration} />}
+              {tab === 'summary' && <ReviewSection state={state} metrics={metrics} duration={duration} />}
+              {tab === 'saved' && <SavedRoutesSection api={saved} />}
+            </div>
+          </>
         )}
       </aside>
       {hasRoute && (
