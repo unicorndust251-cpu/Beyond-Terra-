@@ -1,0 +1,97 @@
+/* Markers and cards drawn through MarsMapBridge, in the Beyond Terra palette. */
+
+.bt-map-pin-host {
+  background: none;
+  border: 0;
+}
+
+.bt-map-pin {
+  position: relative;
+  width: 28px;
+  height: 36px;
+  filter: drop-shadow(0 2px 4px rgba(5, 5, 7, 0.55));
+}
+
+/* Round head with the symbol, and a point below it touching the location */
+.bt-map-pin::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--pin);
+  border: 2px solid #171413;
+  box-sizing: border-box;
+}
+
+.bt-map-pin::after {
+  content: '';
+  position: absolute;
+  left: 9px;
+  top: 22px;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 12px solid #171413;
+}
+
+.bt-map-pin span {
+  position: absolute;
+  z-index: 1;
+  left: 2px;
+  top: 0;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  font: 800 12px/1 'Manrope', system-ui, sans-serif;
+  color: #171413;
+}
+
+.bt-map-tip.leaflet-tooltip {
+  border: 1px solid rgba(214, 163, 139, 0.45);
+  border-radius: 7px;
+  background: rgba(23, 20, 19, 0.95);
+  color: #f3e5dc;
+  font: 600 11px/1.4 'Manrope', system-ui, sans-serif;
+  box-shadow: 0 6px 18px rgba(5, 5, 7, 0.5);
+}
+
+.bt-map-tip.leaflet-tooltip-top::before {
+  border-top-color: rgba(214, 163, 139, 0.45);
+}
+
+.bt-map-card .leaflet-popup-content-wrapper {
+  border-radius: 10px;
+  background: rgba(23, 20, 19, 0.95);
+  border: 1px solid rgba(214, 163, 139, 0.45);
+  color: #f3e5dc;
+  box-shadow: 0 10px 28px rgba(5, 5, 7, 0.55);
+}
+
+.bt-map-card .leaflet-popup-tip {
+  background: rgba(23, 20, 19, 0.95);
+}
+
+.bt-map-card .leaflet-popup-content {
+  margin: 10px 14px;
+  font: 12px/1.5 'Manrope', system-ui, sans-serif;
+}
+
+.bt-map-card .leaflet-popup-content p {
+  margin: 0;
+}
+
+.bt-map-card .bt-map-card__title {
+  margin-bottom: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #d6a38b;
+}
+
+.bt-map-card a.leaflet-popup-close-button {
+  color: #e8c2ad;
+}

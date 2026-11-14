@@ -22,6 +22,7 @@ import { useMapSync } from '../useMapSync';
 import EquipmentSection from './EquipmentSection';
 import { MissionConfigSection, ObjectivesSection } from './MissionConfigSection';
 import RouteSection from './RouteSection';
+import RouteSummary from './RouteSummary';
 import { ReviewSection, TasksSection } from './TasksAndReview';
 import '../missionPlanner.css';
 
@@ -47,28 +48,53 @@ function boundsAround(points: MarsCoordinate[]): CoordinateBounds {
 }
 
 /**
- * Widens a box so the route lands in the part of the map the panel does not cover: to the
- * west for the side panel (desktop), to the north for the top sheet (narrow screens). The
- * map is equirectangular, so degrees scale linearly with pixels.
+ * Widens a box so the route lands in the part of the map left visible by the planner: to
+ * the west for the side panel (desktop) or to the north for the top sheet (narrow
+ * screens), and to the south for the route summary along the bottom. The map is
+ * equirectangular, so degrees scale linearly with pixels.
  */
-function makeRoomForPanel(b: CoordinateBounds, panel: DOMRect | undefined): CoordinateBounds {
-  if (!panel) return b;
-  if (window.innerWidth > 640) {
-    const covered = Math.min(0.6, (panel.right + 16) / window.innerWidth);
+function makeRoomForPanel(b: CoordinateBounds, panel: DOMRect | undefined, summary: DOMRect | undefined): CoordinateBounds {
+  const out = { ...b };
+  const W = window.innerWidth;
+  const H = window.innerHeight;
+  if (panel && W > 640) {
+    const covered = Math.min(0.6, (panel.right + 16) / W);
     const span = (((b.east - b.west) % 360) + 360) % 360 || 360;
-    return { ...b, west: normalizeLongitudeEast(b.east - span / (1 - covered)) };
+    out.west = normalizeLongitudeEast(b.east - span / (1 - covered));
   }
-  const covered = Math.min(0.6, (panel.bottom + 16) / window.innerHeight);
-  return { ...b, north: Math.min(90, b.south + (b.north - b.south) / (1 - covered)) };
+  const top = panel && W <= 640 ? Math.min(0.5, (panel.bottom + 16) / H) : 0;
+  const bottom = summary ? Math.min(0.5, (H - summary.top + 16) / H) : 0;
+  const latSpan = b.north - b.south;
+  const fullSpan = latSpan / Math.max(0.2, 1 - top - bottom);
+  out.north = Math.min(90, b.north + fullSpan * top);
+  out.south = Math.max(-90, b.south - fullSpan * bottom);
+  return out;
 }
+
+const isPhone = () => window.innerWidth <= 640;
 
 /** The Marswalk route planner and mission loadout, beside the Mars Trek map. */
 export default function MissionPlannerPanel() {
   const [state, dispatch] = useReducer(missionReducer, undefined, initialMissionState);
-  // Open beside the map on wide screens; collapsed on phones, where it would cover the map
-  const [open, setOpen] = useState(() => window.innerWidth > 640);
-  const [section, setSection] = useState<SectionId | null>('route');
+  // Default to an open planner so the route editor is immediately usable; users can collapse it manually.
+  const [open, setOpen] = useState(true);
+  // On phones the planner and the route summary take turns, so the map stays visible
+  const [summaryOpen, setSummaryOpen] = useState(() => !isPhone());
+  const [fitRequest, setFitRequest] = useState(0);
+  const showPanel = (v: boolean) => {
+    setOpen(v);
+    if (v && isPhone()) setSummaryOpen(false);
+  };
+  const showSummary = (v: boolean) => {
+    setSummaryOpen(v);
+    if (v && isPhone()) setOpen(false);
+  };
+  const [section, setSection] = useState<SectionId | null>(() => 'route');
   const [picking, setPicking] = useState<StopKey | null>(null);
+
+  useEffect(() => {
+    if (!section) setSection('route');
+  }, [section]);
   const bridge = useMapBridge();
   const selection = useSelectedLocation();
   const armedWith = useRef<SelectedLocation | null>(null);
@@ -129,13 +155,31 @@ export default function MissionPlannerPanel() {
 
   const calculate = () => {
     dispatch({ type: 'calculate' });
-    const points = routeStops(state)
-      .filter((s) => s.location)
-      .map((s) => s.location!.coordinate);
-    if (bridge && points.length >= 2) {
-      bridge.fitBounds(makeRoomForPanel(boundsAround(points), panelRef.current?.getBoundingClientRect()));
-    }
+    // On phones, show the result: the summary opens and the planner folds away
+    if (isPhone()) showSummary(true);
+    setFitRequest((n) => n + 1);
   };
+
+  // Frame the route once the panel and summary have their new sizes
+  useEffect(() => {
+    if (!fitRequest) return undefined;
+    const frame = requestAnimationFrame(() => {
+      const points = routeStops(state)
+        .filter((s) => s.location)
+        .map((s) => s.location!.coordinate);
+      if (!bridge || points.length < 2) return;
+      bridge.fitBounds(
+        makeRoomForPanel(
+          boundsAround(points),
+          panelRef.current?.getBoundingClientRect(),
+          document.querySelector('.mp-sum')?.getBoundingClientRect(),
+        ),
+      );
+    });
+    return () => cancelAnimationFrame(frame);
+    // only when a fit is requested
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fitRequest]);
 
   const pickingLabel = picking ? routeStops(state).find((s) => s.key === picking)?.label : null;
 
@@ -145,7 +189,7 @@ export default function MissionPlannerPanel() {
       title: 'Route',
       summary: metrics.segments.length ? `${formatKm(metrics.totalKm)} · ${formatDuration(metrics.travelHours)}` : 'Set start and destination',
       body: (
-        <RouteSection state={state} dispatch={dispatch} metrics={metrics} picking={picking} onPick={pick} onCalculate={calculate} />
+        <RouteSection state={state} dispatch={dispatch} picking={picking} onPick={pick} onCalculate={calculate} />
       ),
     },
     {
@@ -196,7 +240,7 @@ export default function MissionPlannerPanel() {
           <button
             type="button"
             className="mp-btn mp-btn--icon"
-            onClick={() => setOpen((o) => !o)}
+            onClick={() => showPanel(!open)}
             aria-expanded={open}
             aria-label={open ? 'Collapse mission planner' : 'Expand mission planner'}
           >
@@ -224,6 +268,13 @@ export default function MissionPlannerPanel() {
           </div>
         )}
       </aside>
+      <RouteSummary
+        state={state}
+        metrics={metrics}
+        besidePanel={open}
+        expanded={summaryOpen}
+        onToggle={() => showSummary(!summaryOpen)}
+      />
     </>
   );
 }

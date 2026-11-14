@@ -1,7 +1,7 @@
 import { useEffect, useId, useMemo, useState } from 'react';
 import { fromEast360, toEast360 } from '../../shared';
 import { LANDMARKS } from '../data/landmarks';
-import { formatCoordinate, parseCoordinate } from '../geo';
+import { formatLatitude, formatLongitude, locationName, parseCoordinate, parseLatitude, parseLongitudeEast } from '../geo';
 import type { PlannedLocation } from '../model';
 
 interface Props {
@@ -15,21 +15,28 @@ interface Props {
   onRemove?: () => void;
   onMove?: (by: -1 | 1) => void;
   accent: 'start' | 'checkpoint' | 'destination';
+  /** Letter or number shown on the map pin, repeated here so the two are easy to match. */
+  symbol: string;
 }
 
-/** One route location: manual coordinates, a verified landmark, or a point picked on the map. */
-export default function LocationField({ label, location, onChange, picking, onPick, onRemove, onMove, accent }: Props) {
+/** Shows a number without trailing zeros (18.88, not 18.8800). */
+const trim = (v: number) => String(Number(v.toFixed(6)));
+
+/** One route location: typed coordinates, a verified landmark, or a point picked on the map. */
+export default function LocationField({ label, location, onChange, picking, onPick, onRemove, onMove, accent, symbol }: Props) {
   const id = useId();
   const [lat, setLat] = useState('');
   const [lon, setLon] = useState('');
   const [query, setQuery] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [latError, setLatError] = useState<string | undefined>();
+  const [lonError, setLonError] = useState<string | undefined>();
 
   // Keep the inputs in step with the location, however it was set
   useEffect(() => {
-    setLat(location ? location.coordinate.latitude.toFixed(4) : '');
-    setLon(location ? toEast360(location.coordinate).toFixed(4) : '');
-    setError(null);
+    setLat(location ? trim(location.coordinate.latitude) : '');
+    setLon(location ? trim(toEast360(location.coordinate)) : '');
+    setLatError(undefined);
+    setLonError(undefined);
   }, [location]);
 
   const matches = useMemo(() => {
@@ -40,45 +47,78 @@ export default function LocationField({ label, location, onChange, picking, onPi
 
   const apply = () => {
     const result = parseCoordinate(lat, lon);
-    if ('error' in result) {
-      setError(result.error);
+    if (!('coordinate' in result)) {
+      setLatError(result.latError);
+      setLonError(result.lonError);
       return;
     }
     onChange({ coordinate: result.coordinate });
   };
 
+  // Each field is checked on its own when you leave it; empty is not an error yet
+  const checkLat = () => {
+    const r = parseLatitude(lat);
+    setLatError('error' in r ? r.error : undefined);
+  };
+  const checkLon = () => {
+    const r = parseLongitudeEast(lon);
+    setLonError('error' in r ? r.error : undefined);
+  };
+
   return (
     <fieldset className={`mp-loc mp-loc--${accent}${picking ? ' is-picking' : ''}`}>
       <legend className="mp-loc__legend">
-        <span className="mp-loc__dot" aria-hidden="true" />
+        <span className="mp-loc__pin" aria-hidden="true">
+          {symbol}
+        </span>
         {label}
-        {location?.name && <span className="mp-loc__name">{location.name}</span>}
       </legend>
 
-      <p className="mp-loc__value" aria-live="polite">
-        {location ? formatCoordinate(location.coordinate) : 'Not set'}
-      </p>
+      <div className="mp-loc__current" aria-live="polite">
+        {location ? (
+          <>
+            <p className="mp-loc__name">{locationName(location.name)}</p>
+            <p className="mp-loc__value">
+              {formatLatitude(location.coordinate)}, {formatLongitude(location.coordinate)}
+            </p>
+          </>
+        ) : (
+          <p className="mp-loc__value">Not set: search, enter coordinates or pick on the map</p>
+        )}
+      </div>
 
       <div className="mp-loc__inputs">
         <label htmlFor={`${id}-lat`}>
-          <span>Lat °</span>
+          <span>Latitude °</span>
           <input
             id={`${id}-lat`}
             inputMode="decimal"
-            placeholder="−90 to 90"
+            placeholder="e.g. 18.88"
             value={lat}
-            onChange={(e) => setLat(e.target.value)}
+            aria-invalid={!!latError}
+            aria-describedby={latError ? `${id}-lat-err` : undefined}
+            onChange={(e) => {
+              setLat(e.target.value);
+              setLatError(undefined);
+            }}
+            onBlur={checkLat}
             onKeyDown={(e) => e.key === 'Enter' && apply()}
           />
         </label>
         <label htmlFor={`${id}-lon`}>
-          <span>Lon °E</span>
+          <span>Longitude °E</span>
           <input
             id={`${id}-lon`}
             inputMode="decimal"
             placeholder="0 to 360"
             value={lon}
-            onChange={(e) => setLon(e.target.value)}
+            aria-invalid={!!lonError}
+            aria-describedby={lonError ? `${id}-lon-err` : undefined}
+            onChange={(e) => {
+              setLon(e.target.value);
+              setLonError(undefined);
+            }}
+            onBlur={checkLon}
             onKeyDown={(e) => e.key === 'Enter' && apply()}
           />
         </label>
@@ -86,9 +126,14 @@ export default function LocationField({ label, location, onChange, picking, onPi
           Set
         </button>
       </div>
-      {error && (
-        <p className="mp-loc__error" role="alert">
-          {error}
+      {latError && (
+        <p id={`${id}-lat-err`} className="mp-loc__error" role="alert">
+          {latError}
+        </p>
+      )}
+      {lonError && (
+        <p id={`${id}-lon-err`} className="mp-loc__error" role="alert">
+          {lonError}
         </p>
       )}
 
@@ -114,7 +159,7 @@ export default function LocationField({ label, location, onChange, picking, onPi
                 >
                   <span>{l.name}</span>
                   <small>
-                    {l.category} · {l.latitude.toFixed(2)}°, {l.longitudeEast360.toFixed(2)}°E
+                    {l.category} · {l.latitude}°, {l.longitudeEast360}° E
                   </small>
                 </button>
               </li>

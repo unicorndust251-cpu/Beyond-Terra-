@@ -1,12 +1,10 @@
 import type { Dispatch } from 'react';
-import { formatCoordinate, formatDuration, formatKm, MARS_MEAN_RADIUS_KM } from '../geo';
 import {
   DEFAULT_SPEED_KMH,
   ROUTE_STATUS_LABELS,
   routeStatus,
   type MissionAction,
   type MissionState,
-  type RouteMetrics,
   type StopKey,
   type TravelMode,
 } from '../model';
@@ -15,15 +13,15 @@ import LocationField from './LocationField';
 interface Props {
   state: MissionState;
   dispatch: Dispatch<MissionAction>;
-  metrics: RouteMetrics;
   picking: StopKey | null;
   onPick: (stop: StopKey) => void;
   onCalculate: () => void;
 }
 
-const MODE_LABELS: Record<TravelMode, string> = { walking: 'Walking', rover: 'Rover-assisted' };
+export const MODE_LABELS: Record<TravelMode, string> = { walking: 'Walking', rover: 'Rover-assisted' };
 
-export default function RouteSection({ state, dispatch, metrics, picking, onPick, onCalculate }: Props) {
+/** Route inputs only: the results live in the route summary below the map. */
+export default function RouteSection({ state, dispatch, picking, onPick, onCalculate }: Props) {
   const status = routeStatus(state);
   const mode = state.travelMode;
 
@@ -32,6 +30,7 @@ export default function RouteSection({ state, dispatch, metrics, picking, onPick
       <LocationField
         label="Start"
         accent="start"
+        symbol="S"
         location={state.start}
         onChange={(location) => dispatch({ type: 'set-start', location })}
         picking={picking === 'start'}
@@ -43,6 +42,7 @@ export default function RouteSection({ state, dispatch, metrics, picking, onPick
           key={c.id}
           label={`Checkpoint ${i + 1}`}
           accent="checkpoint"
+          symbol={String(i + 1)}
           location={c.location}
           onChange={(location) => dispatch({ type: 'set-checkpoint', id: c.id, location })}
           picking={picking === c.id}
@@ -59,6 +59,7 @@ export default function RouteSection({ state, dispatch, metrics, picking, onPick
       <LocationField
         label="Destination"
         accent="destination"
+        symbol="D"
         location={state.destination}
         onChange={(location) => dispatch({ type: 'set-destination', location })}
         picking={picking === 'destination'}
@@ -92,86 +93,20 @@ export default function RouteSection({ state, dispatch, metrics, picking, onPick
           />
         </label>
         <p className="mp-note">
-          Planning assumption (default {DEFAULT_SPEED_KMH[mode]} km/h), not a validated EVA or rover rate. No terrain or
-          hazard adjustment is applied.
+          Planning assumption (default {DEFAULT_SPEED_KMH[mode]} km/h), not a validated EVA or rover rate.
         </p>
       </div>
 
       <div className="mp-actions">
         <button type="button" className="mp-btn mp-btn--primary" onClick={onCalculate} disabled={status === 'incomplete'}>
-          Calculate route
+          {status === 'changed' ? 'Recalculate route' : 'Calculate route'}
         </button>
         <button type="button" className="mp-btn mp-btn--ghost" onClick={() => dispatch({ type: 'reset-route' })}>
           Reset route
         </button>
       </div>
-
-      <dl className="mp-facts">
-        <div>
-          <dt>Route status</dt>
-          <dd className={`mp-status mp-status--${status}`}>{ROUTE_STATUS_LABELS[status]}</dd>
-        </div>
-        <div>
-          <dt>Start</dt>
-          <dd className="mp-data">{state.start ? formatCoordinate(state.start.coordinate) : '—'}</dd>
-        </div>
-        <div>
-          <dt>Destination</dt>
-          <dd className="mp-data">{state.destination ? formatCoordinate(state.destination.coordinate) : '—'}</dd>
-        </div>
-        <div>
-          <dt>Checkpoints</dt>
-          <dd className="mp-data">{state.checkpoints.length}</dd>
-        </div>
-        <div>
-          <dt>Travel mode</dt>
-          <dd>{MODE_LABELS[mode]}</dd>
-        </div>
-        <div>
-          <dt>Total distance</dt>
-          <dd className="mp-data">{metrics.segments.length ? formatKm(metrics.totalKm) : '—'}</dd>
-        </div>
-        <div>
-          <dt>Estimated travel time</dt>
-          <dd className="mp-data">{metrics.segments.length ? formatDuration(metrics.travelHours) : '—'}</dd>
-        </div>
-      </dl>
-
-      {metrics.segments.length > 0 && (
-        <table className="mp-table">
-          <caption>Segments</caption>
-          <thead>
-            <tr>
-              <th scope="col">Segment</th>
-              <th scope="col">Distance</th>
-              <th scope="col">Time</th>
-            </tr>
-          </thead>
-          <tbody>
-            {metrics.segments.map((s) => (
-              <tr key={`${s.from.key}-${s.to.key}`}>
-                <td>
-                  {s.from.label} → {s.to.label}
-                </td>
-                <td className="mp-data">{formatKm(s.km)}</td>
-                <td className="mp-data">{formatDuration(s.hours)}</td>
-              </tr>
-            ))}
-          </tbody>
-          <tfoot>
-            <tr>
-              <th scope="row">Total</th>
-              <td className="mp-data">{formatKm(metrics.totalKm)}</td>
-              <td className="mp-data">{formatDuration(metrics.travelHours)}</td>
-            </tr>
-          </tfoot>
-        </table>
-      )}
-
-      <p className="mp-note">
-        Great-circle (Haversine) distances on a sphere of Mars’s mean radius, R = {MARS_MEAN_RADIUS_KM} km. These are
-        straight-line geographic estimates, not terrain-following walking distances, and say nothing about whether the
-        route is safe or traversable.
+      <p className={`mp-status mp-status--${status}`} role="status">
+        {ROUTE_STATUS_LABELS[status]}. Results appear in the route summary below the map.
       </p>
     </div>
   );

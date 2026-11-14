@@ -29,6 +29,10 @@ export interface MarkerOptions {
   label?: string;
   /** Any CSS colour. */
   color?: string;
+  /** One or two characters shown inside a pin (e.g. "S", "D", "2") instead of a plain dot. */
+  symbol?: string;
+  /** Plain-text card opened by clicking the marker. */
+  details?: { title: string; lines: string[] };
   onClick?: () => void;
 }
 
