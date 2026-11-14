@@ -28,6 +28,8 @@ export default function CurvatureLayer() {
   const { map } = useMarsMap();
   const bridge = useMapBridge();
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // Collapsed to one line until wanted; selecting a site opens it
+  const [expanded, setExpanded] = useState(false);
   const [query, setQuery] = useState('');
   const markers = useRef(new Map<string, L.Marker>());
   const matches = useMemo(() => searchSites(query), [query]);
@@ -49,7 +51,10 @@ export default function CurvatureLayer() {
         // A marker click selects the site; it is not also a click on the terrain
         bubblingMouseEvents: false,
       });
-      m.on('click', () => setSelectedId(site.id));
+      m.on('click', () => {
+        setSelectedId(site.id);
+        setExpanded(true);
+      });
       m.addTo(map);
       markers.current.set(site.id, m);
     }
@@ -95,11 +100,17 @@ export default function CurvatureLayer() {
   };
 
   return (
-    <section className="bt-curv" aria-label="Curvature investigation sites">
-      <header className="bt-curv__head">
+    <section className={`bt-curv${expanded ? ' is-open' : ''}`} aria-label="Curvature investigation sites">
+      <button type="button" className="bt-curv__head" aria-expanded={expanded} onClick={() => setExpanded((e) => !e)}>
         <span className="bt-curv__dot" aria-hidden="true" />
-        <h2>Curvature Investigation Sites</h2>
-      </header>
+        <h2>Curvature sites</h2>
+        <span className="bt-curv__n">{CURVATURE_SITES.length}</span>
+        <svg className="bt-curv__chev" viewBox="0 0 20 20" aria-hidden="true">
+          <path d="m6 8 4 4 4-4" />
+        </svg>
+      </button>
+      {expanded && (
+      <div className="bt-curv__body">
       <p className="bt-curv__legend">
         <span className="bt-curv__dot bt-curv__dot--legend" aria-hidden="true" /> Candidate curvature investigation site
       </p>
@@ -180,6 +191,8 @@ export default function CurvatureLayer() {
             View location
           </button>
         </article>
+      )}
+      </div>
       )}
     </section>
   );

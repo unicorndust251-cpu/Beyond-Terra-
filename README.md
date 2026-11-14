@@ -158,9 +158,27 @@ The 3D scenes are imperative Three.js classes owned by React components, which c
 - With reduced motion, the globe simply fades and the map appears in place.
 - If the map's code cannot load, the map area shows a message with a Reload button instead of breaking the page.
 
+## Map workspace
+
+Less interface, more Mars. The map fills the screen and shows only a thin top bar, a **Layers** button and the map controls. Everything else appears when asked for. Code: `src/science/workspace/`; tokens: `src/map/map.css`.
+
+- **Top bar:** the logo, the region in view (its USGS chart quadrangle, for example "Syrtis Major MC-13"), search and settings. The quadrangle lookup matches the quadrangle the Gazetteer records for 2,038 of 2,049 named features; the 11 exceptions lie exactly on a quadrangle edge.
+- **Search** ("Explore locations on Mars…"): all 2,055 IAU-approved Mars names from the Gazetteer (`public/data/places/mars-places.json`, built by `scripts/prepare-places.mjs`, loaded on first use); NASA rover sites (Perseverance and Curiosity landing points and latest published positions, from NASA's waypoint feeds); and typed coordinates such as `18.44, 77.45`, `5.37 S 137.81 E` or `-14, 301`. A result flies the map there and opens the location card.
+- **Layers:** one button opens a small menu: Surface (Standard Imagery), Terrain (Elevation, Topography, Slope), Science (Geological Information, Curvature Sites). Each row is a switch. The ⓘ button shows what the data is, its resolution and source, and opacity or intensity. An outside click or Escape closes the menu.
+- **Location card:** appears when a place is clicked or found. It shows four lines: Location, Elevation (the best available model, above the MOLA areoid), Terrain (mapped geologic unit and slope) and Science (the datasets holding data there). **View detailed information** expands the full readings: local and regional elevation, slope and relief, MOLA shot coverage, geology, limits and sources. Missing values read "Data unavailable". The close button or Escape dismisses it.
+- **Legend:** shown only while elevation, slope or geology is on.
+- **Map controls:** zoom in, zoom out, recentre and fullscreen.
+- **Settings:** longitude as east 0–360° or ±180°, elevation in km or m, and the status of each data source.
+
+Palette: background `#111110`, panels `#1C1A19`, secondary `#25211F`, borders `#38312E`, text `#F3EAE4 / #AAA09A`, copper `#C58B70` for what is on or chosen. Type: Inter for the interface, IBM Plex Mono for coordinates and measurements.
+
+The map opens on the NASA imagery. Elevation, slope and geology keep their own unchanged colour scales.
+
+Not yet offered: Trek's catalogue also lists TES mineral and thermal-inertia maps. They are rendered images, and a verified colour key for reading them has not been found yet, so they are not shown as layers.
+
 ## Scientific layers
 
-A location search and a **Layers** panel sit in the top-left corner of the map. The panel switches four layers, each with its own opacity (relief: intensity), plus **Reset Layers**. Elevation (100 %) and relief shading (1×) are on by default. The module lives in `src/science/`, attaches to the map through `useMarsMap()` and the shared map bridge, and does not depend on routes or any other feature.
+The **Layers** menu switches each layer; opacity (relief: intensity) is behind each layer's ⓘ. The map opens on the imagery; elevation, relief and slope are one switch away. The module lives in `src/science/`, attaches to the map through `useMarsMap()` and the shared map bridge, and does not depend on routes or any other feature.
 
 | Layer | Exact product | Access | Grid | Coverage |
 | --- | --- | --- | --- | --- |

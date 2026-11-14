@@ -9,6 +9,7 @@ export type DemMode = 'elevation' | 'slope';
 /** Map panes, above the imagery pane (200) and below Leaflet's overlay pane (400). */
 export const SCIENCE_PANES = {
   elevation: { name: 'btScienceElevation', zIndex: 250 },
+  geology: { name: 'btScienceGeology', zIndex: 255 },
   slope: { name: 'btScienceSlope', zIndex: 260 },
   relief: { name: 'btScienceRelief', zIndex: 270 },
 } as const;
@@ -323,6 +324,34 @@ export function prefetchRelief(map: L.Map, center: L.LatLngExpression, zoom: num
     }
   }
   return images;
+}
+
+/* -------------------------------------------------------------------- geology */
+
+/**
+ * The USGS Geologic Map of Mars (Tanaka et al., 2014, SIM 3292) in its published unit
+ * colours, as rendered by NASA Mars Trek (catalogue item SIM3292_Global_Geology). Served
+ * through Trek's ArcGIS WMTS: same tile matrix set as the Viking mosaic (default028mm,
+ * 256-px tiles from −180°, 90°, 2 × 1 at level 0), levels 0–11, CORS open. Checked
+ * against its GetCapabilities document.
+ */
+export const GEOLOGY_TILES = {
+  url: 'https://trek.nasa.gov/mars/trekarcgis/rest/services/SIM3292_Global_Geology/MapServer/WMTS/tile/1.0.0/SIM3292_Global_Geology/default/default028mm/{z}/{y}/{x}.png',
+  maxNativeZoom: 11,
+  credit: 'Geology: USGS SIM 3292 (Tanaka et al., 2014) via NASA Mars Trek',
+};
+
+export function createGeologyLayer(): L.TileLayer {
+  const layer = L.tileLayer(GEOLOGY_TILES.url, {
+    ...screenTileOptions(GEOLOGY_TILES.maxNativeZoom),
+    maxZoom: MAP_LIMITS.maxZoom,
+    noWrap: false,
+    keepBuffer: 2,
+    pane: SCIENCE_PANES.geology.name,
+    className: 'bt-sci-tile bt-sci-tile--geology',
+    crossOrigin: 'anonymous',
+  });
+  return sharpenTileZoom(layer);
 }
 
 /* ------------------------------------------------------------ global CTX imagery */
