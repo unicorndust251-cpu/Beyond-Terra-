@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#050507" />
+    <meta
+      name="description"
+      content="Beyond Terra: a layered view of Mars built from NASA mission data, for planning routes and science on the Martian surface."
+    />
+    <title>Beyond Terra</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preload" href="/fonts/Exo2-Variable.woff" as="font" type="font/woff" crossorigin />
+    <link rel="preload" href="/textures/mars_color_2k.jpg" as="image" />
+    <link rel="preload" href="/textures/mars_normal_2k.jpg" as="image" />
+    <style>
+      /* Paint deep space before any script runs, so there is never a white flash */
+      html, body { background: #050507; margin: 0; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

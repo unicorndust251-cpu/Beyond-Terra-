@@ -1,0 +1,82 @@
+@font-face {
+  font-family: 'Exo 2';
+  src: url('/fonts/Exo2-Variable.woff') format('woff');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  /* Beyond Terra palette */
+  --space: #050507;
+  --obsidian: #171413;
+  --espresso: #302725;
+  --mocha: #63504a;
+  --terracotta: #b87860;
+  --dust-rose: #e8c2ad;
+  --taupe: #8d756e;
+  --copper: #d6a38b;
+  --ivory: #f3e5dc;
+  --title-ivory: #f5f1ed;
+
+  --font-display: 'Exo 2', system-ui, sans-serif;
+  --font-body: 'Exo 2', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--space);
+  color: var(--ivory);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+a {
+  color: inherit;
+}
+
+button {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--copper);
+  outline-offset: 3px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Covers the page for the moment the intro's code is loading */
+.bt-intro-placeholder {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: var(--space);
+}
