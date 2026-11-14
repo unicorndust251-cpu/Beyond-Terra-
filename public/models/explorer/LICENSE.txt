@@ -1,0 +1,16 @@
+astronaut.glb — "Astronaut in Spacesuit" (rigged), from Grab3D
+Page:     https://grab3d.com/models/characters/astronaut-in-spacesuit/
+Download: https://grab3d.com/dl/astronaut-in-spacesuit-rigged/astronaut-in-spacesuit-rigged.glb
+          (downloaded 2026-11-15, unmodified)
+License:  CC0 1.0 Universal (public domain dedication), as stated on the page:
+          "CC0 for personal and commercial use, no attribution."
+          https://creativecommons.org/publicdomain/zero/1.0/
+
+Contents checked before use: glTF 2.0 binary, one skinned mesh (300,000 triangles),
+24-joint humanoid skeleton (Hips … Head, Left/Right Arm, Leg, Foot), 3 × 2048² JPEG
+textures (base colour, normal, metallic-roughness), 1.9 m tall in metres, feet at y = 0.
+Animations: "walk" (1.0 s, in place) and "run". No idle clip: the route preview derives
+a standing pose from the walk cycle (see astronautView.ts).
+
+Used by the Missions route preview (src/mission-planning/exploration/astronautView.ts).
+Not used by the intro, which looks for /models/astronaut.glb.

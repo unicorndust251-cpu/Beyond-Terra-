@@ -28,6 +28,7 @@ interface Props {
   onPick: (stop: StopKey) => void;
   onCalculate: () => void;
   onReset: () => void;
+  onKeep: () => void;
   onOpenEquipment: () => void;
   openRow: RouteRow;
   setOpenRow: (row: RouteRow) => void;
@@ -51,6 +52,7 @@ export default function RouteSection({
   onPick,
   onCalculate,
   onReset,
+  onKeep,
   onOpenEquipment,
   openRow,
   setOpenRow,
@@ -207,7 +209,7 @@ export default function RouteSection({
           <p className={`mp-status mp-status--${status}`} role="status">
             {ROUTE_STATUS_LABELS[status]}
           </p>
-          <ResetRouteButton onReset={onReset} disabled={!hasAnyStop(state)} className="mp-link" />
+          <ResetRouteButton onReset={onReset} onKeep={onKeep} disabled={!hasAnyStop(state)} className="mp-link" />
         </div>
         {saveControls}
       </div>

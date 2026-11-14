@@ -9,6 +9,8 @@ import {
   type SelectedLocation,
 } from '../../shared';
 import { durationSummary, initialMissionState, missionReducer, routeMetrics, routeStops, type StopKey } from '../model';
+import ExplorationPanel from '../exploration/ExplorationPanel';
+import { useExploration } from '../exploration/useExploration';
 import { useMapSync } from '../useMapSync';
 import EquipmentSection from './EquipmentSection';
 import RouteSection, { type RouteRow } from './RouteSection';
@@ -114,7 +116,9 @@ export default function MissionPlannerPanel() {
     setSummaryOpen(hasRoute && !isPhone());
   }, [hasRoute]);
 
-  useMapSync(state);
+  // The route preview astronaut, kept here (above the tabs) so tab changes never interrupt it
+  const exploration = useExploration(state);
+  useMapSync(state, exploration.highlight);
 
   const setStop = useCallback((stop: StopKey, coordinate: MarsCoordinate) => {
     const location = { coordinate };
@@ -260,6 +264,7 @@ export default function MissionPlannerPanel() {
                   onPick={pick}
                   onCalculate={calculate}
                   onReset={resetRoute}
+                  onKeep={saved.saveBeforeReset}
                   onOpenEquipment={() => setTab('equipment')}
                   openRow={openRow}
                   setOpenRow={setOpenRow}
@@ -281,6 +286,14 @@ export default function MissionPlannerPanel() {
           expanded={summaryOpen}
           onToggle={() => showSummary(!summaryOpen)}
           onReset={resetRoute}
+          onKeep={saved.saveBeforeReset}
+          exploration={
+            exploration.engine && exploration.snapshot ? (
+              <ExplorationPanel engine={exploration.engine} x={exploration.snapshot} state={state} travelHours={metrics.travelHours} />
+            ) : null
+          }
+          explorationPlaying={exploration.snapshot?.play === 'playing'}
+          onPauseExploration={() => exploration.engine?.pause()}
         />
       )}
     </>

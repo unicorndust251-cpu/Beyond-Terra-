@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 
 interface Props {
   onReset: () => void;
+  onKeep?: () => void;
   /** Nothing to clear yet. */
   disabled?: boolean;
   label?: string;
@@ -17,6 +18,7 @@ interface Props {
  */
 export default function ResetRouteButton({
   onReset,
+  onKeep,
   disabled,
   label = 'Reset route',
   className = '',
@@ -58,7 +60,14 @@ export default function ResetRouteButton({
       >
         Clear
       </button>
-      <button type="button" className="mp-btn mp-btn--small mp-btn--ghost" onClick={() => setConfirming(false)}>
+      <button
+        type="button"
+        className="mp-btn mp-btn--small mp-btn--ghost"
+        onClick={() => {
+          setConfirming(false);
+          onKeep?.();
+        }}
+      >
         Keep
       </button>
     </span>

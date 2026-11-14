@@ -190,10 +190,11 @@ export class Astronaut {
   readonly upperLen = 0.3;
   readonly foreLen = 0.29;
 
-  constructor(mats: SuitMaterials) {
+  /** `legs: false` leaves the legs to the caller (the route preview animates its own). */
+  constructor(mats: SuitMaterials, options: { legs?: boolean } = {}) {
     this.mats = mats;
     this.root.add(this.torso);
-    this.buildLegs();
+    if (options.legs !== false) this.buildLegs();
     this.buildTorso();
     this.buildHelmet();
     this.buildPack();

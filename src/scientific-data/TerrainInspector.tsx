@@ -26,6 +26,7 @@ const MARKER_ID = 'sd:inspect';
 export default function TerrainInspector() {
   const bridge = useMapBridge();
   const selected = useSelectedLocation();
+  const displaySettings = useDisplaySettings();
   const [result, setResult] = useState<TerrainInspection | null>(null);
   const [loading, setLoading] = useState(false);
   const [visible, setVisible] = useState(false);
@@ -68,8 +69,12 @@ export default function TerrainInspector() {
 
   if (!selected) return null;
 
+  const locationLabel = selected.name
+    ? `${selected.name} · ${formatLatitude(selected.coordinate.latitude)} · ${formatLongitude(selected.coordinate.longitudeEast, displaySettings.longitude)}`
+    : `${formatLatitude(selected.coordinate.latitude)} · ${formatLongitude(selected.coordinate.longitudeEast, displaySettings.longitude)}`;
+
   if (!visible) {
-    const name = selected.name ?? 'Selected point';
+    const name = locationLabel;
     return (
       <button
         type="button"
@@ -84,9 +89,9 @@ export default function TerrainInspector() {
   }
 
   return (
-    <section className={`sd-card${expanded ? ' is-expanded' : ''}${details ? ' is-detailed' : ''}`} aria-label={`${selected.name ?? 'Selected point'}, location details`}>
+    <section className={`sd-card${expanded ? ' is-expanded' : ''}${details ? ' is-detailed' : ''}`} aria-label={`${locationLabel}, location details`}>
       <header className="sd-card__head">
-        <h2>{selected.name ?? 'Selected point'}</h2>
+        <h2>{locationLabel}</h2>
         <div className="sd-card__actions">
           <button
             type="button"

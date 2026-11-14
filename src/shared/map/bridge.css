@@ -95,3 +95,16 @@
 .bt-map-card a.leaflet-popup-close-button {
   color: #e8c2ad;
 }
+
+/* A stop that a route preview has reached */
+.bt-map-pin.is-highlight {
+  filter: drop-shadow(0 0 6px rgba(214, 163, 139, 0.95)) drop-shadow(0 2px 4px rgba(5, 5, 7, 0.55));
+  transform: scale(1.15);
+  transform-origin: 50% 100%;
+}
+
+/* Caller-made elements (e.g. the route preview astronaut) */
+.bt-map-element {
+  background: none;
+  border: 0;
+}

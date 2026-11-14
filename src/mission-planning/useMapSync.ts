@@ -30,11 +30,11 @@ function stopColour(stop: RouteStop): string {
  * lettered pin whose card (on click) gives its role, name and coordinates. The route is
  * dashed until calculated, then solid. Works without any scientific layer.
  */
-export function useMapSync(state: MissionState) {
+export function useMapSync(state: MissionState, highlight: string | null = null) {
   const bridge = useMapBridge();
   const stops = routeStops(state);
   const status = routeStatus(state);
-  const key = JSON.stringify(stops.map((s) => [s.key, s.location ?? null])) + status;
+  const key = JSON.stringify(stops.map((s) => [s.key, s.location ?? null])) + status + (highlight ?? '');
 
   useEffect(() => {
     if (!bridge) return undefined;
@@ -46,6 +46,7 @@ export function useMapSync(state: MissionState) {
       return bridge.addMarker(`${ID}${s.key}`, coordinate, {
         color: stopColour(s),
         symbol: stopSymbol(s, checkpoint),
+        highlight: s.key === highlight,
         label: `${s.label} · ${locationName(name)}`,
         details: {
           title: s.label,
@@ -65,7 +66,7 @@ export function useMapSync(state: MissionState) {
       );
     }
     return () => handles.forEach((h) => h?.remove());
-    // `key` captures every stop and the status
+    // `key` captures every stop, the status and the highlighted stop
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bridge, key]);
 }

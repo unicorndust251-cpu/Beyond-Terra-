@@ -4,6 +4,8 @@ import { fromMapLatLng, normalizeLongitudeEast, toMapLatLng } from '../coordinat
 import type { CoordinateBounds, MarsCoordinate } from '../types';
 import './bridge.css';
 import type {
+  ElementHandle,
+  ElementOptions,
   LayerHandle,
   MapOverlayHandle,
   MapView,
@@ -17,9 +19,9 @@ import type {
 const DEFAULT_COLOR = '#D6A38B'; // copper glow
 
 /** A map pin with a short symbol in its head. Text is set as text, never as HTML. */
-function pinIcon(symbol: string, color: string): L.DivIcon {
+function pinIcon(symbol: string, color: string, highlight = false): L.DivIcon {
   const pin = document.createElement('div');
-  pin.className = 'bt-map-pin';
+  pin.className = highlight ? 'bt-map-pin is-highlight' : 'bt-map-pin';
   pin.style.setProperty('--pin', color);
   const label = document.createElement('span');
   label.textContent = symbol.slice(0, 2);
@@ -118,7 +120,7 @@ export function createLeafletBridge(map: L.Map, options: { reducedMotion: () => 
       let marker: L.Marker | L.CircleMarker;
       let tooltipOffset: L.PointExpression = [0, -8];
       if (opts.symbol) {
-        marker = L.marker(at, { icon: pinIcon(opts.symbol, color), bubblingMouseEvents: !ownsClick, riseOnHover: true });
+        marker = L.marker(at, { icon: pinIcon(opts.symbol, color, opts.highlight), bubblingMouseEvents: !ownsClick, riseOnHover: true });
         tooltipOffset = [0, -34];
       } else {
         marker = L.circleMarker(at, {
@@ -160,6 +162,46 @@ export function createLeafletBridge(map: L.Map, options: { reducedMotion: () => 
         id,
         remove: () => take(id, line),
         setPoints: (next) => line.setLatLngs(unwrap(next)),
+      };
+    },
+
+    addElement(id, coordinate, element, opts: ElementOptions): ElementHandle {
+      const marker = L.marker(toMapLatLng(coordinate, map.getCenter().lng), {
+        icon: L.divIcon({ html: element, className: 'bt-map-element', iconSize: opts.size, iconAnchor: opts.anchor }),
+        keyboard: false,
+        bubblingMouseEvents: false,
+        zIndexOffset: opts.behindMarkers ? -1000 : 0,
+      });
+      put(id, marker);
+      return {
+        id,
+        remove: () => take(id, marker),
+        setPosition: (c) => marker.setLatLng(toMapLatLng(c, map.getCenter().lng)),
+      };
+    },
+
+    project(coordinate) {
+      const p = map.latLngToContainerPoint(toMapLatLng(coordinate, map.getCenter().lng));
+      return { x: p.x, y: p.y };
+    },
+
+    panTo(coordinate, opts = {}) {
+      const animate = (opts.animate ?? true) && !options.reducedMotion();
+      map.panTo(toMapLatLng(coordinate, map.getCenter().lng), { animate, duration: 0.25, noMoveStart: true });
+    },
+
+    onViewChange(listener) {
+      const fire = () => listener(this.getView());
+      map.on('moveend zoomend', fire);
+      return () => {
+        map.off('moveend zoomend', fire);
+      };
+    },
+
+    onUserPan(listener) {
+      map.on('dragstart', listener);
+      return () => {
+        map.off('dragstart', listener);
       };
     },
 

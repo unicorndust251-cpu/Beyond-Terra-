@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { formatDuration, formatKm, formatLatitude, formatLongitude, locationName, MARS_MEAN_RADIUS_KM } from '../geo';
 import { ROUTE_STATUS_LABELS, routeStatus, type MissionState, type PlannedLocation, type RouteMetrics } from '../model';
 import ResetRouteButton from './ResetRouteButton';
@@ -11,6 +12,11 @@ interface Props {
   expanded: boolean;
   onToggle: () => void;
   onReset: () => void;
+  onKeep: () => void;
+  /** The route preview controls, shown first in the summary. */
+  exploration?: ReactNode;
+  explorationPlaying?: boolean;
+  onPauseExploration?: () => void;
 }
 
 function Place({ symbol, role, location }: { symbol: string; role: string; location: PlannedLocation | null }) {
@@ -37,7 +43,18 @@ function Place({ symbol, role, location }: { symbol: string; role: string; locat
 }
 
 /** The route results, docked along the bottom of the map and always in view. */
-export default function RouteSummary({ state, metrics, besidePanel, expanded, onToggle, onReset }: Props) {
+export default function RouteSummary({
+  state,
+  metrics,
+  besidePanel,
+  expanded,
+  onToggle,
+  onReset,
+  onKeep,
+  exploration,
+  explorationPlaying,
+  onPauseExploration,
+}: Props) {
   const status = routeStatus(state);
   const hasRoute = metrics.segments.length > 0;
   const scienceStops = Object.entries(state.tasks).filter(
@@ -55,7 +72,12 @@ export default function RouteSummary({ state, metrics, besidePanel, expanded, on
         <p className="mp-sum__headline mp-data" aria-live="polite">
           {hasRoute ? `${formatKm(metrics.totalKm)} · ${formatDuration(metrics.travelHours)}` : '—'}
         </p>
-        {hasAnyStop(state) && <ResetRouteButton onReset={onReset} label="New route" className="mp-sum__reset" />}
+        {hasAnyStop(state) && <ResetRouteButton onReset={onReset} onKeep={onKeep} label="New route" className="mp-sum__reset" />}
+        {!expanded && explorationPlaying && (
+          <button type="button" className="mp-btn mp-btn--small" onClick={onPauseExploration}>
+            Pause preview
+          </button>
+        )}
         <button
           type="button"
           className="mp-btn mp-btn--icon"
@@ -69,6 +91,7 @@ export default function RouteSummary({ state, metrics, besidePanel, expanded, on
 
       {expanded && (
         <div className="mp-sum__body">
+          {exploration}
           <div className="mp-sum__grid">
             <Place symbol="S" role="Start" location={state.start} />
             <Place symbol="D" role="Destination" location={state.destination} />

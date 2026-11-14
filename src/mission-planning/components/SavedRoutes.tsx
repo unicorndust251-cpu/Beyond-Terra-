@@ -20,6 +20,7 @@ export interface SavedRoutesApi {
   notice: string | null;
   saveNew: (name: string) => void;
   saveChanges: () => void;
+  saveBeforeReset: () => void;
   open: (route: SavedRoute) => void;
   remove: (id: string) => void;
   clear: () => void;
@@ -72,6 +73,19 @@ export function useSavedRoutes(state: MissionState, dispatch: Dispatch<MissionAc
       const r = store.update(current.id, current.name, state);
       // The saved route was deleted elsewhere: keep the work by saving it anew
       saved(r ?? store.create(current.name, state), 'Saved changes to');
+    },
+    saveBeforeReset: () => {
+      if (!hasContent(state)) return;
+      if (current) {
+        if (!dirty) {
+          setNotice(`“${current.name}” is already saved`);
+          return;
+        }
+        const r = store.update(current.id, current.name, state);
+        saved(r ?? store.create(current.name, state), 'Saved changes to');
+        return;
+      }
+      saved(store.create(defaultName(state), state), 'Saved');
     },
     open: useCallback(
       (route: SavedRoute) => {
