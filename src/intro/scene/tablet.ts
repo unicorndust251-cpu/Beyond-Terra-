@@ -42,8 +42,12 @@ export class Tablet {
   private readonly screenMat: THREE.MeshBasicMaterial;
   private readonly glassMat: THREE.MeshStandardMaterial;
 
-  constructor(mats: SuitMaterials, heroTexture: THREE.Texture) {
+  private readonly withGloves: boolean;
+
+  /** `gloves: false` when a character model holds the tablet with its own hands. */
+  constructor(mats: SuitMaterials, heroTexture: THREE.Texture, options: { gloves?: boolean } = {}) {
     this.mats = mats;
+    this.withGloves = options.gloves ?? true;
     this.chassis = new THREE.MeshStandardMaterial({ color: '#2C2A28', metalness: 0.65, roughness: 0.52 });
     this.bumper = new THREE.MeshStandardMaterial({ color: '#1D1B1A', metalness: 0.05, roughness: 0.78 });
     this.ledMat = new THREE.MeshStandardMaterial({
@@ -178,6 +182,14 @@ export class Tablet {
       const g = new THREE.Group();
       const edge = side * (outerW / 2);
       const gripY = side === 1 ? -H * 0.18 : -H * 0.08;
+
+      // A character model brings its own hands: only the grip points are needed
+      if (!this.withGloves) {
+        // Wrists out beyond the edge and behind the device, so the fingers wrap its
+        // back and sides rather than crossing the screen
+        (side === 1 ? this.rightWrist : this.leftWrist).position.set(edge + side * 0.075, gripY - 0.02, -DEPTH / 2 - 0.045);
+        continue;
+      }
 
       // Palm wraps the side edge from behind
       const palm = new THREE.Mesh(new RoundedBoxGeometry(0.048, 0.1, 0.056, 3, 0.018), m.glove);

@@ -19,7 +19,7 @@ npm run typecheck
 npm run build      # production build in dist/ (static: deploys to Vercel or Netlify as is)
 ```
 
-The opening plays once per browser session. Add `?intro` to the URL to see it again, or `?nointro` to skip it.
+The opening plays every time the site is opened or reloaded. Add `?nointro` to the URL to leave it out.
 
 ## The opening, beat by beat
 
@@ -51,19 +51,31 @@ The tablet's screen always has the viewport's aspect ratio, and the raised table
 
 ## The astronaut
 
-The brief asks for a realistic, properly licensed astronaut model. This repository does not include one: the earlier suit built from 3D primitives looked visibly artificial on camera, and no model URL is assumed or invented.
+The opening has two versions, chosen automatically:
 
-The fallback is the astronaut's own point of view. The visitor sees the plain, the tablet and the mount arm; the suit itself is never on camera. The procedural suit (`src/intro/scene/astronaut.ts`) is still in the scene, but it renders into the shadow map only, so the astronaut appears as a soft, long shadow holding the tablet. No primitive geometry is shown up close.
+**1. Third person, with an astronaut model (the intended opening).** Put a rigged astronaut at `public/models/astronaut.glb`, and the intro plays:
+- a three-quarter shot of the astronaut looking out over the plain, with a gentle head turn and breathing;
+- the astronaut raising the tablet in both hands while looking down at it, as Beyond Terra wakes on the screen;
+- the camera moving round over the right shoulder onto the screen until it fills the viewport, where the website takes over exactly as before.
 
-**To add a third-person shot later**, you need a rigged, game-ready astronaut model (glTF/GLB, under about 50k triangles, PBR textures at 2k or less) with a licence that allows web redistribution, plus a hand or wrist bone to attach the tablet to. With that, `SurfaceScene` can load it with `GLTFLoader` and add an over-the-shoulder camera path before the current POV move.
+This lives in `src/intro/scene/astronautRig.ts`, `thirdPersonScene.ts` and `createThirdPersonTimeline` in `timeline.ts`.
 
-## Globe resolution
+**2. The astronaut's own view (fallback).** With no model, or one that cannot be used, the intro is the earlier point-of-view shot. The suit appears only as a shadow, so no placeholder figure is ever shown.
 
-- The 4k colour map loads first, so the planet appears quickly.
-- On large or high-density screens (hero disc of 800+ device pixels, a GPU that supports 8192-pixel textures, and a capable device), a 6k map (2.9 MB) loads in the background. Every view of the planet then switches to it together.
-- The colour and relief maps are sampled with a negative LOD bias (`MAP_LOD_BIAS` in `marsHero.ts`), so the GPU keeps the full-resolution mip level at hero size instead of blending in a blurrier half-size one.
-- Rendering goes up to 2x device pixels on every device.
-- The 8k map is not shipped: as a texture it needs about 180 MB of GPU memory per WebGL context.
+### What the model needs
+
+- **Format:** glTF binary (`.glb`). Draco and Meshopt compression are supported. Aim for a few MB and under about 100k triangles, with PBR textures at 2k.
+- **Rig:** a humanoid skeleton. Bones are found by name, so Mixamo, Unreal-style and most marketplace rigs work as they are. The model needs a head and, on both sides, upper arm, forearm and hand bones; neck and chest bones are optional. If a bone is missing, the intro uses the fallback; in development the console says which bone.
+- **Orientation and scale:** any. The model is turned to face the camera using its own shoulders, and scaled to 1.88 m.
+- **Licence:** web distribution must be allowed. Check the licence before adding a model.
+
+### How the model is posed
+
+- The arms are posed with two-bone IK onto the tablet's grips, so they follow it as it rises.
+- The head and neck turn and tilt, and the chest breathes.
+- Fingers are left as the model provides them. A model whose rest pose has gloved hands relaxed or gripping looks right; one with flat, open hands will hold the tablet with open hands.
+- The visor reflects the actual landscape (an environment map captured from the astronaut's head).
+- In the last moments of the camera move, when the screen already fills the view, the figure is hidden, so no part of a hand can ever cross the screen at the handoff.
 
 ## Fallbacks and accessibility
 
@@ -87,7 +99,7 @@ src/
   intro/
     AstronautIntro.tsx        The cinematic opening (overlay component)
     timeline.ts               GSAP timeline and timing
-    introGate.ts              Once per session, ?intro / ?nointro, reduced motion
+    introGate.ts              When the intro plays: ?nointro, reduced motion, WebGL
     scene/
       surfaceScene.ts         Scene assembly, point-of-view camera, tablet mount, poses
       environment.ts          Terrain, sky, rocks, dust, lighting

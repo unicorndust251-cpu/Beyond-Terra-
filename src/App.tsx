@@ -26,6 +26,8 @@ type Stage = 'globe' | 'zooming' | 'map';
 const GLOBE_HOLD_MS = 2500;
 /** Length of the push into the planet (matches .bt-home.is-zooming in HomePage.css). */
 const GLOBE_ZOOM_MS = 1700;
+/** Longest the intro may cover the site before the website is shown regardless (ms). */
+const INTRO_WATCHDOG_MS = 25000;
 
 export default function App() {
   const [reducedMotion] = useState(prefersReducedMotion);
@@ -45,6 +47,14 @@ export default function App() {
     setIntroActive(false);
   }, []);
   const onGlobeRevealed = useCallback(() => setGlobeReady(true), []);
+
+  // Watchdog: whatever happens inside the intro, the website appears. The intro normally
+  // ends in about 10.5 s (plus loading, which it gives up on after 12 s).
+  useEffect(() => {
+    if (!introActive) return undefined;
+    const timer = window.setTimeout(onComplete, INTRO_WATCHDOG_MS);
+    return () => window.clearTimeout(timer);
+  }, [introActive, onComplete]);
 
   // Hold on the finished globe, then zoom into the map
   useEffect(() => {

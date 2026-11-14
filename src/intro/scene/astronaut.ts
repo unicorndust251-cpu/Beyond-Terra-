@@ -1,11 +1,12 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
+import { createFabricNormal } from './textures';
 
 /**
- * The silhouette of a future Mars surface suit, built from primitives: hard upper torso,
- * rear-entry life-support pack, bearing rings, helmet. Primitives are not convincing on
- * camera, so the intro uses this suit only to cast the astronaut's shadow. It is a
- * concept, not a model of flight hardware.
+ * A future Mars surface suit, built in code (no external model): hard upper torso,
+ * rear-entry life-support pack, bearing rings at shoulders, waist, elbows and wrists, and a
+ * helmet with a gold reflective visor. The intro shows it when no rigged astronaut model
+ * is supplied. It is a concept, not a model of flight hardware.
  *
  * Coordinates: metres, astronaut standing at the origin and facing −Z (right hand at +X).
  */
@@ -19,6 +20,87 @@ export interface SuitMaterials {
   accent: THREE.Material;
   panel: THREE.Material;
   glove: THREE.Material;
+}
+
+/** Dust settles on the lower suit: tint by world height. */
+function addDust(material: THREE.MeshStandardMaterial, strength: number) {
+  material.onBeforeCompile = (shader) => {
+    shader.uniforms.uDust = { value: new THREE.Color('#A87A5C') };
+    shader.uniforms.uDustStrength = { value: strength };
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vBtWorld;')
+      .replace(
+        '#include <begin_vertex>',
+        `#include <begin_vertex>
+        {
+          vec4 btw = modelMatrix * vec4(transformed, 1.0);
+          #ifdef USE_INSTANCING
+            btw = modelMatrix * instanceMatrix * vec4(transformed, 1.0);
+          #endif
+          vBtWorld = btw.xyz;
+        }`,
+      );
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        '#include <common>',
+        '#include <common>\nvarying vec3 vBtWorld;\nuniform vec3 uDust;\nuniform float uDustStrength;',
+      )
+      .replace(
+        '#include <map_fragment>',
+        `#include <map_fragment>
+        {
+          float low = 1.0 - smoothstep(0.08, 0.95, vBtWorld.y);
+          float speck = fract(sin(dot(floor(vBtWorld.xz * 180.0 + vBtWorld.y * 97.0), vec2(12.9898, 78.233))) * 43758.5453);
+          float dust = clamp(low * 0.85 + 0.1 + speck * 0.05, 0.0, 1.0) * uDustStrength;
+          diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * uDust * 1.25, dust);
+        }`,
+      );
+  };
+  material.customProgramCacheKey = () => `bt-dust-${strength}`;
+}
+
+export function createSuitMaterials(): SuitMaterials {
+  const weave = createFabricNormal(256);
+  weave.repeat.set(6, 6);
+  const fabric = new THREE.MeshStandardMaterial({
+    color: '#E3DDD1',
+    roughness: 0.86,
+    metalness: 0,
+    normalMap: weave,
+    normalScale: new THREE.Vector2(0.4, 0.4),
+  });
+  addDust(fabric, 0.65);
+  const glove = new THREE.MeshStandardMaterial({
+    color: '#D5CDBF',
+    roughness: 0.8,
+    normalMap: weave,
+    normalScale: new THREE.Vector2(0.35, 0.35),
+  });
+  addDust(glove, 0.25);
+  const shell = new THREE.MeshPhysicalMaterial({
+    color: '#ECE7DF',
+    roughness: 0.42,
+    metalness: 0,
+    clearcoat: 0.35,
+    clearcoatRoughness: 0.35,
+  });
+  return {
+    fabric,
+    glove,
+    shell,
+    metal: new THREE.MeshStandardMaterial({ color: '#A9A49B', metalness: 0.92, roughness: 0.34 }),
+    rubber: new THREE.MeshStandardMaterial({ color: '#2B2724', roughness: 0.82, metalness: 0.05 }),
+    visor: new THREE.MeshPhysicalMaterial({
+      color: '#A98451',
+      metalness: 1,
+      roughness: 0.06,
+      clearcoat: 1,
+      clearcoatRoughness: 0.04,
+      envMapIntensity: 1.25,
+    }),
+    accent: new THREE.MeshStandardMaterial({ color: '#8F5543', roughness: 0.8 }),
+    panel: new THREE.MeshStandardMaterial({ color: '#C9C1B5', roughness: 0.62, metalness: 0.05 }),
+  };
 }
 
 const UP = new THREE.Vector3(0, 1, 0);

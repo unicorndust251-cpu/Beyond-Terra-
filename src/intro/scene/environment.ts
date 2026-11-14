@@ -47,10 +47,11 @@ export function terrainHeight(x: number, z: number): number {
   return h;
 }
 
-export function createSky(): THREE.Mesh {
+/** `sunDir` defaults to the astronaut's-eye shot's sun; the third-person shot passes its own. */
+export function createSky(sunDir: THREE.Vector3 = SURFACE.sunDir): THREE.Mesh {
   const material = new THREE.ShaderMaterial({
     uniforms: {
-      uSunDir: { value: SURFACE.sunDir.clone() },
+      uSunDir: { value: sunDir.clone() },
       uZenith: { value: new THREE.Color(SURFACE.skyZenith) },
       uHorizon: { value: new THREE.Color(SURFACE.skyHorizon) },
       uGround: { value: new THREE.Color(SURFACE.ground) },
@@ -270,7 +271,7 @@ export function createRocks(quality: 'high' | 'low'): THREE.Group {
 }
 
 /** Fine dust drifting through the light. Very sparse and slow. */
-export function createDust(quality: 'high' | 'low') {
+export function createDust(quality: 'high' | 'low', sunDir: THREE.Vector3 = SURFACE.sunDir) {
   const count = quality === 'high' ? 420 : 200;
   const rand = mulberry32(99);
   const positions = new Float32Array(count * 3);
@@ -288,7 +289,7 @@ export function createDust(quality: 'high' | 'low') {
       uFade: { value: 1 },
       uPixelRatio: { value: 1 },
       uColor: { value: new THREE.Color('#E8C2AD') },
-      uSunDir: { value: SURFACE.sunDir.clone() },
+      uSunDir: { value: sunDir.clone() },
     },
     vertexShader: /* glsl */ `
       attribute float aSeed;
