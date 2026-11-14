@@ -60,7 +60,7 @@ export function MissionConfigSection({ state, dispatch }: Props) {
           onChange={(e) => dispatch({ type: 'set-available-hours', hours: Math.max(0, Number(e.target.value) || 0) })}
         />
       </label>
-      <p className="mp-note">Your own time budget for the Marswalk; the planner compares the plan against it.</p>
+      <p className="mp-note">Your own time budget for the route; the planner compares the plan against it.</p>
     </div>
   );
 }

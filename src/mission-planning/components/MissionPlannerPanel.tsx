@@ -73,7 +73,7 @@ function makeRoomForPanel(b: CoordinateBounds, panel: DOMRect | undefined, summa
 
 const isPhone = () => window.innerWidth <= 640;
 
-/** The Marswalk route planner and mission loadout, beside the Mars Trek map. */
+/** The route planner and mission loadout, beside the Mars Trek map. */
 export default function MissionPlannerPanel() {
   const [state, dispatch] = useReducer(missionReducer, undefined, initialMissionState);
   // Default to an open planner so the route editor is immediately usable; users can collapse it manually.
@@ -103,6 +103,13 @@ export default function MissionPlannerPanel() {
   const metrics = useMemo(() => routeMetrics(state), [state]);
   const duration = useMemo(() => durationSummary(state, metrics), [state, metrics]);
   const mass = useMemo(() => massBreakdown(state), [state]);
+  const hasRoute = metrics.segments.length > 0;
+
+  // The summary appears with the route: open on desktop so the results are in view at once;
+  // on phones it opens when the route is calculated, taking turns with the planner
+  useEffect(() => {
+    setSummaryOpen(hasRoute && !isPhone());
+  }, [hasRoute]);
 
   useMapSync(state);
 
@@ -126,6 +133,15 @@ export default function MissionPlannerPanel() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [picking]);
+
+  /** Clears the stops and their tasks (mission setup and loadout are kept) and opens the planner on Start. */
+  const resetRoute = () => {
+    dispatch({ type: 'reset-route' });
+    setPicking(null);
+    showPanel(true);
+    setSection('route');
+    requestAnimationFrame(() => document.querySelector<HTMLInputElement>('.mp-loc--start .mp-loc__inputs input')?.focus());
+  };
 
   const pick = (stop: StopKey) => {
     if (picking === stop) {
@@ -189,7 +205,7 @@ export default function MissionPlannerPanel() {
       title: 'Route',
       summary: metrics.segments.length ? `${formatKm(metrics.totalKm)} · ${formatDuration(metrics.travelHours)}` : 'Set start and destination',
       body: (
-        <RouteSection state={state} dispatch={dispatch} picking={picking} onPick={pick} onCalculate={calculate} />
+        <RouteSection state={state} dispatch={dispatch} picking={picking} onPick={pick} onCalculate={calculate} onReset={resetRoute} />
       ),
     },
     {
@@ -218,7 +234,7 @@ export default function MissionPlannerPanel() {
     },
     {
       id: 'review',
-      title: 'Review Marswalk',
+      title: 'Review route',
       summary: metrics.segments.length ? `${formatDuration(duration.totalHours)} estimated` : 'Plan incomplete',
       body: <ReviewSection state={state} metrics={metrics} duration={duration} />,
     },
@@ -231,11 +247,10 @@ export default function MissionPlannerPanel() {
           Click the map to set <strong>{pickingLabel}</strong> · <kbd>Esc</kbd> to cancel
         </p>
       )}
-      <aside ref={panelRef} className={`mp-panel${open ? ' is-open' : ''}`} aria-label="Marswalk mission planner">
+      <aside ref={panelRef} className={`mp-panel${open ? ' is-open' : ''}`} aria-label="Route planner">
         <header className="mp-panel__header">
           <div>
-            <p className="mp-panel__eyebrow">Marswalk planner</p>
-            <h2 className="mp-panel__title">Mission planning</h2>
+            <h2 className="mp-panel__title">Route Planner</h2>
           </div>
           <button
             type="button"
@@ -268,13 +283,16 @@ export default function MissionPlannerPanel() {
           </div>
         )}
       </aside>
-      <RouteSummary
-        state={state}
-        metrics={metrics}
-        besidePanel={open}
-        expanded={summaryOpen}
-        onToggle={() => showSummary(!summaryOpen)}
-      />
+      {hasRoute && (
+        <RouteSummary
+          state={state}
+          metrics={metrics}
+          besidePanel={open}
+          expanded={summaryOpen}
+          onToggle={() => showSummary(!summaryOpen)}
+          onReset={resetRoute}
+        />
+      )}
     </>
   );
 }

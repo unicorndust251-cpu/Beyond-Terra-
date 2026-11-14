@@ -9,6 +9,7 @@ import {
   type TravelMode,
 } from '../model';
 import LocationField from './LocationField';
+import ResetRouteButton from './ResetRouteButton';
 
 interface Props {
   state: MissionState;
@@ -16,12 +17,18 @@ interface Props {
   picking: StopKey | null;
   onPick: (stop: StopKey) => void;
   onCalculate: () => void;
+  onReset: () => void;
+}
+
+/** True once any stop has been set, i.e. there is a route to clear. */
+export function hasAnyStop(state: MissionState): boolean {
+  return !!(state.start || state.destination || state.checkpoints.length);
 }
 
 export const MODE_LABELS: Record<TravelMode, string> = { walking: 'Walking', rover: 'Rover-assisted' };
 
 /** Route inputs only: the results live in the route summary below the map. */
-export default function RouteSection({ state, dispatch, picking, onPick, onCalculate }: Props) {
+export default function RouteSection({ state, dispatch, picking, onPick, onCalculate, onReset }: Props) {
   const status = routeStatus(state);
   const mode = state.travelMode;
 
@@ -101,9 +108,7 @@ export default function RouteSection({ state, dispatch, picking, onPick, onCalcu
         <button type="button" className="mp-btn mp-btn--primary" onClick={onCalculate} disabled={status === 'incomplete'}>
           {status === 'changed' ? 'Recalculate route' : 'Calculate route'}
         </button>
-        <button type="button" className="mp-btn mp-btn--ghost" onClick={() => dispatch({ type: 'reset-route' })}>
-          Reset route
-        </button>
+        <ResetRouteButton onReset={onReset} disabled={!hasAnyStop(state)} />
       </div>
       <p className={`mp-status mp-status--${status}`} role="status">
         {ROUTE_STATUS_LABELS[status]}. Results appear in the route summary below the map.

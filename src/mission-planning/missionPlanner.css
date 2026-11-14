@@ -1,4 +1,4 @@
-/* Marswalk planner: a compact panel beside the Mars Trek map, in the Beyond Terra palette.
+/* Route planner: a compact panel beside the Mars Trek map, in the Beyond Terra palette.
    Interface colours only; the NASA imagery is never tinted. */
 
 .mp-panel {
@@ -11,8 +11,11 @@
   flex-direction: column;
   border-radius: 14px;
   background: rgba(23, 20, 19, 0.9);
-  border: 1px solid rgba(141, 117, 110, 0.32);
-  box-shadow: 0 12px 40px rgba(10, 8, 7, 0.45);
+  border: 1px solid rgba(214, 163, 139, 0.78);
+  box-shadow:
+    0 0 0 1px rgba(184, 120, 96, 0.58),
+    0 0 18px rgba(184, 120, 96, 0.24),
+    0 12px 40px rgba(10, 8, 7, 0.45);
   -webkit-backdrop-filter: blur(12px) saturate(120%);
   backdrop-filter: blur(12px) saturate(120%);
   color: var(--ivory);
@@ -968,4 +971,34 @@ p.mp-status {
   .mp-sum__figures {
     grid-template-columns: 1fr 1fr;
   }
+}
+
+/* ----- Reset route confirmation ----------------------------------------------- */
+
+.mp-confirm {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.mp-actions .mp-confirm {
+  flex: 1;
+}
+
+.mp-confirm__question {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--dust-rose);
+}
+
+.mp-sum__reset.mp-btn {
+  min-height: 28px;
+  padding: 0 12px;
+  font-size: 11px;
+}
+
+.mp-sum__header .mp-confirm {
+  flex: none;
 }

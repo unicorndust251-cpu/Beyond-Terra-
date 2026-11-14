@@ -1,6 +1,7 @@
 import { formatDuration, formatKm, formatLatitude, formatLongitude, locationName, MARS_MEAN_RADIUS_KM } from '../geo';
 import { ROUTE_STATUS_LABELS, routeStatus, type MissionState, type PlannedLocation, type RouteMetrics } from '../model';
-import { MODE_LABELS } from './RouteSection';
+import ResetRouteButton from './ResetRouteButton';
+import { hasAnyStop, MODE_LABELS } from './RouteSection';
 
 interface Props {
   state: MissionState;
@@ -9,6 +10,7 @@ interface Props {
   besidePanel: boolean;
   expanded: boolean;
   onToggle: () => void;
+  onReset: () => void;
 }
 
 function Place({ symbol, role, location }: { symbol: string; role: string; location: PlannedLocation | null }) {
@@ -35,7 +37,7 @@ function Place({ symbol, role, location }: { symbol: string; role: string; locat
 }
 
 /** The route results, docked along the bottom of the map and always in view. */
-export default function RouteSummary({ state, metrics, besidePanel, expanded, onToggle }: Props) {
+export default function RouteSummary({ state, metrics, besidePanel, expanded, onToggle, onReset }: Props) {
   const status = routeStatus(state);
   const hasRoute = metrics.segments.length > 0;
   const scienceStops = Object.entries(state.tasks).filter(
@@ -53,6 +55,7 @@ export default function RouteSummary({ state, metrics, besidePanel, expanded, on
         <p className="mp-sum__headline mp-data" aria-live="polite">
           {hasRoute ? `${formatKm(metrics.totalKm)} · ${formatDuration(metrics.travelHours)}` : '—'}
         </p>
+        {hasAnyStop(state) && <ResetRouteButton onReset={onReset} label="New route" className="mp-sum__reset" />}
         <button
           type="button"
           className="mp-btn mp-btn--icon"
