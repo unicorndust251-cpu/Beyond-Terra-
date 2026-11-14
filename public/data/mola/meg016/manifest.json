@@ -1,0 +1,21 @@
+{
+  "product": "MEGT90N000EB.IMG",
+  "dataSetId": "MGS-M-MOLA-5-MEGDR-L3-V1.0",
+  "productVersion": "2.0",
+  "pixelsPerDegree": 16,
+  "mapScaleKm": 3.705,
+  "radiusM": 3396000,
+  "unit": "m",
+  "verticalDatum": "MOLA areoid (GMM3 / mgm1025, degree and order 50); topography = planetary radius − areoid radius",
+  "latitude": "planetocentric",
+  "longitude": "east-positive, −180…180 (re-ordered from the product’s 0…360)",
+  "tileDegrees": 30,
+  "tilePixels": 480,
+  "halo": 1,
+  "rows": 6,
+  "cols": 12,
+  "encoding": "int16 little-endian, row delta, gzip",
+  "min": -8177,
+  "max": 21171,
+  "source": "https://pds-geosciences.wustl.edu/mgs/mgs-m-mola-5-megdr-l3-v1/mgsl_300x/meg016/"
+}

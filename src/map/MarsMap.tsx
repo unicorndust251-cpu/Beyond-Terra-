@@ -14,6 +14,7 @@ import 'leaflet/dist/leaflet.css';
 import './map.css';
 import {
   BASE_LAYER_KEY,
+  IMAGERY_PANE,
   JEZERO_CENTER,
   MAP_LIMITS,
   MarsCRS,
@@ -108,6 +109,7 @@ const MarsMap = forwardRef<MarsMapHandle, MarsMapProps>(function MarsMap(
       keyboardPanDelta: 120,
     });
 
+    map.createPane(IMAGERY_PANE).style.zIndex = '200';
     const layers = TREK_LAYERS.map((def) => createTrekLayer(def).addTo(map));
     const base = layers[TREK_LAYERS.findIndex((d) => d.key === BASE_LAYER_KEY)];
 

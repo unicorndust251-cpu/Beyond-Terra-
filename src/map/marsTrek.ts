@@ -88,6 +88,9 @@ export const TREK_LAYERS: TrekLayerDef[] = [
 
 export const BASE_LAYER_KEY = 'viking';
 
+/** All Trek imagery draws in this pane, so overlays can sit above it and the imagery can be shown or hidden as one. */
+export const IMAGERY_PANE = 'btImagery';
+
 export function trekTileTemplate(def: TrekLayerDef): string {
   return `${TREK_TILE_ROOT}/${def.product}/1.0.0/default/default028mm/{z}/{y}/{x}.${def.ext}`;
 }
@@ -110,6 +113,7 @@ export function createTrekLayer(def: TrekLayerDef): L.TileLayer {
     updateWhenZooming: true,
     updateInterval: 120,
     zIndex: def.zIndex,
+    pane: IMAGERY_PANE,
     opacity: def.fadeIn ? 0 : 1,
     className: `bt-trek-layer bt-trek-layer--${def.key}`,
     attribution: '', // the custom attribution label handles credits
