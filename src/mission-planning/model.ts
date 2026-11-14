@@ -1,16 +1,32 @@
 import type { MarsCoordinate } from '../shared';
-import { EQUIPMENT, equipmentById, OBJECTIVES, TASKS, type MassGroup, type ObjectiveId, type TaskId } from './data/science';
+import { catalogItem } from './data/equipment';
+import { OBJECTIVES, TASK_IDS, type ObjectiveId, type TaskId } from './data/science';
 import { haversineKm } from './geo';
+import {
+  availableCarriers,
+  clampAllocation,
+  itemFromCatalog,
+  massSummary,
+  newId,
+  resetToDefaults,
+  taskTiming,
+  type Carrier,
+  type LoadoutItem,
+  type MassSummary,
+  type NumKey,
+  type TaskTiming,
+  type Valued,
+} from './loadout';
 
 /**
  * Mission-planning state and calculations. Everything here is a planning estimate:
- * straight-line distances, assumed speeds and assumed task times. Nothing assesses
- * whether a route is traversable or a mission is safe.
+ * straight-line distances, assumed speeds and demo or user-supplied equipment values.
+ * Nothing assesses whether a route is traversable or a mission is safe.
  */
 
 export type TravelMode = 'walking' | 'rover';
 export type SuitProfile = 'standard' | 'enhanced';
-/** A stop on the route: 'start', 'destination' or a checkpoint id. */
+/** A stop on the route: 'start', 'destination' or a waypoint id. */
 export type StopKey = string;
 
 export interface PlannedLocation {
@@ -36,11 +52,11 @@ export interface MissionState {
   suit: SuitProfile;
   objectives: ObjectiveId[];
   availableHours: number;
-  /** Selected equipment and its (editable, assumed) mass. */
-  equipment: Record<string, { massKg: number }>;
+  /** Equipment instances with their values, carriers and task assignments. */
+  loadout: LoadoutItem[];
   /** No verified suit mass exists in this project: only a value the user states as an assumption. */
   suitMassAssumptionKg: number | null;
-  /** Tasks assigned to each stop. */
+  /** Tasks scheduled at each stop. */
   tasks: Record<StopKey, TaskId[]>;
 }
 
@@ -72,11 +88,15 @@ export function initialMissionState(): MissionState {
     suit: 'standard',
     objectives: [],
     availableHours: 6,
-    equipment: {},
+    loadout: [],
     suitMassAssumptionKg: null,
     tasks: {},
   };
 }
+
+export type ItemPatch = Partial<
+  Pick<LoadoutItem, 'name' | 'category' | 'purpose' | 'tasks' | 'currency' | 'timingMode' | 'attended' | 'includesBatteries' | 'inSuit' | 'notes'>
+>;
 
 export type MissionAction =
   | { type: 'set-start'; location: PlannedLocation | null }
@@ -93,13 +113,38 @@ export type MissionAction =
   | { type: 'set-suit'; suit: SuitProfile }
   | { type: 'toggle-objective'; id: ObjectiveId }
   | { type: 'set-available-hours'; hours: number }
-  | { type: 'toggle-equipment'; id: string }
-  | { type: 'set-equipment-mass'; id: string; massKg: number }
   | { type: 'add-suggested-equipment'; objective: ObjectiveId }
   | { type: 'set-suit-mass'; massKg: number | null }
-  | { type: 'toggle-task'; stop: StopKey; task: TaskId };
+  | { type: 'toggle-task'; stop: StopKey; task: TaskId }
+  // Loadout
+  | { type: 'add-catalog-item'; catalogId: string }
+  | { type: 'add-custom-item'; item: LoadoutItem }
+  | { type: 'remove-item'; uid: string }
+  | { type: 'reset-item'; uid: string }
+  | { type: 'set-item-field'; uid: string; key: NumKey; value: Valued }
+  | { type: 'patch-item'; uid: string; patch: ItemPatch }
+  | { type: 'set-allocation'; uid: string; carrier: Carrier; units: number }
+  | { type: 'add-assignment'; uid: string; stop: StopKey; task: TaskId; uses: number }
+  | { type: 'set-assignment-uses'; uid: string; assignmentId: string; uses: number }
+  | { type: 'remove-assignment'; uid: string; assignmentId: string }
+  // Saved routes
+  | { type: 'load'; state: MissionState }
+  | { type: 'new-mission' };
 
-let nextCheckpoint = 1;
+const mapItem = (state: MissionState, uid: string, fn: (item: LoadoutItem) => LoadoutItem): MissionState => ({
+  ...state,
+  loadout: state.loadout.map((i) => (i.uid === uid ? fn(i) : i)),
+});
+
+/** Drops tasks and equipment assignments at stops that no longer exist. */
+function pruneStops(state: MissionState): MissionState {
+  const keys = new Set(routeStops(state).map((s) => s.key));
+  const tasks = Object.fromEntries(Object.entries(state.tasks).filter(([k]) => keys.has(k)));
+  const loadout = state.loadout.map((i) =>
+    i.assignments.every((a) => keys.has(a.stop)) ? i : { ...i, assignments: i.assignments.filter((a) => keys.has(a.stop)) },
+  );
+  return { ...state, tasks, loadout };
+}
 
 export function missionReducer(state: MissionState, action: MissionAction): MissionState {
   switch (action.type) {
@@ -108,17 +153,14 @@ export function missionReducer(state: MissionState, action: MissionAction): Miss
     case 'set-destination':
       return { ...state, destination: action.location };
     case 'add-checkpoint':
-      return { ...state, checkpoints: [...state.checkpoints, { id: `cp-${nextCheckpoint++}`, location: null }] };
+      return { ...state, checkpoints: [...state.checkpoints, { id: newId('cp'), location: null }] };
     case 'set-checkpoint':
       return {
         ...state,
         checkpoints: state.checkpoints.map((c) => (c.id === action.id ? { ...c, location: action.location } : c)),
       };
-    case 'remove-checkpoint': {
-      const tasks = { ...state.tasks };
-      delete tasks[action.id];
-      return { ...state, checkpoints: state.checkpoints.filter((c) => c.id !== action.id), tasks };
-    }
+    case 'remove-checkpoint':
+      return pruneStops({ ...state, checkpoints: state.checkpoints.filter((c) => c.id !== action.id) });
     case 'move-checkpoint': {
       const i = state.checkpoints.findIndex((c) => c.id === action.id);
       const j = i + action.by;
@@ -130,7 +172,15 @@ export function missionReducer(state: MissionState, action: MissionAction): Miss
     case 'calculate':
       return routeIsComplete(state) ? { ...state, calculatedSignature: routeSignature(state) } : state;
     case 'reset-route':
-      return { ...state, start: null, destination: null, checkpoints: [], calculatedSignature: null, tasks: {} };
+      return {
+        ...state,
+        start: null,
+        destination: null,
+        checkpoints: [],
+        calculatedSignature: null,
+        tasks: {},
+        loadout: state.loadout.map((i) => ({ ...i, assignments: [] })),
+      };
     case 'set-travel-mode':
       return { ...state, travelMode: action.mode };
     case 'set-speed':
@@ -148,32 +198,92 @@ export function missionReducer(state: MissionState, action: MissionAction): Miss
       };
     case 'set-available-hours':
       return { ...state, availableHours: action.hours };
-    case 'toggle-equipment': {
-      const equipment = { ...state.equipment };
-      if (equipment[action.id]) delete equipment[action.id];
-      else equipment[action.id] = { massKg: equipmentById(action.id)?.assumedMassKg ?? 0 };
-      return { ...state, equipment };
-    }
-    case 'set-equipment-mass':
-      return state.equipment[action.id]
-        ? { ...state, equipment: { ...state.equipment, [action.id]: { massKg: action.massKg } } }
-        : state;
     case 'add-suggested-equipment': {
       const objective = OBJECTIVES.find((o) => o.id === action.objective);
       if (!objective) return state;
-      const equipment = { ...state.equipment };
-      objective.suggestedEquipment.forEach((id) => {
-        if (!equipment[id]) equipment[id] = { massKg: equipmentById(id)?.assumedMassKg ?? 0 };
-      });
-      return { ...state, equipment };
+      const have = new Set(state.loadout.map((i) => i.catalogId));
+      const added = objective.suggestedEquipment
+        .filter((id) => !have.has(id))
+        .map((id) => catalogItem(id))
+        .filter((c): c is NonNullable<typeof c> => !!c)
+        .map(itemFromCatalog);
+      return { ...state, loadout: [...state.loadout, ...added] };
     }
     case 'set-suit-mass':
       return { ...state, suitMassAssumptionKg: action.massKg };
     case 'toggle-task': {
       const current = state.tasks[action.stop] ?? [];
-      const next = current.includes(action.task) ? current.filter((t) => t !== action.task) : [...current, action.task];
-      return { ...state, tasks: { ...state.tasks, [action.stop]: next } };
+      const removing = current.includes(action.task);
+      const next = removing ? current.filter((t) => t !== action.task) : [...current, action.task];
+      // Unscheduling a task also releases the equipment booked for it
+      const loadout = removing
+        ? state.loadout.map((i) => ({ ...i, assignments: i.assignments.filter((a) => !(a.stop === action.stop && a.task === action.task)) }))
+        : state.loadout;
+      return { ...state, tasks: { ...state.tasks, [action.stop]: next }, loadout };
     }
+
+    case 'add-catalog-item': {
+      const c = catalogItem(action.catalogId);
+      return c ? { ...state, loadout: [...state.loadout, itemFromCatalog(c)] } : state;
+    }
+    case 'add-custom-item':
+      return { ...state, loadout: [...state.loadout, action.item] };
+    case 'remove-item':
+      return { ...state, loadout: state.loadout.filter((i) => i.uid !== action.uid) };
+    case 'reset-item':
+      return mapItem(state, action.uid, resetToDefaults);
+    case 'set-item-field':
+      return mapItem(state, action.uid, (i) => {
+        const fields = { ...i.fields, [action.key]: action.value };
+        // A smaller quantity releases units from the carriers, last carrier first
+        const allocation = action.key === 'quantity' ? clampAllocation(i.allocation, action.value.value ?? 1) : i.allocation;
+        return { ...i, fields, allocation };
+      });
+    case 'patch-item':
+      return mapItem(state, action.uid, (i) => {
+        const next = { ...i, ...action.patch };
+        // Narrowing the item's tasks drops assignments to tasks it no longer supports
+        if (action.patch.tasks) next.assignments = i.assignments.filter((a) => action.patch.tasks!.includes(a.task));
+        return next;
+      });
+    case 'set-allocation':
+      return mapItem(state, action.uid, (i) => {
+        const others = Object.entries(i.allocation)
+          .filter(([c]) => c !== action.carrier)
+          .reduce((s, [, n]) => s + (n ?? 0), 0);
+        // Never more units than exist: the same unit cannot go to two carriers
+        const units = Math.max(0, Math.min(Math.floor(action.units), (i.fields.quantity.value ?? 1) - others));
+        const allocation = { ...i.allocation, [action.carrier]: units };
+        if (!units) delete allocation[action.carrier];
+        return { ...i, allocation };
+      });
+    case 'add-assignment': {
+      // An item is booked once per task at a stop; the task is scheduled if it was not
+      const target = state.loadout.find((i) => i.uid === action.uid);
+      if (!target || target.assignments.some((a) => a.stop === action.stop && a.task === action.task)) return state;
+      const uses = Math.max(1, Math.floor(action.uses));
+      const scheduled = state.tasks[action.stop] ?? [];
+      const tasks = scheduled.includes(action.task) ? state.tasks : { ...state.tasks, [action.stop]: [...scheduled, action.task] };
+      return {
+        ...mapItem(state, action.uid, (i) => ({
+          ...i,
+          assignments: [...i.assignments, { id: newId('as'), stop: action.stop, task: action.task, uses }],
+        })),
+        tasks,
+      };
+    }
+    case 'set-assignment-uses':
+      return mapItem(state, action.uid, (i) => ({
+        ...i,
+        assignments: i.assignments.map((a) => (a.id === action.assignmentId ? { ...a, uses: Math.max(1, Math.floor(action.uses)) } : a)),
+      }));
+    case 'remove-assignment':
+      return mapItem(state, action.uid, (i) => ({ ...i, assignments: i.assignments.filter((a) => a.id !== action.assignmentId) }));
+
+    case 'load':
+      return action.state;
+    case 'new-mission':
+      return initialMissionState();
   }
 }
 
@@ -188,7 +298,7 @@ export interface RouteStop {
 export function routeStops(state: MissionState): RouteStop[] {
   return [
     { key: 'start', label: 'Start', location: state.start },
-    ...state.checkpoints.map((c, i) => ({ key: c.id, label: `Checkpoint ${i + 1}`, location: c.location })),
+    ...state.checkpoints.map((c, i) => ({ key: c.id, label: `Waypoint ${i + 1}`, location: c.location })),
     { key: 'destination', label: 'Destination', location: state.destination },
   ];
 }
@@ -245,60 +355,65 @@ export function routeMetrics(state: MissionState): RouteMetrics {
 
 /* ----------------------------------------------------------- equipment */
 
-export interface MassBreakdown {
-  byGroup: Record<MassGroup, number>;
-  /** Scientific equipment + sample storage + supplies (the suit is separate). */
-  carriedKg: number;
-  /** Shared evenly between the crew: an assumption. */
-  perAstronautKg: number;
+export function missionCarriers(state: MissionState): Carrier[] {
+  return availableCarriers(state.crew, state.travelMode === 'rover');
+}
+
+export interface EquipmentSummary extends MassSummary {
+  carriers: Carrier[];
   suitKg: number | null;
 }
 
-export function massBreakdown(state: MissionState): MassBreakdown {
-  const byGroup: Record<MassGroup, number> = { science: 0, 'sample-storage': 0, supplies: 0 };
-  Object.entries(state.equipment).forEach(([id, { massKg }]) => {
-    const item = equipmentById(id);
-    if (item) byGroup[item.massGroup] += massKg;
-  });
-  const carriedKg = byGroup.science + byGroup['sample-storage'] + byGroup.supplies;
-  return { byGroup, carriedKg, perAstronautKg: carriedKg / state.crew, suitKg: state.suitMassAssumptionKg };
+export function equipmentSummary(state: MissionState): EquipmentSummary {
+  const carriers = missionCarriers(state);
+  return { ...massSummary(state.loadout, carriers), carriers, suitKg: state.suitMassAssumptionKg };
 }
 
-/** Equipment the selected objectives suggest but that is not selected. */
+/** Menu equipment the selected objectives suggest but that is not in the loadout. */
 export function missingSuggestedEquipment(state: MissionState): string[] {
   const wanted = new Set(OBJECTIVES.filter((o) => state.objectives.includes(o.id)).flatMap((o) => o.suggestedEquipment));
-  return [...wanted].filter((id) => !state.equipment[id]);
+  const have = new Set(state.loadout.map((i) => i.catalogId));
+  return [...wanted].filter((id) => !have.has(id));
 }
 
-/** Tasks the selected equipment makes possible. */
+/** Tasks the loadout's equipment makes possible. */
 export function availableTasks(state: MissionState): TaskId[] {
   const ids = new Set<TaskId>();
-  EQUIPMENT.filter((e) => state.equipment[e.id]).forEach((e) => e.tasks.forEach((t) => ids.add(t)));
-  return (Object.keys(TASKS) as TaskId[]).filter((t) => ids.has(t));
+  state.loadout.forEach((i) => i.tasks.forEach((t) => ids.add(t)));
+  return TASK_IDS.filter((t) => ids.has(t));
 }
 
 /* ------------------------------------------------------------ duration */
 
 export interface DurationSummary {
   travelHours: number;
+  /** Known task time. */
   taskHours: number;
   totalHours: number;
   availableHours: number;
   /** Positive: hours to spare; negative: hours over the available time. */
   marginHours: number;
-  /** Tasks assigned at stops whose equipment is no longer selected. */
+  /** Scheduled tasks no loadout item can perform. */
   tasksWithoutEquipment: { stop: StopKey; task: TaskId }[];
+  /** Every scheduled task with its time and where it comes from. */
+  timings: TaskTiming[];
+  /** Tasks whose time is unknown (an assigned item has an unknown value). */
+  unknownTasks: number;
 }
 
 export function durationSummary(state: MissionState, metrics: RouteMetrics): DurationSummary {
-  const stops = new Set(routeStops(state).map((s) => s.key));
+  const stops = routeStops(state).map((s) => s.key);
   const usable = new Set(availableTasks(state));
   let taskMinutes = 0;
+  let unknownTasks = 0;
+  const timings: TaskTiming[] = [];
   const tasksWithoutEquipment: { stop: StopKey; task: TaskId }[] = [];
-  Object.entries(state.tasks).forEach(([stop, tasks]) => {
-    if (!stops.has(stop)) return;
-    tasks.forEach((task) => {
-      taskMinutes += TASKS[task].assumedMinutes;
+  stops.forEach((stop) => {
+    (state.tasks[stop] ?? []).forEach((task) => {
+      const timing = taskTiming(state.loadout, stop, task);
+      timings.push(timing);
+      if (timing.minutes === null) unknownTasks++;
+      else taskMinutes += timing.minutes;
       if (!usable.has(task)) tasksWithoutEquipment.push({ stop, task });
     });
   });
@@ -311,5 +426,7 @@ export function durationSummary(state: MissionState, metrics: RouteMetrics): Dur
     availableHours: state.availableHours,
     marginHours: state.availableHours - totalHours,
     tasksWithoutEquipment,
+    timings,
+    unknownTasks,
   };
 }

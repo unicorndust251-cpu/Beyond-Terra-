@@ -2,6 +2,7 @@ import * as L from 'leaflet';
 import { createTrekLayer } from '../../map/marsTrek';
 import { fromMapLatLng, normalizeLongitudeEast, toMapLatLng } from '../coordinates';
 import type { CoordinateBounds, MarsCoordinate } from '../types';
+import './bridge.css';
 import type {
   LayerHandle,
   MapOverlayHandle,
@@ -14,6 +15,32 @@ import type {
 } from './MarsMapBridge';
 
 const DEFAULT_COLOR = '#D6A38B'; // copper glow
+
+/** A map pin with a short symbol in its head. Text is set as text, never as HTML. */
+function pinIcon(symbol: string, color: string): L.DivIcon {
+  const pin = document.createElement('div');
+  pin.className = 'bt-map-pin';
+  pin.style.setProperty('--pin', color);
+  const label = document.createElement('span');
+  label.textContent = symbol.slice(0, 2);
+  pin.appendChild(label);
+  return L.divIcon({ html: pin, className: 'bt-map-pin-host', iconSize: [28, 36], iconAnchor: [14, 36] });
+}
+
+/** The card a marker opens on click: a title and plain-text lines. */
+function detailsCard(details: { title: string; lines: string[] }): HTMLElement {
+  const card = document.createElement('div');
+  const title = document.createElement('p');
+  title.className = 'bt-map-card__title';
+  title.textContent = details.title;
+  card.appendChild(title);
+  details.lines.forEach((line) => {
+    const p = document.createElement('p');
+    p.textContent = line;
+    card.appendChild(p);
+  });
+  return card;
+}
 
 /** The bridge over the Leaflet map in src/map, plus `destroy()` for when the map goes away. */
 export interface LeafletMarsMapBridge extends MarsMapBridge {
@@ -76,6 +103,8 @@ export function createLeafletBridge(map: L.Map, options: { reducedMotion: () => 
     fitBounds(bounds: CoordinateBounds) {
       const east = bounds.east < bounds.west ? bounds.east + 360 : bounds.east;
       const sw = toMapLatLng({ latitude: bounds.south, longitudeEast: bounds.west }, map.getCenter().lng);
+      // A camera flight still under way would otherwise carry on and override the framing
+      map.stop();
       map.fitBounds(L.latLngBounds(sw, [bounds.north, sw[1] + (east - bounds.west)]), {
         animate: !options.reducedMotion(),
       });
@@ -83,16 +112,36 @@ export function createLeafletBridge(map: L.Map, options: { reducedMotion: () => 
 
     addMarker(id, coordinate, opts: MarkerOptions = {}): MapOverlayHandle {
       const color = opts.color ?? DEFAULT_COLOR;
-      const marker = L.circleMarker(toMapLatLng(coordinate, map.getCenter().lng), {
-        radius: 7,
-        color: '#171413',
-        weight: 2,
-        fillColor: color,
-        fillOpacity: 1,
-        // A marker with its own action does not also count as a map click
-        bubblingMouseEvents: !opts.onClick,
-      });
-      if (opts.label) marker.bindTooltip(opts.label, { direction: 'top', offset: [0, -8] });
+      const at = toMapLatLng(coordinate, map.getCenter().lng);
+      // A marker with its own action or card does not also count as a map click
+      const ownsClick = !!(opts.onClick || opts.details);
+      let marker: L.Marker | L.CircleMarker;
+      let tooltipOffset: L.PointExpression = [0, -8];
+      if (opts.symbol) {
+        marker = L.marker(at, { icon: pinIcon(opts.symbol, color), bubblingMouseEvents: !ownsClick, riseOnHover: true });
+        tooltipOffset = [0, -34];
+      } else {
+        marker = L.circleMarker(at, {
+          radius: 7,
+          color: '#171413',
+          weight: 2,
+          fillColor: color,
+          fillOpacity: 1,
+          bubblingMouseEvents: !ownsClick,
+        });
+      }
+      if (opts.label) marker.bindTooltip(opts.label, { direction: 'top', offset: tooltipOffset, className: 'bt-map-tip' });
+      // The card replaces the hover label while it is open
+      if (opts.label && opts.details) {
+        marker.on('popupopen', () => marker.closeTooltip());
+      }
+      if (opts.details) {
+        marker.bindPopup(detailsCard(opts.details), {
+          className: 'bt-map-card',
+          offset: opts.symbol ? [0, -30] : [0, -4],
+          autoPanPadding: [24, 24],
+        });
+      }
       if (opts.onClick) marker.on('click', opts.onClick);
       put(id, marker);
       return { id, remove: () => take(id, marker) };

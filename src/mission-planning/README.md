@@ -1,6 +1,6 @@
-# Mission planning (owner: Hajra)
+# Route planner (owner: Hajra)
 
-The Marswalk route planner and mission loadout, shown as a panel beside the Mars Trek map.
+The route planner and mission loadout, shown as a panel beside the Mars Trek map.
 
 - **Entry point:** `MissionPlanningLayer.tsx`, mounted inside the map by `src/components/MarsMapWithFeatures.tsx`.
 - **Map access:** only through `src/shared` (`useMapBridge`, `useSelectedLocation`). Nothing is imported from `src/scientific-data`, so the planner works without elevation, terrain or hazard layers.
