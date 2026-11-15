@@ -25,12 +25,12 @@ The opening plays every time the site is opened or reloaded. Add `?nointro` to t
 
 | Time | Beat |
 | --- | --- |
-| 0.0–3.2 s | Three-quarter shot of the astronaut's upper body and helmet; the astronaut looks out over the plain with a gentle head turn, the visor reflecting the landscape |
-| 3.0–4.6 s | The astronaut raises the tablet and looks down at it; the screen wakes |
-| 4.5–8.5 s | On the tablet, the original four-second reveal: Mars rises out of darkness, the camera pushes in, BEYOND TERRA fades up and sharpens |
-| 5.0–9.6 s | The camera moves round over the right shoulder onto the screen; the astronaut and then the bezel leave the frame |
-| 9.6 s | Handoff: the screen exactly fills the viewport, and the same image is now drawn full-screen |
-| 9.95–10.45 s | The intro dissolves onto the identical globe, which holds for 2.5 s and then zooms into the Mars Trek map |
+| 0.0–0.77 s | Fade up on the astronaut's upper body and helmet while the tablet starts rising |
+| 0.15–1.38 s | The astronaut raises the tablet and looks down at it; the screen wakes |
+| 1.0–3.46 s | On the tablet, Mars rises out of darkness, the camera pushes in, and BEYOND TERRA fades up |
+| 0.54–3.38 s | The camera moves round over the right shoulder onto the screen; the astronaut and then the bezel leave the frame |
+| 3.38 s | Handoff: the screen exactly fills the viewport, and the same image is now drawn full-screen |
+| 3.46–4.0 s | The intro dissolves onto the identical globe, which holds for 2.5 s and then zooms into the Mars Trek map |
 
 The intro always plays through; there is no skip. If it cannot load, hits an error or is still running after 25 s, the site appears anyway.
 

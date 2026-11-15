@@ -132,8 +132,8 @@ export default function App() {
   }, []);
   const onGlobeRevealed = useCallback(() => setGlobeReady(true), []);
 
-  // Watchdog: whatever happens inside the intro, the website appears. The intro normally
-  // ends in about 2.6 s (plus loading, which it gives up on after 12 s).
+  // Watchdog: whatever happens inside the intro, the website appears. The intro animation
+  // lasts 4 s (plus loading, which it gives up on after 12 s).
   useEffect(() => {
     if (!introActive) return undefined;
     const timer = window.setTimeout(onComplete, INTRO_WATCHDOG_MS);
