@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useReducer, useRef, useState, type CSS
 import {
   normalizeLongitudeEast,
   plannedRouteStore,
+  plannedRouteTotalsStore,
   selectedLocationStore,
   useMapBridge,
   useSelectedLocation,
@@ -150,6 +151,23 @@ export default function MissionPlannerPanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.start, state.destination, state.checkpoints, routeStatusNow]);
   useEffect(() => () => plannedRouteStore.set(null), []);
+
+  // The planner's own distance and time, shown unchanged under the Hazards view's map
+  useEffect(() => {
+    plannedRouteTotalsStore.set(
+      hasRoute
+        ? {
+            distanceKm: metrics.totalKm,
+            travelHours: metrics.travelHours,
+            taskHours: duration.taskHours,
+            totalHours: duration.totalHours,
+            speedKmh: metrics.speedKmh,
+            mode: state.travelMode,
+          }
+        : null,
+    );
+  }, [hasRoute, metrics, duration, state.travelMode]);
+  useEffect(() => () => plannedRouteTotalsStore.set(null), []);
 
   // The route preview astronaut, kept here (above the tabs) so tab changes never interrupt it
   const exploration = useExploration(state);

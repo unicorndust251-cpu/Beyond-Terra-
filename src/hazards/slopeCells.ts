@@ -142,10 +142,11 @@ export class SlopeCellLayer extends L.GridLayer {
         if (is(i, j)) fill.rect(x(j), y(i), cellPx + 0.01, sy / ppd + 0.01);
       }
     }
+    // At 0% shading (or "Outlines only") no fill or pattern is drawn; the outline below stays
     ctx.globalAlpha = this.fillOpacity;
     ctx.fillStyle = cat.colour;
-    ctx.fill(fill);
-    if (cellPx * ratio >= 6) {
+    if (this.fillOpacity > 0) ctx.fill(fill);
+    if (this.fillOpacity > 0 && cellPx * ratio >= 6) {
       ctx.globalAlpha = Math.min(1, this.fillOpacity * 2 + 0.25);
       ctx.fillStyle = ctx.createPattern(patternTile('SL', ratio), 'repeat')!;
       ctx.fill(fill);

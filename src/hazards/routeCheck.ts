@@ -9,6 +9,7 @@ import {
   type RouteHazardReport,
 } from '../shared';
 import { CATEGORY_BY_CODE } from './categories';
+import { featureContains, type DuneData } from './dunes';
 import { OBSERVATIONS } from './observations';
 import { SLOPE_LEVEL, slopeAt } from './slopeCells';
 import type { StructureData, StructureFeature } from './structures';
@@ -265,7 +266,7 @@ async function slopeHits(legs: Leg[], store: DemStore, threshold: number) {
       code: 'SL',
       colour: cat.colour,
       featureId: r.maxId,
-      title: `${cat.name} (≥ ${threshold}°)`,
+      title: `${cat.name} above ${threshold}°`,
       detail:
         `${r.cells} MOLA bin${r.cells === 1 ? '' : 's'} at or above ${threshold}° along about ${len.toFixed(1)} km of the line; steepest ${r.maxSlope.toFixed(1)}°. ` +
         `Slopes are over the 3.7 km bin spacing of MOLA MEGDR ${SLOPE_LEVEL}: local slopes can be much steeper or gentler. The threshold is your planning setting, not a limit for walking or driving.`,
@@ -278,6 +279,77 @@ async function slopeHits(legs: Leg[], store: DemStore, threshold: number) {
     };
   });
   return { hits, steepKm, belowKm, unavailableKm };
+}
+
+/* ------------------------------------------------------------- dune fields */
+
+/** Parameters t (0…1) where a→b crosses the segment c→d, or null. */
+function crossT(a: LonLat, b: LonLat, c: LonLat, d: LonLat): number | null {
+  const rx = b[0] - a[0];
+  const ry = b[1] - a[1];
+  const sx = d[0] - c[0];
+  const sy = d[1] - c[1];
+  const den = rx * sy - ry * sx;
+  if (den === 0) return null;
+  const t = ((c[0] - a[0]) * sy - (c[1] - a[1]) * sx) / den;
+  const u = ((c[0] - a[0]) * ry - (c[1] - a[1]) * rx) / den;
+  return t >= 0 && t <= 1 && u >= 0 && u <= 1 ? t : null;
+}
+
+/** Each stretch of each leg that lies inside a mapped USGS dune field (exact polygon clipping). */
+function duneHits(legs: Leg[], data: DuneData): RouteHazardHit[] {
+  const cat = CATEGORY_BY_CODE.S;
+  const hits: RouteHazardHit[] = [];
+  for (const leg of legs) {
+    const lw = Math.min(leg.a[0], leg.b[0]);
+    const le = Math.max(leg.a[0], leg.b[0]);
+    const ls = Math.min(leg.a[1], leg.b[1]);
+    const ln = Math.max(leg.a[1], leg.b[1]);
+    for (const f of data.features) {
+      if (f.box.n < ls || f.box.s > ln) continue;
+      for (const k of [-720, -360, 0, 360, 720]) {
+        if (f.box.e + k < lw || f.box.w + k > le) continue;
+        const ts = [0, 1];
+        for (const r of f.rings)
+          for (let i = 0, j = r.length - 1; i < r.length; j = i++) {
+            const t = crossT(leg.a, leg.b, [r[j][0] + k, r[j][1]], [r[i][0] + k, r[i][1]]);
+            if (t !== null) ts.push(t);
+          }
+        ts.sort((x, y) => x - y);
+        // Inside stretches: test the midpoint of every interval between crossings
+        const runs: [number, number][] = [];
+        for (let i = 0; i + 1 < ts.length; i++) {
+          if (ts[i + 1] - ts[i] < 1e-9) continue;
+          const m = lerp(leg.a, leg.b, (ts[i] + ts[i + 1]) / 2);
+          if (!featureContains(f, m[0], m[1])) continue;
+          const last = runs[runs.length - 1];
+          if (last && Math.abs(last[1] - ts[i]) < 1e-9) last[1] = ts[i + 1];
+          else runs.push([ts[i], ts[i + 1]]);
+        }
+        runs.forEach(([t0, t1], n) => {
+          const a = lerp(leg.a, leg.b, t0);
+          const b = lerp(leg.a, leg.b, t1);
+          hits.push({
+            id: `${f.id}@${leg.index}:${n}`,
+            code: 'S',
+            colour: cat.colour,
+            featureId: f.id,
+            title: `${cat.name}: USGS dune field ${f.duneId}`,
+            detail:
+              `The route line runs inside mapped dune field ${f.duneId} (${f.types.join(', ') || 'type not recorded'}) for about ${km(a, b).toFixed(1)} km. ` +
+              `Outline from the USGS Mars Global Digital Dune Database (THEMIS 100 m/px, ~1:75,000); ground strength and dune heights along the line are not known from it.`,
+            segmentIndex: leg.index,
+            segmentLabel: leg.label,
+            fromKm: leg.startKm + leg.km * t0,
+            toKm: leg.startKm + leg.km * t1,
+            at: coord(lerp(leg.a, leg.b, (t0 + t1) / 2)),
+            path: [coord(a), coord(b)],
+          });
+        });
+      }
+    }
+  }
+  return hits;
 }
 
 /* ---------------------------------------------------------- observations */
@@ -311,14 +383,16 @@ function nearbyObservations(legs: Leg[]) {
 
 export type DataState<T> = { state: 'loading' } | { state: 'error'; message: string } | { state: 'ready'; data: T };
 
-const CATALOGUE_ONLY: HazardCode[] = ['L', 'S', 'B', 'G', 'I', 'D'];
+const CATALOGUE_ONLY: HazardCode[] = ['L', 'B', 'G', 'I', 'D'];
 const NO_DATASET: HazardCode[] = ['V', 'T', 'R', 'C', 'N', 'E', 'M'];
 
 export async function checkRoute(
   route: PlannedRoute,
   structures: DataState<StructureData>,
   slope: DataState<DemStore>,
+  dunes: DataState<DuneData>,
   thresholdDeg: number,
+  excluded: HazardCode[] = [],
 ): Promise<RouteHazardReport> {
   const legs = routeLegs(route);
   const hits: RouteHazardHit[] = [];
@@ -329,16 +403,28 @@ export async function checkRoute(
   const unavailable = (s: DataState<unknown>, name: string) =>
     s.state === 'loading' ? `${name} still loading.` : `Mapped dataset unavailable: ${s.state === 'error' ? s.message : name}.`;
 
+  const EXCLUDED_NOTE = 'Excluded from route assessment by you. Showing or hiding it on the map is a separate setting.';
   if (structures.state === 'ready') {
-    hits.push(...lineHits(legs, structures.data));
+    const lineCodes = (['F', 'P'] as const).filter((code) => !excluded.includes(code));
+    hits.push(...lineHits(legs, structures.data).filter((h) => lineCodes.includes(h.code as 'F' | 'P')));
     for (const code of ['F', 'P'] as const)
-      check(code, 'checked', 'Tested against USGS SIM 3292 mapped axes (lines only; no width is mapped).');
+      if (excluded.includes(code)) check(code, 'excluded', EXCLUDED_NOTE);
+      else check(code, 'checked', 'Tested against USGS SIM 3292 mapped axes (lines only; no width is mapped).');
   } else {
-    for (const code of ['F', 'P'] as const) check(code, 'unavailable', unavailable(structures, 'USGS structure lines'));
+    for (const code of ['F', 'P'] as const)
+      check(code, excluded.includes(code) ? 'excluded' : 'unavailable', excluded.includes(code) ? EXCLUDED_NOTE : unavailable(structures, 'USGS structure lines'));
   }
 
+  if (excluded.includes('S')) check('S', 'excluded', EXCLUDED_NOTE);
+  else if (dunes.state === 'ready') {
+    hits.push(...duneHits(legs, dunes.data));
+    check('S', 'checked', 'Tested against the 547 USGS MGD³ dune-field outlines (65° N–65° S). Small dune fields are not in that database.');
+  } else check('S', 'unavailable', unavailable(dunes, 'USGS dune-field outlines'));
+
   let slopeSummary: RouteHazardReport['slope'] = null;
-  if (slope.state === 'ready') {
+  if (excluded.includes('SL')) {
+    check('SL', 'excluded', EXCLUDED_NOTE);
+  } else if (slope.state === 'ready') {
     const r = await slopeHits(legs, slope.data, thresholdDeg);
     hits.push(...r.hits);
     slopeSummary = { thresholdDeg, steepKm: r.steepKm, belowKm: r.belowKm, unavailableKm: r.unavailableKm };
@@ -348,7 +434,7 @@ export async function checkRoute(
   }
 
   for (const code of CATALOGUE_ONLY)
-    check(code, 'no-geometry', 'Catalogue observation centres only: no mapped extent, so the route cannot be tested.');
+    check(code, 'no-geometry', 'Observation locations only: no mapped boundary, so the route cannot be tested against it.');
   for (const code of NO_DATASET) check(code, 'no-geometry', 'Not assessed: no dataset in this project.');
   check(
     'U',
@@ -358,7 +444,7 @@ export async function checkRoute(
 
   hits.sort((a, b) => a.fromKm - b.fromKm);
   return {
-    signature: `${route.signature}|${thresholdDeg}`,
+    signature: `${route.signature}|${thresholdDeg}|${excluded.join(',')}`,
     status: 'ready',
     hits,
     checks,

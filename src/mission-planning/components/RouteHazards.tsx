@@ -30,9 +30,7 @@ export default function RouteHazards() {
             <ol className="mp-hz__hits">
               {report.hits.map((h) => (
                 <li key={h.id} className="mp-hz__hit">
-                  <span className="mp-hz__code" style={{ borderColor: h.colour, color: h.colour }}>
-                    {h.code}
-                  </span>
+                  <span className="mp-hz__dot" style={{ background: h.colour }} aria-hidden="true" />
                   <div>
                     <p className="mp-hz__name">{h.title}</p>
                     <p className="mp-data">
@@ -48,7 +46,7 @@ export default function RouteHazards() {
               ))}
             </ol>
           ) : (
-            <p>The route line does not meet any mapped trough axis (F, P) or steep-slope cell (SL).</p>
+            <p>The route line does not meet any mapped trough line or steep-slope cell.</p>
           )}
 
           {report.slope && (
@@ -88,10 +86,8 @@ export default function RouteHazards() {
             <ul className="mp-hz__plain">
               {report.checks.map((c) => (
                 <li key={c.code}>
-                  <span className="mp-hz__code mp-hz__code--sm" style={{ borderColor: c.colour, color: c.colour }}>
-                    {c.code}
-                  </span>{' '}
-                  <strong>{c.state === 'checked' ? 'Tested' : c.state === 'unavailable' ? 'Unavailable' : 'Not tested'}</strong>: {c.name}. {c.note}
+                  <span className="mp-hz__dot mp-hz__dot--sm" style={{ background: c.colour }} aria-hidden="true" />{' '}
+                  <strong>{c.name}</strong>: {c.state === 'checked' ? 'Tested' : c.state === 'unavailable' ? 'Unavailable' : c.state === 'excluded' ? 'Excluded by you' : 'Not tested'}. {c.note}
                 </li>
               ))}
             </ul>
@@ -109,7 +105,7 @@ export default function RouteHazards() {
           <ul className="mp-hz__plain">
             {notes.map((n) => (
               <li key={n.id} className="mp-hz__note">
-                <span className="mp-hz__code mp-hz__code--sm">{n.code}</span> {n.title}
+                {n.title}
                 <span className="mp-hz__muted"> · {n.status}</span>
                 <button type="button" className="mp-link" onClick={() => removeMissionHazardNote(n.id)} aria-label={`Remove ${n.title} from the mission`}>
                   Remove

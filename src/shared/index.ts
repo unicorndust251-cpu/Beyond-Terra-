@@ -14,6 +14,8 @@ export {
   missionHazardNotesStore,
   patchHazardState,
   plannedRouteStore,
+  plannedRouteTotalsStore,
+  SLOPE_LIMIT_SOURCE_LABEL,
   removeMissionHazardNote,
   requestHazardFocus,
   routeHazardStore,
@@ -21,6 +23,7 @@ export {
   useHazardState,
   useMissionHazardNotes,
   usePlannedRoute,
+  usePlannedRouteTotals,
   useRouteHazardReport,
 } from './hazards';
 export type {
@@ -31,6 +34,8 @@ export type {
   MissionHazardNote,
   PlannedRoute,
   PlannedRouteStop,
+  PlannedRouteTotals,
+  SlopeLimitSource,
   RouteCheckState,
   RouteHazardHit,
   RouteHazardReport,

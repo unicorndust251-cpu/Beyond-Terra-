@@ -1,17 +1,26 @@
 import { useEffect } from 'react';
 import * as L from 'leaflet';
 import type { DemStore } from '../science/molaDem';
-import { routeHazardStore, usePlannedRoute, useRouteHazardReport, type MarsCoordinate } from '../shared';
+import { routeHazardStore, usePlannedRoute, useRouteHazardReport, type HazardCode, type MarsCoordinate } from '../shared';
 import { CATEGORY_BY_CODE } from './categories';
 import { NO_ALTERNATIVE, checkRoute, routeLegs, type DataState } from './routeCheck';
 import { HAZARD_PANES, type StructureData } from './structures';
+import type { DuneData } from './dunes';
 
 /**
  * Keeps the route's hazard report (shared with the planner's summary) up to date, and marks
  * the affected parts of the route on the map in both views. Highlights sit in the hazard
  * selection pane, under the planner's route line, so the route and its stops stay on top.
  */
-export function useRouteHazards(map: L.Map, structures: DataState<StructureData>, slope: DataState<DemStore>, thresholdDeg: number) {
+export function useRouteHazards(
+  map: L.Map,
+  structures: DataState<StructureData>,
+  slope: DataState<DemStore>,
+  dunes: DataState<DuneData>,
+  thresholdDeg: number,
+  excluded: HazardCode[],
+) {
+  const excludedKey = excluded.join(',');
   const route = usePlannedRoute();
   const report = useRouteHazardReport();
 
@@ -21,7 +30,7 @@ export function useRouteHazards(map: L.Map, structures: DataState<StructureData>
       return undefined;
     }
     let live = true;
-    const signature = `${route.signature}|${thresholdDeg}`;
+    const signature = `${route.signature}|${thresholdDeg}|${excludedKey}`;
     routeHazardStore.set({
       signature,
       status: 'checking',
@@ -32,7 +41,7 @@ export function useRouteHazards(map: L.Map, structures: DataState<StructureData>
       alternative: { available: false, message: NO_ALTERNATIVE },
     });
     const timer = window.setTimeout(() => {
-      checkRoute(route, structures, slope, thresholdDeg).then(
+      checkRoute(route, structures, slope, dunes, thresholdDeg, excludedKey ? (excludedKey.split(',') as HazardCode[]) : []).then(
         (r) => live && routeHazardStore.set(r),
         () => live && routeHazardStore.set(null),
       );
@@ -41,7 +50,7 @@ export function useRouteHazards(map: L.Map, structures: DataState<StructureData>
       live = false;
       window.clearTimeout(timer);
     };
-  }, [route, structures, slope, thresholdDeg]);
+  }, [route, structures, slope, dunes, thresholdDeg, excludedKey]);
 
   useEffect(() => () => routeHazardStore.set(null), []);
 
@@ -68,7 +77,7 @@ export function useRouteHazards(map: L.Map, structures: DataState<StructureData>
         ref = nearLon(c, ref);
         return L.latLng(c.latitude, ref);
       });
-      if (h.code === 'SL') {
+      if (h.code === 'SL' || h.code === 'S') {
         layers.push(L.polyline(pts, { pane, color: '#171413', weight: 11, opacity: 0.55, interactive: false, lineCap: 'butt' }));
         layers.push(L.polyline(pts, { pane, color: colour, weight: 8, opacity: 0.85, interactive: false, lineCap: 'butt' }));
       } else {

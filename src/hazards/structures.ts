@@ -109,6 +109,17 @@ export class StructureLayer {
     }
   }
 
+  /** Shown features with any part in the current view (any world copy). */
+  countInView(map: L.Map, active: HazardCode[]): number {
+    const b = map.getBounds();
+    let n = 0;
+    for (const f of this.data.features) {
+      if (!active.includes(f.category)) continue;
+      if (this.paths.get(f.id)?.some((p) => b.intersects(p.getBounds()))) n++;
+    }
+    return n;
+  }
+
   setHovered(id: string | null) {
     if (id === this.hovered) return;
     const prev = this.hovered;

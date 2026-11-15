@@ -31,14 +31,38 @@ export interface HazardState {
   fillOpacity: number;
   /** Slope classification threshold in degrees over the MOLA 3.7 km baseline: an editable assumption. */
   slopeThresholdDeg: number;
+  /** Where the slope limit comes from. 'illustrative' is the demonstration default. */
+  slopeLimitSource: SlopeLimitSource;
+  /** Citation for a documented mission limit. */
+  slopeLimitReference: string;
+  /** Shading + outlines, or outlines only (appearance only). */
+  outlinesOnly: boolean;
+  /** Categories the user excluded from route assessment (separate from what is shown). */
+  routeExcluded: HazardCode[];
+  /** Planned date and time (UTC, ISO without zone), or null. No loaded dataset uses it yet. */
+  plannedTime: string | null;
   selection: HazardSelection | null;
 }
 
+export type SlopeLimitSource = 'illustrative' | 'user' | 'scenario' | 'documented';
+
+export const SLOPE_LIMIT_SOURCE_LABEL: Record<SlopeLimitSource, string> = {
+  illustrative: 'Illustrative planning assumption',
+  user: 'User supplied',
+  scenario: 'Scenario assumption',
+  documented: 'Documented mission limit',
+};
+
 export const HAZARD_DEFAULTS: HazardState = {
   view: 'planner',
-  active: ['F', 'P', 'SL'],
+  active: ['L', 'S', 'B', 'P', 'F', 'G', 'I', 'D', 'SL'],
   fillOpacity: 0.2,
   slopeThresholdDeg: 8,
+  slopeLimitSource: 'illustrative',
+  slopeLimitReference: '',
+  outlinesOnly: false,
+  routeExcluded: [],
+  plannedTime: null,
   selection: null,
 };
 
@@ -74,6 +98,22 @@ export interface PlannedRoute {
 /** Written by the planner, read by the hazards module. Null when fewer than two stops are set. */
 export const plannedRouteStore = createStore<PlannedRoute | null>(null);
 
+/** The planner's own distance and time figures, so the Hazards view can show them unchanged. */
+export interface PlannedRouteTotals {
+  distanceKm: number;
+  travelHours: number;
+  taskHours: number;
+  totalHours: number;
+  speedKmh: number;
+  mode: string;
+}
+
+export const plannedRouteTotalsStore = createStore<PlannedRouteTotals | null>(null);
+
+export function usePlannedRouteTotals(): PlannedRouteTotals | null {
+  return useStore(plannedRouteTotalsStore);
+}
+
 /** One place where the route line meets mapped hazard geometry. */
 export interface RouteHazardHit {
   id: string;
@@ -96,7 +136,7 @@ export interface RouteHazardHit {
   path: MarsCoordinate[];
 }
 
-export type RouteCheckState = 'checked' | 'unavailable' | 'no-geometry';
+export type RouteCheckState = 'checked' | 'unavailable' | 'no-geometry' | 'excluded';
 
 export interface RouteHazardReport {
   signature: string;

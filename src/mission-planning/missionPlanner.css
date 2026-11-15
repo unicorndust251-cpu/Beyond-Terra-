@@ -2646,3 +2646,18 @@
     justify-self: start;
   }
 }
+
+.mp-hz__dot {
+  display: inline-block;
+  flex: none;
+  width: 12px;
+  height: 12px;
+  margin-top: 4px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1.5px rgba(23, 20, 19, 0.9);
+}
+.mp-hz__dot--sm {
+  width: 9px;
+  height: 9px;
+  margin-top: 0;
+}

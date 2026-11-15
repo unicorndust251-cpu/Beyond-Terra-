@@ -23,6 +23,7 @@ export interface Action {
 /** What the selected record is, for matching it against the route report. */
 export type RouteMatch =
   | { kind: 'line'; id: string }
+  | { kind: 'dune'; id: string }
   | { kind: 'slope'; bounds: { south: number; north: number; west: number; east: number } }
   | { kind: 'observation'; id: string }
   | { kind: 'point' };
@@ -55,7 +56,7 @@ function segmentTouchesBox(a: [number, number], b: [number, number], box: { sout
 }
 
 function matchingHits(hits: RouteHazardHit[], match: RouteMatch): RouteHazardHit[] {
-  if (match.kind === 'line') return hits.filter((h) => h.featureId === match.id);
+  if (match.kind === 'line' || match.kind === 'dune') return hits.filter((h) => h.featureId === match.id);
   if (match.kind === 'slope')
     return hits.filter(
       (h) =>
@@ -96,21 +97,21 @@ export function RouteInteraction({ match }: { match: RouteMatch }) {
   if (!hits.length) {
     return (
       <>
-        <p>The {status} line does not {match.kind === 'line' ? 'cross this mapped line' : 'pass through this cell'}.</p>
+        <p>The {status} line does not {match.kind === 'line' ? 'cross this mapped line' : match.kind === 'dune' ? 'enter this mapped dune field' : 'pass through this cell'}.</p>
         <p className="hz-muted">This is a test against mapped geometry only, not a statement that the route is safe.</p>
       </>
     );
   }
   return (
     <>
-      <p>The {status} meets this {match.kind === 'line' ? 'mapped line' : 'cell'}:</p>
+      <p>The {status} meets this {match.kind === 'line' ? 'mapped line' : match.kind === 'dune' ? 'mapped dune field' : 'cell'}:</p>
       <ul className="hz-list">
         {hits.map((h) => (
           <li key={h.id}>
             {h.segmentLabel}:{' '}
             {h.fromKm === h.toKm
               ? `crossing about ${fmtKm(h.fromKm)} km from the start`
-              : `from about ${fmtKm(h.fromKm)} to ${fmtKm(h.toKm)} km from the start (part of a steep run)`}
+              : `from about ${fmtKm(h.fromKm)} to ${fmtKm(h.toKm)} km from the start${h.code === 'SL' ? ' (part of a steep run)' : ' (inside the outline)'}`}
             {h.path.length > 1 && h.code !== 'SL' ? ` (${h.path.length} crossings)` : ''}
           </li>
         ))}
@@ -128,7 +129,7 @@ export function useMissionActions(note: Omit<MissionHazardNote, 'savedAt'> | nul
   const hasRoute = !!route && route.stops.length >= 2;
   return [
     {
-      label: 'Compare Alternative',
+      label: 'Compare Alternative Route',
       disabled: hasRoute
         ? `${NO_ALTERNATIVE} No routable terrain data (slopes and obstacles at walking scale) is available in this project.`
         : 'No route is planned in the Mission Planner, so there is nothing to compare.',
