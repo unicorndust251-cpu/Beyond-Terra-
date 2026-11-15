@@ -2102,7 +2102,7 @@
     left: 8px;
     right: 8px;
     width: auto;
-    max-height: 58%;
+    max-height: 48%;
     border-radius: 12px;
   }
 
@@ -2438,4 +2438,105 @@
   margin: 0;
   font-size: 11px;
   color: var(--mp-faint);
+}
+
+@media (max-width: 760px) {
+  .mp-panel {
+    max-height: 48%;
+  }
+}
+
+/* ----- A landmark picked from its marker: assign it to a mission role ----- */
+.mp-lmk {
+  --mp-bg: #171413;
+  --mp-surface: #302725;
+  --mp-accent: #b87860;
+  --mp-copper: #d6a38b;
+  --mp-text: #f3e5dc;
+  --mp-line: rgba(141, 117, 110, 0.22);
+  --mp-line-strong: rgba(141, 117, 110, 0.4);
+  --mp-dim: rgba(243, 229, 220, 0.6);
+  --mp-faint: rgba(243, 229, 220, 0.42);
+  position: absolute;
+  z-index: 6;
+  /* Beside the selected-point card (top right), not over it */
+  top: calc(var(--bt-topbar, 44px) + env(safe-area-inset-top, 0px) + 12px);
+  right: calc(var(--bt-edge, 16px) + 236px + 12px);
+  width: 250px;
+  padding: 12px 14px;
+  border: 1px solid rgba(214, 163, 139, 0.45);
+  border-radius: 10px;
+  background: var(--mp-bg);
+  box-shadow: 0 8px 28px rgba(5, 5, 7, 0.4);
+  color: var(--mp-text);
+  font-family: 'Poppins', 'Manrope', system-ui, sans-serif;
+  font-size: 13px;
+}
+
+.mp-lmk__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.mp-lmk__eyebrow {
+  margin: 0;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #ff8a3d;
+}
+
+.mp-lmk h3 {
+  margin: 2px 0 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.mp-lmk__coords {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--mp-dim);
+}
+
+.mp-lmk__actions {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.mp-lmk__actions .mp-btn {
+  width: 100%;
+  min-height: 34px;
+  font-size: 12.5px;
+}
+
+.mp-lmk__note {
+  margin: 8px 0 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--mp-faint);
+}
+
+@media (max-width: 760px) {
+  .mp-lmk {
+    top: auto;
+    right: 8px;
+    left: 8px;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 84px);
+    width: auto;
+  }
+
+  .mp-lmk__actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .mp-lmk__actions .mp-btn {
+    padding: 0 6px;
+    font-size: 11.5px;
+    white-space: normal;
+    line-height: 1.2;
+  }
 }

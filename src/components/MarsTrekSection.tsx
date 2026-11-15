@@ -10,6 +10,8 @@ interface Props {
   load: boolean;
   /** Bring the map into focus and descend onto Jezero Crater. */
   revealed: boolean;
+  /** Called once the descent has started (a later camera move may then replace it). */
+  onRevealStarted?: () => void;
 }
 
 /** Zoom levels above the orbital view of Jezero where the map waits: most of the planet. */
@@ -44,12 +46,14 @@ class MapLoadBoundary extends Component<{ children: ReactNode }, { failed: boole
  * It mounts out of focus high above the planet; when revealed, the globe has zoomed away
  * and the map sharpens and descends onto Jezero Crater.
  */
-export default function MarsTrekSection({ load, revealed }: Props) {
+export default function MarsTrekSection({ load, revealed, onRevealStarted }: Props) {
   const [mounted, setMounted] = useState(load);
   const handleRef = useRef<MarsMapHandle | null>(null);
   const revealedRef = useRef(revealed);
   revealedRef.current = revealed;
   const done = useRef(false);
+  const onStarted = useRef(onRevealStarted);
+  onStarted.current = onRevealStarted;
 
   useEffect(() => {
     if (load) setMounted(true);
@@ -60,6 +64,7 @@ export default function MarsTrekSection({ load, revealed }: Props) {
     if (done.current || !revealedRef.current || !handleRef.current?.getMap()) return false;
     done.current = true;
     handleRef.current.reveal({ duration: MAP_DESCENT_SECONDS });
+    onStarted.current?.();
     return true;
   }, []);
 
