@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { selectedLocationStore, useMapBridge } from '../shared';
 import { formatLandmarkCoordinates, landmarkById, landmarkCoordinate, useSelectedLandmark } from '../shared/landmarks';
+import { markerTheme } from '../shared/landmarks/markerTheme';
 import './explore.css';
 
 interface Props {
@@ -30,7 +31,7 @@ export default function MapReturnBar({ visitedGlobe, onOpenGlobe, onOpenDashboar
     if (!bridge || !landmark) return undefined;
     const id = landmark.id;
     const handle = bridge.addMarker('ex:landmark', landmarkCoordinate(landmark), {
-      color: '#FF8A3D',
+      color: markerTheme().default,
       symbol: '◆',
       label: `${landmark.name} · select to use in the mission plan`,
       onClick: () => {

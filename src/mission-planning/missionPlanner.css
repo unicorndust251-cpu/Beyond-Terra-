@@ -2486,7 +2486,7 @@
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #ff8a3d;
+  color: var(--bt-landmark, #c76532);
 }
 
 .mp-lmk h3 {

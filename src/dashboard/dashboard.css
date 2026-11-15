@@ -873,3 +873,131 @@
     transition: none;
   }
 }
+
+/* ----- environmental observations ----- */
+.md-card__full {
+  margin: -2px 0 4px;
+  font-size: 12px;
+  color: var(--md-soft);
+}
+
+.md-card__reason {
+  margin: 4px 0 0;
+  font-size: 11.5px;
+  color: var(--md-faint);
+}
+
+.md-obs {
+  display: grid;
+  gap: 4px;
+  margin: 8px 0 0;
+  font-size: 11.5px;
+}
+
+.md-obs dt {
+  color: var(--md-faint);
+}
+
+.md-obs dd {
+  margin: 0;
+  color: var(--md-dim);
+  overflow-wrap: anywhere;
+}
+
+.md-obs a {
+  color: var(--md-copper);
+  text-underline-offset: 2px;
+}
+
+.md-card__retry {
+  margin-top: 8px;
+}
+
+.md-skeleton {
+  animation: md-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes md-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.md-prov p {
+  margin: 0 0 6px;
+  color: var(--md-dim);
+}
+
+.md-prov dl {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+
+.md-archive {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0;
+  font-size: 12.5px;
+}
+
+/* ----- day and night ----- */
+.md-solar__badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.md-mode-badge {
+  padding: 4px 10px;
+  border: 1px solid var(--md-border);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--md-soft);
+}
+
+.md-mode-badge.is-preview {
+  border-color: var(--md-copper);
+  background: rgba(214, 163, 139, 0.18);
+  color: var(--md-text);
+}
+
+.md-solar.is-preview {
+  border-color: var(--md-copper);
+}
+
+.md-solar__tl {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 6px 0 0;
+}
+
+.md-sun {
+  will-change: transform;
+}
+
+.md-svg-label--dir {
+  fill: var(--md-soft);
+  font-weight: 600;
+}
+
+.md-events {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+@media (max-width: 860px) {
+  .md-events {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md-skeleton {
+    animation: none;
+  }
+}

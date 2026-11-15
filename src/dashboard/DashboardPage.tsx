@@ -26,13 +26,15 @@ import {
 } from '../mission-planning/model';
 import { quadrangleAt } from '../science/workspace/quadrangles';
 import MetricCard from './MetricCard';
-import { environmentalUnavailable, fmtCoord, terrainValues, useTerrain, type SciValue } from './metrics';
+import EnvironmentCard from './environment/EnvironmentCard';
+import { loadIndex, loadSol, middayOf, roverCoordinate, type MedaIndex } from './environment/meda';
+import { useMedaObservations } from './environment/useMeda';
+import { fmtCoord, terrainValues, useTerrain, type SciValue } from './metrics';
 import { formatClock, localSolar, marsTime, SOL_SECONDS } from './science/marsTime';
 import { EARTH_GRAVITY, MARS_GRAVITY, martianSeason, weightNewtons } from './science/seasonsAndUnits';
-import { solarEvents } from './science/solarEvents';
 import SolarCyclePanel from './SolarCyclePanel';
 import { SOURCES } from './sources';
-import { useSimTime } from './timeStore';
+import { selectedClock, useSelectedUtc } from './timeStore';
 import './dashboard.css';
 
 interface Props {
@@ -73,7 +75,7 @@ export default function DashboardPage({ active, onOpenMap, onOpenExplore }: Prop
   const focus = useFocusedLocation();
   const mission = useActiveMission();
   const bridge = useMapBridge();
-  const { utcMs, clock: sim } = useSimTime();
+  const { utcMs, mode: timeMode } = useSelectedUtc();
   const [query, setQuery] = useState('');
   const [latText, setLatText] = useState('');
   const [lonText, setLonText] = useState('');
@@ -98,16 +100,6 @@ export default function DashboardPage({ active, onOpenMap, onOpenExplore }: Prop
   // Solar time
   const t = useMemo(() => marsTime(utcMs), [utcMs]);
   const solar = c ? localSolar(t, c.latitude, c.longitudeEast) : null;
-  // Sol events: recomputed only when the place changes or time leaves the current sol
-  const [events, setEvents] = useState<ReturnType<typeof solarEvents> | null>(null);
-  useEffect(() => {
-    if (!c) return;
-    if (events && events.solStartMs <= utcMs && utcMs < events.solEndMs && (events as { key?: string }).key === `${c.latitude},${c.longitudeEast}`) return;
-    const ev = Object.assign(solarEvents(utcMs, c.latitude, c.longitudeEast), { key: `${c.latitude},${c.longitudeEast}` });
-    setEvents(ev);
-    // events is compared above
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [utcMs, c?.latitude, c?.longitudeEast]);
   const season = c ? martianSeason(t.Ls, c.latitude) : null;
 
   const { terrain, loading, error } = useTerrain(c);
@@ -148,10 +140,25 @@ export default function DashboardPage({ active, onOpenMap, onOpenExplore }: Prop
         method: 'Planetocentric latitude, east longitude 0–360°. Region: USGS Mars chart quadrangle.',
       }
     : { value: null, status: 'unavailable', detail: 'Select a location' };
-  const airT = environmentalUnavailable('air temperature');
-  const groundT = environmentalUnavailable('ground (surface) temperature');
-  const wind = environmentalUnavailable('wind');
-  const pressure = environmentalUnavailable('pressure');
+  // Perseverance MEDA observations, matched to this place and the selected (not preview) time
+  const meda = useMedaObservations(c, utcMs);
+  const [medaIndex, setMedaIndex] = useState<MedaIndex | null>(null);
+  useEffect(() => {
+    loadIndex().then(setMedaIndex, () => setMedaIndex(null));
+  }, [meda.state.status]);
+  /** Shows an archived Jezero record: its time, and the rover's position if this place is far from it. */
+  const showArchived = async (file: string) => {
+    if (!medaIndex) return;
+    const sol = await loadSol(file);
+    const t0 = middayOf(sol);
+    if (t0 === null) return;
+    selectedClock.setTime(t0);
+    const pos = sol.rover.reduce((b, r) => (Math.abs(r[0] - t0) < Math.abs(b[0] - t0) ? r : b));
+    if (pos[1] !== null && pos[2] !== null) {
+      const rover = roverCoordinate(medaIndex, pos[1], pos[2]);
+      selectedLocationStore.set({ coordinate: rover, name: `Perseverance, sol ${sol.sol}`, source: 'manual' });
+    }
+  };
   const timeValue: SciValue = solar
     ? {
         value: formatClock(solar.LTST),
@@ -230,7 +237,7 @@ export default function DashboardPage({ active, onOpenMap, onOpenExplore }: Prop
             </p>
             <p className="md-head__time md-num">
               UTC {new Date(utcMs).toISOString().replace('T', ' ').slice(0, 19)}
-              {solar && ` · LTST ${formatClock(solar.LTST)}`} · <span className="md-mode">{sim.live ? 'Live clock' : sim.playing ? 'Simulated time' : 'Selected time'}</span> ·
+              {solar && ` · LTST ${formatClock(solar.LTST)}`} · <span className="md-mode">{timeMode === 'live' ? 'Current time (live)' : 'Selected date'}</span> ·
               terrain from archived datasets · no live weather
             </p>
           </div>
@@ -306,18 +313,46 @@ export default function DashboardPage({ active, onOpenMap, onOpenExplore }: Prop
               <MetricCard title="Elevation" v={tv.elevation} />
               <MetricCard title="Slope" v={tv.slope} />
               <MetricCard title="Surface Material" v={tv.material} />
-              <MetricCard title="Air Temperature" v={airT} />
-              <MetricCard title="Surface Temperature" v={groundT} />
+              <EnvironmentCard
+                field="airTemperatureC"
+                title="Air Temperature"
+                fullName="Near-surface air temperature"
+                explanation="Air temperature measured by the MEDA Air Temperature Sensors on the Perseverance mast. Air temperature is the atmosphere just above the ground, not the ground itself."
+                state={meda.state}
+                onRetry={meda.retry}
+              />
+              <EnvironmentCard
+                field="surfaceTemperatureC"
+                title="Surface Temperature"
+                fullName="Ground (surface) brightness temperature"
+                explanation="Ground temperature measured remotely by the MEDA Thermal Infrared Sensor, which looks down at a patch of ground beside the rover. It is a brightness temperature (thermal emission), measured separately from the air temperature."
+                state={meda.state}
+                onRetry={meda.retry}
+              />
             </div>
             {error && <p className="md-error">Terrain data could not be loaded: {error}</p>}
 
-            {events && solar && <SolarCyclePanel utcMs={utcMs} sim={sim} latitude={c.latitude} longitudeEast={c.longitudeEast} events={events} />}
+            <SolarCyclePanel selectedUtc={utcMs} selectedMode={timeMode} latitude={c.latitude} longitudeEast={c.longitudeEast} />
 
             <div className="md-row md-row--five">
               <MetricCard title="Local Mars Time" v={timeValue} />
               <MetricCard title="Martian Season" v={seasonValue} />
-              <MetricCard title="Wind" v={wind} />
-              <MetricCard title="Pressure" v={pressure} />
+              <EnvironmentCard
+                field="windSpeedMs"
+                title="Wind Speed"
+                fullName="Horizontal wind speed"
+                explanation="Horizontal wind speed retrieved by the MEDA team from the wind sensors on the rover mast (derived product), used only while the rover is still. The MEDA wind sensor was damaged during the mission, so later sols have no wind product."
+                state={meda.state}
+                onRetry={meda.retry}
+              />
+              <EnvironmentCard
+                field="pressurePa"
+                title="Atmospheric Pressure"
+                fullName="Surface atmospheric pressure"
+                explanation="Atmospheric pressure measured by the MEDA pressure sensor inside the rover body. It changes through the sol and the seasons; it is never estimated here from elevation."
+                state={meda.state}
+                onRetry={meda.retry}
+              />
               <MetricCard title="Gravity" v={gravityValue}>
                 <label className="md-calc">
                   <span>Mass</span>
@@ -331,14 +366,25 @@ export default function DashboardPage({ active, onOpenMap, onOpenExplore }: Prop
             <div className="md-secs">
               <Section title="Environmental Conditions">
                 <p>
-                  No temperature, pressure, wind, humidity, dust-opacity or visibility value is shown for this location: no suitable observation or
-                  documented model is connected to this build, and nothing is estimated in its place.
+                  Air temperature, ground temperature, wind speed and pressure come from archived <strong>Perseverance MEDA</strong> records (NASA PDS),
+                  shown only for places within 30 km of the rover and times within 30 minutes of a record. They are historical observations at
+                  Jezero, never live weather and never applied to other landmarks.
                 </p>
+                {medaIndex && (
+                  <div className="md-archive">
+                    <span>Archived Jezero observations in this build:</span>
+                    {medaIndex.sols.map((s) => (
+                      <button key={s.sol} type="button" className="md-chip" onClick={() => void showArchived(s.file)}>
+                        Sol {s.sol} · {s.startUtc.slice(0, 10)}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <p className="md-note">Choosing a sol sets the dashboard to about 13:00 LTST that sol and, if needed, to the rover position.</p>
                 <ul className="md-list">
                   <li>
-                    <strong>Perseverance MEDA</strong> measures air and ground temperature, pressure, wind, humidity and radiation/dust — but only at the
-                    rover in Jezero crater. Its archive (CSV, multi-GB) has no API and needs an offline, quality-filtered extract before it can be shown,
-                    labelled as a Jezero observation with its date.
+                    Humidity, dust opacity and radiation are also measured by MEDA but are not connected yet. Wind speed exists in the archive only for
+                    early sols.
                   </li>
                   <li>
                     <strong>Mars Climate Database</strong> model output could give modelled values anywhere; it is not connected, and would be labelled

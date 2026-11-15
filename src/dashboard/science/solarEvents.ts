@@ -33,15 +33,15 @@ export interface SolarEvents {
   /** Daylight and darkness in Mars clock hours (a sol = 24 Mars hours). */
   dayMarsHours: number;
   nightMarsHours: number;
-  /** Elevation through the sol, for drawing: [LTST h, elevation°]. */
-  curve: Array<[number, number]>;
+  /** The Sun through the sol, for drawing: [hours since local midnight, elevation°, azimuth° or null]. */
+  curve: Array<[number, number, number | null]>;
 }
 
 const STEP_MARS_MIN = 2;
 
-function elevationAt(ms: number, lat: number, lonE: number): { elevation: number; LTST: number } {
+function elevationAt(ms: number, lat: number, lonE: number): { elevation: number; LTST: number; azimuth: number | null } {
   const s = localSolar(marsTime(ms), lat, lonE);
-  return { elevation: s.elevation, LTST: s.LTST };
+  return { elevation: s.elevation, LTST: s.LTST, azimuth: s.azimuth };
 }
 
 function bisect(a: number, b: number, lat: number, lonE: number): number {
@@ -70,15 +70,15 @@ export function solarEvents(utcMs: number, lat: number, lonE: number): SolarEven
   const solEndMs = solStartMs + SOL_SECONDS * 1000;
   const step = ((STEP_MARS_MIN / 60) / 24) * SOL_SECONDS * 1000;
 
-  const curve: Array<[number, number]> = [];
+  const curve: Array<[number, number, number | null]> = [];
   let prev: { ms: number; e: number } | null = null;
   let sunriseMs: number | null = null;
   let sunsetMs: number | null = null;
   let max = { ms: solStartMs, e: -Infinity };
   let min = Infinity;
   for (let ms = solStartMs; ms <= solEndMs + 1; ms += step) {
-    const { elevation } = elevationAt(ms, lat, lonE);
-    curve.push([((ms - solStartMs) / (SOL_SECONDS * 1000)) * 24, elevation]);
+    const { elevation, azimuth } = elevationAt(ms, lat, lonE);
+    curve.push([((ms - solStartMs) / (SOL_SECONDS * 1000)) * 24, elevation, azimuth]);
     if (elevation > max.e) max = { ms, e: elevation };
     min = Math.min(min, elevation);
     if (prev) {
@@ -143,4 +143,36 @@ export function marsHoursToEarthHours(marsHours: number): number {
 export function formatDurationHours(h: number): string {
   const total = Math.round(h * 60);
   return `${Math.floor(total / 60)} h ${String(total % 60).padStart(2, '0')} min`;
+}
+
+export interface NextEvent {
+  kind: 'sunrise' | 'sunset';
+  utcMs: number;
+  /** Local true solar time of the event (h). */
+  ltst: number;
+  /** Sols after the current one (0 = this sol). */
+  solsAhead: number;
+}
+
+/**
+ * The next actual sunrise or sunset after an instant, looking up to `maxSols` sols ahead
+ * (polar day or night can last many sols). Null when none occurs in that window.
+ */
+export function nextSolarEvent(utcMs: number, lat: number, lonE: number, maxSols = 3): NextEvent | null {
+  for (let k = 0; k <= maxSols; k++) {
+    const ev = solarEvents(utcMs + k * SOL_SECONDS * 1000, lat, lonE);
+    const candidates: NextEvent[] = [];
+    if (ev.sunriseMs !== null && ev.sunriseMs > utcMs) candidates.push({ kind: 'sunrise', utcMs: ev.sunriseMs, ltst: ev.sunriseLTST!, solsAhead: k });
+    if (ev.sunsetMs !== null && ev.sunsetMs > utcMs) candidates.push({ kind: 'sunset', utcMs: ev.sunsetMs, ltst: ev.sunsetLTST!, solsAhead: k });
+    if (candidates.length) return candidates.sort((a, b) => a.utcMs - b.utcMs)[0];
+  }
+  return null;
+}
+
+/** "2 h 05 min" or "14 min 09 s" for an Earth-time interval in milliseconds. */
+export function formatEarthCountdown(ms: number): string {
+  const s = Math.max(0, Math.round(ms / 1000));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  return h > 0 ? `${h} h ${String(m).padStart(2, '0')} min` : `${m} min ${String(s % 60).padStart(2, '0')} s`;
 }

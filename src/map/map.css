@@ -52,6 +52,10 @@
 .bt-map__surface {
   position: absolute;
   inset: 0;
+  /* Contains Leaflet's pane z-indexes (markers 600, popups 700), so pins and their cards stay
+     below the panels in the overlay slot (500) instead of painting over them */
+  z-index: 0;
+  isolation: isolate;
 }
 
 /* Leaflet's default grey background would flash between tiles: keep it obsidian */
