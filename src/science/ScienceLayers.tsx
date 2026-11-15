@@ -20,12 +20,14 @@ import {
 import LocationSearch from './LocationSearch';
 import TopBar, { type StatusItem } from './workspace/TopBar';
 import LayersMenu, { type LayerItem, type LoadStatus } from './workspace/LayersMenu';
-import MapLegend, { type LegendMode } from './workspace/MapLegend';
+import MapLegend from './workspace/MapLegend';
 import './workspace/workspace.css';
 import './science.css';
 
 // Loaded the first time the Curvature layer is switched on
 const CurvatureLayer = lazy(() => import('./curvature/CurvatureLayer'));
+// Loaded the first time the Geology layer is switched on
+const GeologyLegend = lazy(() => import('./geology/GeologyLegend'));
 
 type LayerKey = 'imagery' | 'elevation' | 'relief' | 'slope' | 'geology' | 'curvature';
 /** `amount` is opacity (0…1), except for relief, where it is the shading intensity (unused for curvature). */
@@ -317,7 +319,7 @@ export default function ScienceLayers() {
       onToggle: () => toggle('geology'),
       onAmount: (v) => setAmount('geology', v),
       info: {
-        text: 'Geologic units of the USGS Geologic Map of Mars, in their published colours. Units describe age and setting, not rock composition.',
+        text: 'Geologic units of the USGS Geologic Map of Mars. Colours identify mapped units and age assignments, not elevation, curvature, mineral concentration or hazard severity.',
         resolution: 'Mapped at 1:20,000,000',
         source: { name: 'USGS SIM 3292 via NASA Mars Trek', url: 'https://pubs.usgs.gov/sim/3292/' },
       },
@@ -333,14 +335,12 @@ export default function ScienceLayers() {
       slider: false,
       swatch: <span className="bt-layer__swatch" aria-hidden="true" />,
       info: {
-        text: 'Ten places whose landforms suit a terrain-curvature study. Markers are reference points; no curvature has been calculated.',
+        text: 'Eighteen places whose landforms suit a terrain-curvature study. Markers are reference points; no curvature has been calculated.',
         resolution: 'Reference positions',
-        source: { name: 'IAU Gazetteer, NASA, ESA', url: 'https://planetarynames.wr.usgs.gov/' },
+        source: { name: 'IAU Gazetteer, NASA, ESA, Mars Odyssey THEMIS', url: 'https://planetarynames.wr.usgs.gov/' },
       },
     },
   ];
-
-  const legendMode: LegendMode | null = activeMode ?? (layers.geology.on ? 'geology' : null);
 
   return (
     <div className="bt-sci">
@@ -355,8 +355,14 @@ export default function ScienceLayers() {
         )}
       </div>
 
+      {layers.geology.on && (
+        <Suspense fallback={null}>
+          <GeologyLegend />
+        </Suspense>
+      )}
+
       <div className="bt-sci-bottom">
-        {legendMode && <MapLegend mode={legendMode} blended={activeMode ? layers[activeMode].amount < 1 || layers.relief.on : false} />}
+        {activeMode && <MapLegend mode={activeMode} blended={activeMode ? layers[activeMode].amount < 1 || layers.relief.on : false} />}
         {(showCtxCredit || layers.geology.on) && (
           <p className="bt-sci-credit">{[showCtxCredit && CTX_GLOBAL.credit, layers.geology.on && GEOLOGY_TILES.credit].filter(Boolean).join(' · ')}</p>
         )}

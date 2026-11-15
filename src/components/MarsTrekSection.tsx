@@ -15,7 +15,7 @@ interface Props {
 /** Zoom levels above the orbital view of Jezero where the map waits: most of the planet. */
 const START_LEVELS_ABOVE = 6.5;
 /** Seconds for the descent from the whole planet onto Jezero. */
-export const MAP_DESCENT_SECONDS = 2.8;
+export const MAP_DESCENT_SECONDS = 1.5;
 
 /**
  * If the map's code cannot load (a dropped connection, or a stale tab after a deploy or

@@ -20,7 +20,7 @@ interface Props {
    * true:  rotating continuously at the hero framing.
    */
   live: boolean;
-  /** Play the four-second reveal when it goes live (a visit without the astronaut intro). */
+  /** Play the Mars reveal when it goes live (a visit without the astronaut intro). */
   playReveal: boolean;
   reducedMotion: boolean;
   /** The final composition is in place: the credit line may appear. */

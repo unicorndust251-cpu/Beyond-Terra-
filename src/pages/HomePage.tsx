@@ -7,7 +7,7 @@ export type HomePhase = 'intro' | 'handoff' | 'home';
 
 interface Props {
   phase: HomePhase;
-  /** Play the four-second Mars reveal (a visit that did not come through the intro). */
+  /** Play the Mars reveal (a visit that did not come through the intro). */
   playReveal: boolean;
   reducedMotion: boolean;
   /** Push into the planet and dissolve, revealing the map underneath. */

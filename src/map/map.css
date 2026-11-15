@@ -32,7 +32,7 @@
   --bt-font-data: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
 
   /* Height of the top bar; overlays start below it */
-  --bt-topbar: 44px;
+  --bt-topbar: 56px;
 
   --bt-edge: max(16px, env(safe-area-inset-right, 0px));
   --bt-edge-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
@@ -83,7 +83,7 @@
 
 .bt-map--sharpening .bt-map__surface {
   filter: blur(0);
-  transition: filter 1.5s cubic-bezier(0.25, 0.7, 0.25, 1);
+  transition: filter 1s cubic-bezier(0.25, 0.7, 0.25, 1);
 }
 
 @media (max-width: 640px) {
@@ -126,7 +126,7 @@
 
 .bt-map--sharpening .bt-map__chrome {
   opacity: 0;
-  animation: bt-chrome-in 0.8s ease 1.4s forwards;
+  animation: bt-chrome-in 0.45s ease 0.6s forwards;
 }
 
 @keyframes bt-chrome-in {

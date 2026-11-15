@@ -187,7 +187,7 @@ const MarsMap = forwardRef<MarsMapHandle, MarsMapProps>(function MarsMap(
         return;
       }
       setFocus('sharpening');
-      focusTimer.current = window.setTimeout(() => setFocus('sharp'), 2300);
+      focusTimer.current = window.setTimeout(() => setFocus('sharp'), 1300);
     },
     [flyHome]
   );

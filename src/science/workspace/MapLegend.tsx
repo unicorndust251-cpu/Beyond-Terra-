@@ -1,28 +1,13 @@
 import { ELEVATION_SCALE, SLOPE_SCALE, cssGradient, legendPercent } from '../colorScales';
 
-export type LegendMode = 'elevation' | 'slope' | 'geology';
+export type LegendMode = 'elevation' | 'slope';
 
 /**
- * The key of the coloured data layer on screen, and nothing else. Hidden when no data
- * layer is on. The colours come from the same scales the tiles are drawn with.
+ * The key of the elevation or slope layer on screen, and nothing else. Hidden when neither
+ * is on; geology has its own legend (geology/GeologyLegend). The colours come from the same
+ * scales the tiles are drawn with.
  */
 export default function MapLegend({ mode, blended }: { mode: LegendMode; blended: boolean }) {
-  if (mode === 'geology') {
-    return (
-      <figure className="bt-legend bt-legend--note" aria-label="Geologic units key">
-        <figcaption>
-          <span className="bt-legend__title">Geologic units</span>
-          <span className="bt-legend__unit">USGS colours</span>
-        </figcaption>
-        <p>
-          Click the map to read a unit.{' '}
-          <a href="https://pubs.usgs.gov/sim/3292/pdf/sim3292_map.pdf" target="_blank" rel="noreferrer">
-            Full key
-          </a>
-        </p>
-      </figure>
-    );
-  }
   const scale = mode === 'elevation' ? ELEVATION_SCALE : SLOPE_SCALE;
   return (
     <figure className="bt-legend" aria-label={`${mode === 'elevation' ? 'Elevation' : 'Slope'} colour key`}>

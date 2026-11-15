@@ -1,12 +1,14 @@
 import type { ReactNode } from 'react';
 import { formatDuration, formatKm, formatLatitude, formatLongitude, locationName, MARS_MEAN_RADIUS_KM } from '../geo';
-import { ROUTE_STATUS_LABELS, routeStatus, type MissionState, type PlannedLocation, type RouteMetrics } from '../model';
+import { ROUTE_STATUS_LABELS, routeStatus, type DurationSummary, type MissionState, type PlannedLocation, type RouteMetrics } from '../model';
+import RouteHazards from './RouteHazards';
 import ResetRouteButton from './ResetRouteButton';
 import { hasAnyStop, MODE_LABELS } from './RouteSection';
 
 interface Props {
   state: MissionState;
   metrics: RouteMetrics;
+  duration: DurationSummary;
   /** The planner panel is open beside the map (desktop): leave room for it. */
   besidePanel: boolean;
   expanded: boolean;
@@ -46,6 +48,7 @@ function Place({ symbol, role, location }: { symbol: string; role: string; locat
 export default function RouteSummary({
   state,
   metrics,
+  duration,
   besidePanel,
   expanded,
   onToggle,
@@ -112,6 +115,21 @@ export default function RouteSummary({
                 <dt>Science stops</dt>
                 <dd className="mp-data">{scienceStops}</dd>
               </div>
+              <div>
+                <dt>Checkpoint activity time</dt>
+                <dd className="mp-data">
+                  {formatDuration(duration.taskHours)}
+                  {duration.unknownTasks > 0 && ` + ${duration.unknownTasks} unknown`}
+                </dd>
+              </div>
+              <div>
+                <dt>Total planned duration</dt>
+                <dd className="mp-data">{hasRoute ? formatDuration(duration.totalHours) : '—'}</dd>
+              </div>
+              <div>
+                <dt>Return by the same line</dt>
+                <dd className="mp-data">{hasRoute ? `${formatKm(metrics.totalKm)} · ${formatDuration(metrics.travelHours)}` : '—'}</dd>
+              </div>
             </dl>
           </div>
 
@@ -122,6 +140,13 @@ export default function RouteSummary({
             {state.speedKmh[state.travelMode]} km/h, with no terrain or hazard adjustment. Not a safety or traversability
             assessment.
           </p>
+
+          <p className="mp-sum__assumptions">
+            Activity time is the sum of the tasks scheduled at the stops, from the planner’s example task times. The return
+            figure is an estimate only, if the walk comes back along the same stops; it is not added to the total.
+          </p>
+
+          <RouteHazards />
 
           {metrics.segments.length > 1 && (
             <details className="mp-sum__segments">

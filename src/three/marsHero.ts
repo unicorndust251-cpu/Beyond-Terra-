@@ -36,7 +36,7 @@ export const HERO = {
 } as const;
 
 /**
- * The original four-second reveal, as three progress values (0 → 1). The intro plays it
+ * The Mars reveal, as three progress values (0 → 1). The intro plays it
  * on the tablet; a direct visit plays it full-screen. Once complete it stays complete:
  * the hero then holds its final composition and the planet keeps rotating.
  */

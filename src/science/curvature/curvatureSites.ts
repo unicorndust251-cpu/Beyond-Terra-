@@ -38,6 +38,9 @@ const gaz = (id: number) => `https://planetarynames.wr.usgs.gov/Feature/${id}`;
 const MOLA_ONLY = 'MOLA MEGDR elevation, 3.7 km bins (global). No local elevation model is loaded here.';
 const NOT_CALCULATED = 'Candidate location — curvature not yet calculated.';
 const IMAGERY_GLOBAL = 'Viking colour mosaic and global CTX mosaic (5 m/px) on this map.';
+const LOCAL_NOT_CALCULATED = 'Local curvature: not calculated.';
+const GAZ_MARS = 'https://planetarynames.wr.usgs.gov/SearchResults?Target=20_Mars';
+const photojournal = (pia: string) => `https://photojournal.jpl.nasa.gov/catalog/${pia}`;
 
 export const CURVATURE_SITES: CurvatureSite[] = [
   {
@@ -218,6 +221,136 @@ export const CURVATURE_SITES: CurvatureSite[] = [
     imagery: IMAGERY_GLOBAL,
     source: { name: 'ESA: The dark dunes of Moreux crater', url: 'https://www.esa.int/ESA_Multimedia/Images/2020/03/The_dark_dunes_of_Moreux_crater' },
     status: NOT_CALCULATED,
+  },
+
+  /* Valles Marineris canyons: more walls, troughs, ridges and slope transitions. Feature
+     positions are approximate USGS named-feature references; observation areas are the
+     centres of NASA Mars Odyssey THEMIS VIS images. Checked on 2026-11-15. */
+  {
+    id: 'ius-chasma',
+    name: 'Ius Chasma',
+    latText: '-7.29',
+    lonEastText: '275.61',
+    approximate: true,
+    reference: 'Approximate named-feature reference (USGS Gazetteer of Planetary Nomenclature), not a measured point',
+    landform: 'Canyon',
+    shapes: 'Canyon walls, floor transitions and surrounding relief',
+    context: 'Explore canyon walls, floor transitions and surrounding relief. Local curvature varies across the canyon.',
+    terrainData: MOLA_ONLY,
+    imagery: IMAGERY_GLOBAL,
+    source: { name: 'USGS Gazetteer of Planetary Nomenclature (Mars)', url: GAZ_MARS },
+    status: LOCAL_NOT_CALCULATED,
+  },
+  {
+    id: 'melas-chasma',
+    name: 'Melas Chasma',
+    latText: '-10.52',
+    lonEastText: '287.46',
+    approximate: true,
+    reference: 'Approximate named-feature reference (USGS Gazetteer of Planetary Nomenclature), not a measured point',
+    landform: 'Broad canyon',
+    shapes: 'Canyon walls, floor and landslide deposits',
+    context:
+      'A broad canyon containing layered materials, dunes and large landslide deposits. Compare wall, floor and deposit shapes.',
+    terrainData: MOLA_ONLY,
+    imagery: IMAGERY_GLOBAL,
+    source: { name: 'NASA/JPL: PIA23992 Melas Chasma', url: 'https://www.jpl.nasa.gov/images/pia23992-melas-chasma/' },
+    status: LOCAL_NOT_CALCULATED,
+  },
+  {
+    id: 'noctis-labyrinthus',
+    name: 'Noctis Labyrinthus',
+    latText: '-6.36',
+    lonEastText: '258.81',
+    approximate: true,
+    reference: 'Approximate named-feature reference (USGS Gazetteer of Planetary Nomenclature), not a measured point',
+    landform: 'Network of intersecting troughs',
+    shapes: 'Trough walls, corners and intervening terrain',
+    context:
+      'A complex network of intersecting troughs. Examine changes in surface shape around trough walls, corners and intervening terrain.',
+    terrainData: MOLA_ONLY,
+    imagery: IMAGERY_GLOBAL,
+    source: { name: 'USGS Gazetteer of Planetary Nomenclature (Mars)', url: GAZ_MARS },
+    status: LOCAL_NOT_CALCULATED,
+  },
+  {
+    id: 'tithonium-chasma',
+    name: 'Tithonium Chasma',
+    latText: '-4.60',
+    lonEastText: '275.71',
+    approximate: true,
+    reference: 'Approximate named-feature reference (USGS Gazetteer of Planetary Nomenclature), not a measured point',
+    landform: 'Canyon',
+    shapes: 'High ground, canyon walls and lower terrain',
+    context: 'Explore canyon relief and transitions between surrounding high ground, walls and lower terrain.',
+    terrainData: MOLA_ONLY,
+    imagery: IMAGERY_GLOBAL,
+    source: { name: 'USGS Gazetteer of Planetary Nomenclature (Mars)', url: GAZ_MARS },
+    status: LOCAL_NOT_CALCULATED,
+  },
+  {
+    id: 'candor-east',
+    name: 'Eastern Candor Chasma',
+    latText: '-7.04697',
+    lonEastText: '292.058',
+    approximate: false,
+    reference: 'Centre of THEMIS VIS image PIA25152 (Mars Odyssey), an observation area, not a feature centre',
+    landform: 'Canyon, observation area',
+    shapes: 'Local terrain bending within the observation',
+    context:
+      'This Mars Odyssey observation shows part of eastern Candor Chasma. Use matching elevation coverage to investigate local terrain bending.',
+    terrainData: MOLA_ONLY,
+    imagery: `${IMAGERY_GLOBAL} The THEMIS VIS image itself is on its source page.`,
+    source: { name: 'NASA Photojournal PIA25152', url: photojournal('PIA25152') },
+    status: LOCAL_NOT_CALCULATED,
+  },
+  {
+    id: 'ophir-candor-west',
+    name: 'Western Ophir–Candor area',
+    latText: '-4.15087',
+    lonEastText: '286.533',
+    approximate: false,
+    reference: 'Centre of THEMIS VIS image PIA25850 (Mars Odyssey), an observation area, not a feature centre',
+    landform: 'Canyons, observation area',
+    shapes: 'Canyon terrain in western Ophir and Candor',
+    context:
+      'This observation covers western portions of Ophir and Candor. Explore the terrain using imagery alongside available elevation data.',
+    terrainData: MOLA_ONLY,
+    imagery: `${IMAGERY_GLOBAL} The THEMIS VIS image itself is on its source page.`,
+    source: { name: 'NASA Photojournal PIA25850', url: photojournal('PIA25850') },
+    status: LOCAL_NOT_CALCULATED,
+  },
+  {
+    id: 'juventae-dunes',
+    name: 'Juventae Chasma dune area',
+    latText: '-4.68844',
+    lonEastText: '297.159',
+    approximate: false,
+    reference: 'Centre of THEMIS VIS image PIA13071 (Mars Odyssey), an observation area, not a feature centre',
+    landform: 'Dunes on a depression floor, observation area',
+    shapes: 'Dune forms on the depression floor',
+    context:
+      'Dunes occur on this portion of the depression floor. Dune-scale curvature requires sufficiently detailed terrain data.',
+    terrainData: `${MOLA_ONLY} Far too coarse for dune-scale shapes.`,
+    imagery: `${IMAGERY_GLOBAL} The THEMIS VIS image itself is on its source page.`,
+    source: { name: 'NASA Photojournal PIA13071', url: photojournal('PIA13071') },
+    status: LOCAL_NOT_CALCULATED,
+  },
+  {
+    id: 'candor-deposits',
+    name: 'Candor eroded-deposit area',
+    latText: '-6.77086',
+    lonEastText: '292.729',
+    approximate: false,
+    reference: 'Centre of THEMIS VIS image PIA13029 (Mars Odyssey), an observation area, not a feature centre',
+    landform: 'Eroded deposits and a landslide deposit, observation area',
+    shapes: 'Several landforms within one image',
+    context:
+      'This observation contains eroded deposits and a large landslide deposit. Inspect the different landforms without assuming one curvature class for the whole image.',
+    terrainData: MOLA_ONLY,
+    imagery: `${IMAGERY_GLOBAL} The THEMIS VIS image itself is on its source page.`,
+    source: { name: 'NASA Photojournal PIA13029', url: photojournal('PIA13029') },
+    status: LOCAL_NOT_CALCULATED,
   },
 ];
 

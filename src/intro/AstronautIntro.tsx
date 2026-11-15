@@ -87,7 +87,7 @@ export default function AstronautIntro({ onHandoff, onComplete }: AstronautIntro
     let raf = 0;
     let playing = false;
     // The timeline follows the wall clock (not GSAP's lag-smoothed ticker), so the
-    // sequence lasts about ten seconds even on slow devices; slow frames are skipped,
+    // sequence keeps its length even on slow devices; slow frames are skipped,
     // and only a long stall (over 0.25 s) is absorbed.
     let clock = 0;
     let last = 0;

@@ -5,6 +5,11 @@
   --bt-burgundy-wine: #9b2948;
   --bt-burgundy-rose: #c77b90;
   --bt-burgundy-light: #e7b7c4;
+  /* Curvature regions: border and profile-curvature fills */
+  --bt-curv-border: #943c59;
+  --bt-curv-convex: #ad79ad;
+  --bt-curv-concave: #4cb9bd;
+  --bt-curv-flat: #f3e5dc;
 }
 
 /* ------------------------------------------------------------------ markers */
@@ -141,6 +146,44 @@
   font-size: 10.5px;
   line-height: 1.45;
   color: var(--bt-text-3);
+}
+
+/* Curvature classes, for calculated regions (none yet) and the key */
+.bt-curv__key {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px 10px;
+  margin: 0 0 6px;
+  padding: 0;
+  list-style: none;
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--bt-text-2);
+}
+
+.bt-curv__key li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bt-curv__sw {
+  display: inline-block;
+  flex: none;
+  width: 14px;
+  height: 10px;
+  border: 1.5px solid var(--bt-curv-border);
+  border-radius: 2px;
+  vertical-align: -1px;
+}
+
+.bt-curv__sw--convex { background: var(--bt-curv-convex); }
+.bt-curv__sw--concave { background: var(--bt-curv-concave); }
+.bt-curv__sw--flat { background: var(--bt-curv-flat); }
+
+.bt-curv__sw--na {
+  border-color: #8a8580;
+  background: repeating-linear-gradient(135deg, #8a8580 0 1.5px, #3a3533 1.5px 4px);
 }
 
 .bt-curv__search input {

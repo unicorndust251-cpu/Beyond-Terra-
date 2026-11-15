@@ -23,9 +23,9 @@ class IntroBoundary extends Component<{ onError: () => void; children: ReactNode
 type Stage = 'globe' | 'zooming' | 'map';
 
 /** How long the finished globe holds before zooming into the map (ms). */
-const GLOBE_HOLD_MS = 2500;
+const GLOBE_HOLD_MS = 200;
 /** Length of the push into the planet (matches .bt-home.is-zooming in HomePage.css). */
-const GLOBE_ZOOM_MS = 1700;
+const GLOBE_ZOOM_MS = 1000;
 /** Longest the intro may cover the site before the website is shown regardless (ms). */
 const INTRO_WATCHDOG_MS = 25000;
 
@@ -33,7 +33,7 @@ export default function App() {
   const [reducedMotion] = useState(prefersReducedMotion);
   const [introActive, setIntroActive] = useState(shouldPlayIntro);
   const [phase, setPhase] = useState<HomePhase>(() => (introActive ? 'intro' : 'home'));
-  // The intro already shows the four-second Mars reveal on the tablet; without it, the
+  // The intro already shows the Mars reveal on the tablet; without it, the
   // globe plays the reveal full-screen.
   const [playReveal] = useState(!introActive);
 
@@ -49,7 +49,7 @@ export default function App() {
   const onGlobeRevealed = useCallback(() => setGlobeReady(true), []);
 
   // Watchdog: whatever happens inside the intro, the website appears. The intro normally
-  // ends in about 10.5 s (plus loading, which it gives up on after 12 s).
+  // ends in about 2.6 s (plus loading, which it gives up on after 12 s).
   useEffect(() => {
     if (!introActive) return undefined;
     const timer = window.setTimeout(onComplete, INTRO_WATCHDOG_MS);

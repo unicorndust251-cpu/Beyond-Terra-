@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState, type CSSProperties } from 'react';
 import {
   normalizeLongitudeEast,
+  plannedRouteStore,
   selectedLocationStore,
   useMapBridge,
   useSelectedLocation,
@@ -8,7 +9,7 @@ import {
   type MarsCoordinate,
   type SelectedLocation,
 } from '../../shared';
-import { durationSummary, initialMissionState, missionReducer, routeMetrics, routeStops, type StopKey } from '../model';
+import { durationSummary, initialMissionState, missionReducer, routeMetrics, routeStatus, routeStops, type StopKey } from '../model';
 import ExplorationPanel from '../exploration/ExplorationPanel';
 import { useExploration } from '../exploration/useExploration';
 import { useMapSync } from '../useMapSync';
@@ -115,6 +116,21 @@ export default function MissionPlannerPanel() {
   useEffect(() => {
     setSummaryOpen(hasRoute && !isPhone());
   }, [hasRoute]);
+
+  // Publish the drawn route through shared, so the hazard layers can test it
+  const routeStatusNow = routeStatus(state);
+  useEffect(() => {
+    const stops = routeStops(state)
+      .filter((s) => s.location)
+      .map((s) => ({ key: s.key, label: s.label, coordinate: s.location!.coordinate, name: s.location!.name }));
+    const signature = JSON.stringify(stops.map((s) => [s.key, s.coordinate]));
+    const prev = plannedRouteStore.get();
+    if (stops.length < 2) plannedRouteStore.set(null);
+    else if (!prev || prev.signature !== signature || prev.status !== routeStatusNow) plannedRouteStore.set({ stops, status: routeStatusNow, signature });
+    // the stops and status describe the route completely
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.start, state.destination, state.checkpoints, routeStatusNow]);
+  useEffect(() => () => plannedRouteStore.set(null), []);
 
   // The route preview astronaut, kept here (above the tabs) so tab changes never interrupt it
   const exploration = useExploration(state);
@@ -288,6 +304,7 @@ export default function MissionPlannerPanel() {
         <RouteSummary
           state={state}
           metrics={metrics}
+          duration={duration}
           besidePanel={open}
           expanded={summaryOpen}
           onToggle={() => showSummary(!summaryOpen)}

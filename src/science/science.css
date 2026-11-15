@@ -22,7 +22,7 @@
 .bt-map--sharpening .bt-sci-top,
 .bt-map--sharpening .bt-sci-bottom {
   opacity: 0;
-  animation: bt-chrome-in 0.8s ease 1.4s forwards;
+  animation: bt-chrome-in 0.45s ease 0.6s forwards;
 }
 
 .bt-sr {

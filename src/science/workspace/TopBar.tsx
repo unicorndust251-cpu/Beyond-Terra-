@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type * as L from 'leaflet';
 import { quadrangleAt } from './quadrangles';
 import { displaySettingsStore, useDisplaySettings } from './uiState';
+import ViewSwitch from '../../hazards/components/ViewSwitch';
 
 export type DataStatus = 'ready' | 'loading' | 'partial' | 'error' | 'off';
 
@@ -37,6 +38,7 @@ export default function TopBar({ map, search, statuses }: { map: L.Map; search: 
   return (
     <header className="bt-top">
       <span className="bt-top__mark">BEYOND TERRA</span>
+      <ViewSwitch />
       <span className="bt-top__region" title={`USGS Mars chart ${quad.code}, the region at the centre of the view`}>
         {quad.name}
         <span className="bt-top__code">{quad.code}</span>

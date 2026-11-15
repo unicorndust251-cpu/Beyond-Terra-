@@ -23,9 +23,10 @@
 
 .bt-top__mark {
   flex: none;
-  font: 600 11.5px/1 var(--bt-font-display);
-  letter-spacing: 0.26em;
-  color: var(--bt-text);
+  font: 700 16px/1 var(--bt-font-display);
+  letter-spacing: 0.2em;
+  color: #f5f1ed;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.55), 0 0 18px rgba(214, 163, 139, 0.18);
 }
 
 .bt-top__region {
@@ -47,7 +48,7 @@
 }
 
 .bt-top__search {
-  flex: 0 1 420px;
+  flex: 0 1 520px;
   min-width: 0;
   margin: 0 auto;
 }
@@ -217,26 +218,36 @@
 .bt-search__field {
   display: flex;
   align-items: center;
-  gap: 9px;
-  height: 32px;
-  padding: 0 6px 0 12px;
+  gap: 11px;
+  height: 40px;
+  padding: 0 10px 0 18px;
   border-radius: 999px;
-  background: rgba(37, 33, 31, 0.9);
-  box-shadow: inset 0 0 0 1px var(--bt-border);
+  background: rgba(48, 39, 37, 0.94);
+  box-shadow:
+    inset 0 0 0 1px rgba(214, 163, 139, 0.5),
+    0 2px 14px rgba(0, 0, 0, 0.35);
   transition: box-shadow 0.18s ease, background-color 0.18s ease;
+}
+
+.bt-search__field:hover {
+  box-shadow:
+    inset 0 0 0 1px rgba(214, 163, 139, 0.75),
+    0 2px 18px rgba(214, 163, 139, 0.14);
 }
 
 .bt-search__field:focus-within {
   background: var(--bt-surface);
-  box-shadow: inset 0 0 0 1px rgba(197, 139, 112, 0.55);
+  box-shadow:
+    inset 0 0 0 1.5px rgba(214, 163, 139, 0.9),
+    0 2px 18px rgba(214, 163, 139, 0.18);
 }
 
 .bt-search__field > svg {
   flex: none;
-  width: 14px;
-  height: 14px;
+  width: 17px;
+  height: 17px;
   fill: none;
-  stroke: var(--bt-text-3);
+  stroke: #d6a38b;
   stroke-width: 1.6;
   stroke-linecap: round;
 }
@@ -248,12 +259,14 @@
   border: 0;
   background: none;
   color: var(--bt-text);
-  font: 400 13px/1 var(--bt-font-ui);
+  font: 500 15px/1 var(--bt-font-ui);
+  letter-spacing: 0.01em;
   outline: none;
 }
 
 .bt-search__field input::placeholder {
-  color: var(--bt-text-3);
+  color: #e8c2ad;
+  opacity: 0.85;
 }
 
 .bt-search__clear {
@@ -746,7 +759,7 @@
 
 /* Hidden while the map comes into focus */
 .bt-map--blurred .bt-top { opacity: 0; }
-.bt-map--sharpening .bt-top { opacity: 0; animation: bt-chrome-in 0.8s ease 1.4s forwards; }
+.bt-map--sharpening .bt-top { opacity: 0; animation: bt-chrome-in 0.45s ease 0.6s forwards; }
 
 /* ---------------------------------------------------------------- small screens */
 @media (max-width: 760px) {
@@ -756,7 +769,9 @@
 }
 
 @media (max-width: 480px) {
-  .bt-top__mark { display: none; }
+  .bt-top__mark { font-size: 12.5px; letter-spacing: 0.14em; }
+  .bt-search__field { height: 38px; padding-left: 14px; }
+  .bt-search__field input { font-size: 14px; }
   /* The layers menu spans the screen under its button */
   .bt-layers__menu {
     width: calc(100vw - 24px);

@@ -17,6 +17,14 @@ const VIEW_ZOOM: Record<string, number> = {
   'hebes-chasma': 6.5,
   korolev: 7.5,
   moreux: 7,
+  'ius-chasma': 7,
+  'melas-chasma': 6.5,
+  'noctis-labyrinthus': 6.5,
+  'tithonium-chasma': 7,
+  'candor-east': 9,
+  'ophir-candor-west': 9,
+  'juventae-dunes': 9,
+  'candor-deposits': 9,
 };
 
 /**
@@ -117,6 +125,23 @@ export default function CurvatureLayer() {
       <p className="bt-curv__note">
         Locations highlight landforms suitable for curvature investigation. Markers do not represent measured terrain curvature.
       </p>
+      <ul className="bt-curv__key" aria-label="Curvature key">
+        <li>
+          <span className="bt-curv__sw bt-curv__sw--convex" aria-hidden="true" /> Convex profile
+        </li>
+        <li>
+          <span className="bt-curv__sw bt-curv__sw--concave" aria-hidden="true" /> Concave profile
+        </li>
+        <li>
+          <span className="bt-curv__sw bt-curv__sw--flat" aria-hidden="true" /> Near-zero profile curvature
+        </li>
+        <li>
+          <span className="bt-curv__sw bt-curv__sw--na" aria-hidden="true" /> Calculation unavailable
+        </li>
+      </ul>
+      <p className="bt-curv__note">
+        Calculated regions will be filled as above inside a burgundy border. None has been calculated yet, so no regions are drawn.
+      </p>
 
       {!selected && (
         <>
@@ -185,7 +210,11 @@ export default function CurvatureLayer() {
               </a>
             </dd>
             <dt>Analysis status</dt>
-            <dd className="bt-curv__status">{selected.status}</dd>
+            <dd className="bt-curv__status">
+              <span>
+                <span className="bt-curv__sw bt-curv__sw--na" aria-hidden="true" /> {selected.status}
+              </span>
+            </dd>
           </dl>
           <button type="button" className="bt-curv__view" onClick={() => view(selected)}>
             View location
