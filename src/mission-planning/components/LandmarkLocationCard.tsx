@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { SelectedLocation } from '../../shared';
+import { openGroundPerspective, type SelectedLocation } from '../../shared';
 import { formatLatitude, formatLongitude } from '../geo';
 
 export type LandmarkRole = 'start' | 'destination' | 'checkpoint';
@@ -70,6 +70,13 @@ export default function LandmarkLocationCard({ selection, onAssign }: Props) {
           Add as Checkpoint
         </button>
       </div>
+      <button
+        type="button"
+        className="mp-link mp-lmk__ground"
+        onClick={() => openGroundPerspective({ coordinate: c, name: selection.name, context: 'landmark' })}
+      >
+        Ground Perspective · NASA rover photographs
+      </button>
       <p className="mp-lmk__note" role="status">
         {done ? `${DONE[done]}: ${selection.name}, using its stored reference coordinates.` : 'Uses the stored reference coordinates of the feature centre.'}
       </p>

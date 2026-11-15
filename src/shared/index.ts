@@ -7,6 +7,8 @@ export * from './coordinates';
 export * from './store';
 export type * from './map/MarsMapBridge';
 export { mapBridgeStore, selectedLocationStore, useMapBridge, useSelectedLocation } from './map/mapBridgeStore';
+export { closeGroundPerspective, groundPerspectiveStore, openGroundPerspective, useGroundPerspectiveRequest } from './ground';
+export type { GroundPerspectiveContext, GroundPerspectiveRequest } from './ground';
 export {
   HAZARD_DEFAULTS,
   hazardFocusStore,

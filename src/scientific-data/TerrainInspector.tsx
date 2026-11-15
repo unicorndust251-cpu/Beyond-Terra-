@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { useMapBridge, useSelectedLocation, type MapOverlayHandle } from '../shared';
+import { openGroundPerspective, useMapBridge, useSelectedLocation, type MapOverlayHandle } from '../shared';
 import { inspectTerrain, type Reading, type TerrainInspection } from './terrain';
 import { formatElevation, formatLatitude, formatLongitude, useDisplaySettings } from '../science/workspace/uiState';
 import './inspector.css';
@@ -99,6 +99,16 @@ export default function TerrainInspector() {
       ) : (
         <Readings key={`${selected.coordinate.latitude},${selected.coordinate.longitudeEast}`} r={result} />
       )}
+      <button
+        type="button"
+        className="sd-card__ground"
+        title="NASA rover photographs near this point"
+        onClick={() =>
+          openGroundPerspective({ coordinate: selected.coordinate, name: selected.name, context: selected.landmarkId ? 'landmark' : selected.source === 'manual' ? 'custom' : 'map-point' })
+        }
+      >
+        Ground Perspective · rover photos
+      </button>
     </section>
   );
 }

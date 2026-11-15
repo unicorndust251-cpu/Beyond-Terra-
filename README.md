@@ -337,6 +337,20 @@ Sizes: shot counts 1.2 MB, stored as categories (0, 1, 2–4, 5–9, 10+); Jezer
 - **Missing data:** points outside the DTM show **Outside coverage**, pole rows and DTM edges **Not assessed**, and blocked files **Data unavailable**. No values appear in any of these cases.
 - **Sources:** all 26 Gazetteer links resolve and name the linked feature; the dataset links resolve.
 
+## Ground Perspective (NASA rover photographs)
+
+What the ground looks like near a chosen place, from real rover photographs. Open it from a route stop (start, destination, any waypoint), the selected-point card, a landmark card, the globe's landmark panel or the Mars Dashboard. Opening and closing it changes nothing in the mission plan.
+
+- **Catalogue:** `public/data/ground/catalogue.json`, built by `node scripts/ground/build-ground.mjs` from a curated list of image IDs. For each one the script reads NASA's own raw-image record (mars.nasa.gov raw-image feed: camera, sol, UTC time, caption, credit, image files) and checks that every image URL loads. Perseverance (Jezero) and Curiosity (Gale) only.
+- **Where a photograph was taken:** only when the image's rover motion counter (site, drive) exactly matches a rover position NASA has published in its MMGIS localizations (`M20_waypoints.json`, `MSL_waypoints.json`). Perseverance records give site/drive; for Curiosity Navcam it is read from the product ID (`F`/`S` + 3-digit site + 4-digit drive), which matched NASA's localizations for 370 of 380 images checked. Otherwise the capture position is null and no distance is shown. The position is the rover's, not a surveyed camera point. View orientation is not given (the feed's pointing angles have no documented frame).
+- **Matching** (`src/ground/catalogue.ts`), using the shared great-circle distance (IAU sphere, R = 3,396.19 km):
+  - *Nearby:* captured within the horizon distance from the ~2 m mast, √(2Rh) ≈ 3.7 km, so the point may be in view.
+  - *Regional:* farther, but the point and the capture both lie within one crater diameter of the crater's centre (crater plus its continuous-ejecta zone; centres and diameters from the IAU/USGS Gazetteer: Jezero 47.5 km, Gale 154.1 km).
+  - *Mission area:* no capture position, and the point lies in that rover's region; no distance.
+  - Otherwise nothing is shown: "No verified NASA surface imagery is available for this location."
+- **Map:** "Show capture location on map" draws the capture point (◉), the chosen point (◎) and a dashed line with their separation, using its own `gp:` overlays; Clear removes them. The route is never changed.
+- Images stay on NASA's servers (thumbnails in the list, the 1200 px version in the viewer, full resolution by link). Credit: NASA/JPL-Caltech (Mastcam-Z: NASA/JPL-Caltech/ASU).
+
 ## Out of scope for now
 
 Route planning, waypoints, information panels and other Explorer features are not part of this build. When they are built, routes must be presented as estimates from orbital data, never as verified safe paths.

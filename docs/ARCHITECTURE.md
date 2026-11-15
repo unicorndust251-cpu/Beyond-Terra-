@@ -9,6 +9,7 @@ Two developers build features in parallel: **mission planning** and **scientific
 | `src/mission-planning/` | Mission planning | Routes, checkpoints, equipment selection, mission state |
 | `src/scientific-data/` | Scientific mapping | Dataset adapters, scientific layers, terrain sampling, hazards |
 | `src/shared/` | Both (changes reviewed by both) | Common types, coordinate conventions, the map contract, shared stores |
+| `src/ground/` | Ground Perspective | NASA rover photograph catalogue, location matching and viewer; opened through `openGroundPerspective()` in `src/shared/ground.ts` |
 | `src/map/` | Shared (do not change for one feature) | The Mars Trek map itself (Leaflet + NASA Trek tiles) |
 | `src/intro/`, `src/three/`, `src/pages/`, `src/components/` | Unchanged by either feature | Astronaut intro, globe, zoom into the map |
 

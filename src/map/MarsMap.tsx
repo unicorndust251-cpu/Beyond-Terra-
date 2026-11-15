@@ -75,6 +75,9 @@ const MarsMap = forwardRef<MarsMapHandle, MarsMapProps>(function MarsMap(
   const reducedMotion = usePrefersReducedMotion();
   const reducedRef = useRef(reducedMotion);
   reducedRef.current = reducedMotion;
+  const hasRevealed = useRef(!awaitReveal);
+  const revealPending = useRef(false);
+  const focusTimer = useRef(0);
 
   /* ---------------------------------------------------------------- create */
   useLayoutEffect(() => {
@@ -130,6 +133,30 @@ const MarsMap = forwardRef<MarsMapHandle, MarsMapProps>(function MarsMap(
     const smooth = new SmoothZoom(map, { instant: reducedRef.current });
     map.on('dblclick', (e: L.LeafletMouseEvent) => smooth.zoomBy(e.originalEvent.shiftKey ? -1 : 1, e.containerPoint));
 
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        const completeReveal = revealPending.current;
+        smooth.stop();
+        map.stop();
+        if (completeReveal) {
+          const center = L.latLng(HOME_CENTER[0], nearestWorldLng(HOME_CENTER[1], map.getCenter().lng));
+          map.setView(center, jezeroOrbitZoom(map), { animate: false });
+          revealPending.current = false;
+        }
+        return;
+      }
+
+      requestAnimationFrame(() => {
+        if (document.hidden) return;
+        map.invalidateSize({ pan: false });
+        if (hasRevealed.current) {
+          window.clearTimeout(focusTimer.current);
+          setFocus('sharp');
+        }
+      });
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
     const onResize = () => {
       map.invalidateSize({ pan: false });
       map.setMinZoom(minZoomForViewport(map.getSize().y));
@@ -142,6 +169,7 @@ const MarsMap = forwardRef<MarsMapHandle, MarsMapProps>(function MarsMap(
     if (import.meta.env.DEV) (window as unknown as { __marsMap?: L.Map }).__marsMap = map;
 
     return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange);
       window.removeEventListener('resize', onResize);
       smooth.destroy();
       map.remove();
@@ -176,20 +204,28 @@ const MarsMap = forwardRef<MarsMapHandle, MarsMapProps>(function MarsMap(
 
   const zoomBy = useCallback((delta: number) => parts?.smooth.zoomBy(delta), [parts]);
 
-  const focusTimer = useRef(0);
   const reveal = useCallback(
     (options: RevealOptions = {}) => {
       const duration = reducedRef.current ? 0 : options.duration ?? 2.6;
+      hasRevealed.current = true;
       flyHome(duration);
       window.clearTimeout(focusTimer.current);
       if (duration <= 0) {
+        revealPending.current = false;
         setFocus('sharp');
         return;
       }
+      revealPending.current = true;
+      const map = parts?.map;
+      const finishReveal = () => {
+        revealPending.current = false;
+        map?.off('moveend', finishReveal);
+      };
+      map?.on('moveend', finishReveal);
       setFocus('sharpening');
       focusTimer.current = window.setTimeout(() => setFocus('sharp'), 1300);
     },
-    [flyHome]
+    [flyHome, parts]
   );
   useEffect(() => () => window.clearTimeout(focusTimer.current), []);
 

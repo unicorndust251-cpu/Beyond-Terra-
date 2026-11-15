@@ -2,8 +2,9 @@ import { Component, lazy, Suspense, useCallback, useEffect, useRef, useState, ty
 import HomePage, { type HomePhase } from './pages/HomePage';
 import MarsTrekSection from './components/MarsTrekSection';
 import MapReturnBar from './explore/MapReturnBar';
+import GroundPerspectiveHost from './ground/GroundPerspectiveHost';
 import { prefersReducedMotion, shouldPlayIntro } from './intro/introGate';
-import { navRequestStore, patchHazardState, selectedLocationStore, useHazardState, useMapBridge } from './shared';
+import { navRequestStore, patchHazardState, selectedLocationStore, useHazardState, useMapBridge, type MarsCoordinate } from './shared';
 import ExploreHub from './components/ExploreHub';
 // Starts tracking the inspected location (globe landmark or map point) from page load
 import './shared/focus';
@@ -51,14 +52,16 @@ function mapZoomFor(l: Landmark): number {
 }
 
 /**
- * Where the clear part of the map is (not under the planner, the route summary or the top
- * bar), in pixels from the map's centre, so a landmark lands where it can be seen and clicked.
+ * The clear part of the map (not under the planner, the route summary or the top bar): its
+ * size, and its centre in pixels from the map's centre.
  */
-function clearAreaOffset(): { x: number; y: number } {
+function clearArea(): { x: number; y: number; width: number; height: number } | null {
   const map = document.querySelector('.leaflet-container')?.getBoundingClientRect();
-  if (!map) return { x: 0, y: 0 };
+  if (!map) return null;
   const panel = document.querySelector('.mp-panel.is-open')?.getBoundingClientRect();
   const summary = document.querySelector('.mp-sum')?.getBoundingClientRect();
+  // Ground Perspective's reference bar, when it is showing
+  const reference = document.querySelector('.gp-ref')?.getBoundingClientRect();
   const phone = window.innerWidth <= 640;
   let left = map.left;
   let top = map.top + 56;
@@ -67,13 +70,36 @@ function clearAreaOffset(): { x: number; y: number } {
   if (panel && !phone) left = Math.max(left, panel.right + 12);
   if (panel && phone) top = Math.max(top, panel.bottom + 12);
   if (summary) bottom = Math.min(bottom, summary.top - 12);
-  if (bottom - top < 80 || right - left < 80) return { x: 0, y: 0 };
+  if (reference) bottom = Math.min(bottom, reference.top - 8);
+  if (bottom - top < 80 || right - left < 80) return null;
+  return { x: (left + right) / 2 - (map.left + map.width / 2), y: (top + bottom) / 2 - (map.top + map.height / 2), width: right - left, height: bottom - top };
+}
+
+/** Where to aim so a landmark lands in the clear part of the map, where it can be seen and clicked. */
+function clearAreaOffset(): { x: number; y: number } {
+  const a = clearArea();
   // The pin stands above its point: aim the point a little below the middle
-  return { x: (left + right) / 2 - (map.left + map.width / 2), y: (top + bottom) / 2 + 18 - (map.top + map.height / 2) };
+  return a ? { x: a.x, y: a.y + 18 } : { x: 0, y: 0 };
 }
 
 /** The map is plate carrée (EPSG:4326 transform): 0.703125° per pixel at zoom 0, halving per level. */
 const degreesPerPixel = (zoom: number) => 0.703125 / Math.pow(2, zoom);
+
+/** Camera that shows two points together inside the clear part of the map (with a margin for their pins). */
+function framePoints(a: MarsCoordinate, b: MarsCoordinate): { centre: MarsCoordinate; zoom: number } {
+  const area = clearArea() ?? { x: 0, y: 0, width: window.innerWidth * 0.8, height: window.innerHeight * 0.7 };
+  let dLon = b.longitudeEast - a.longitudeEast;
+  if (dLon > 180) dLon -= 360;
+  if (dLon < -180) dLon += 360;
+  const spanLon = Math.max(Math.abs(dLon), 0.004);
+  const spanLat = Math.max(Math.abs(b.latitude - a.latitude), 0.004);
+  // Plate carrée: the same degrees per pixel in both directions
+  const fit = Math.min(Math.log2((0.703125 * Math.max(40, area.width - 120)) / spanLon), Math.log2((0.703125 * Math.max(40, area.height - 120)) / spanLat));
+  const zoom = Math.max(3, Math.min(12, fit));
+  const d = degreesPerPixel(zoom);
+  const mid = { latitude: (a.latitude + b.latitude) / 2, longitudeEast: a.longitudeEast + dLon / 2 };
+  return { centre: { latitude: Math.max(-85, Math.min(85, mid.latitude + area.y * d)), longitudeEast: mid.longitudeEast - area.x * d }, zoom };
+}
 
 export default function App() {
   const [reducedMotion] = useState(prefersReducedMotion);
@@ -213,6 +239,15 @@ export default function App() {
           onRevealed={onGlobeRevealed}
         />
       )}
+      {/* NASA rover photographs near a chosen place, opened from the planner, map, globe or dashboard */}
+      <GroundPerspectiveHost
+        mapHidden={overlay !== null || stage !== 'map'}
+        onShowMap={() => setOverlay(null)}
+        onFrame={(a, b) => {
+          const { centre, zoom } = framePoints(a, b);
+          bridge?.flyTo(centre, { zoom, durationSeconds: 1.2 });
+        }}
+      />
       {introActive && (
         <IntroBoundary onError={onComplete}>
           <Suspense fallback={<div className="bt-intro-placeholder" />}>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { selectedLocationStore, useMapBridge, type MarsCoordinate, type SelectedLocation } from '../shared';
+import { openGroundPerspective, selectedLocationStore, useMapBridge, type MarsCoordinate, type SelectedLocation } from '../shared';
 import { useFocusedLocation } from '../shared/focus';
 import {
   formatLandmarkCoordinates,
@@ -266,6 +266,22 @@ export default function DashboardPage({ active, onOpenMap, onOpenExplore }: Prop
               <button type="button" className="md-btn md-btn--primary" disabled={!c} onClick={viewOnMap}>
                 View on Map
               </button>
+              <button
+                type="button"
+                className="md-btn"
+                disabled={!c}
+                onClick={() =>
+                  c &&
+                  openGroundPerspective({
+                    coordinate: c,
+                    name: landmark ? landmark.name : location?.name,
+                    context: landmark ? 'landmark' : location?.source === 'mission-plan' ? 'checkpoint' : 'custom',
+                    contextLabel: landmark ? undefined : location?.source === 'mission-plan' ? 'Mission stop' : undefined,
+                  })
+                }
+              >
+                Ground Perspective
+              </button>
             </div>
             {hasMission && (
               <div className="md-stops" aria-label="Mission stops">
@@ -287,7 +303,7 @@ export default function DashboardPage({ active, onOpenMap, onOpenExplore }: Prop
         ) : (
           <>
             <h2 className="md-h2 md-h2--group">Location &amp; Terrain</h2>
-            <div className="md-row md-row--four">
+            <div className="md-row md-row--four md-strip">
               <MetricCard title="Location" v={locationValue} />
               <MetricCard title="Elevation" v={tv.elevation} />
               <MetricCard title="Slope" v={tv.slope} />
@@ -296,10 +312,25 @@ export default function DashboardPage({ active, onOpenMap, onOpenExplore }: Prop
             {error && <p className="md-error">Terrain data could not be loaded: {error}</p>}
 
             <h2 className="md-h2 md-h2--group">Mars Conditions</h2>
+            <div className="md-row md-row--three md-strip">
+              <MetricCard title="Local Mars Time" v={timeValue} />
+              <MetricCard title="Martian Season" v={seasonValue} />
+              <MetricCard title="Gravity" v={gravityValue}>
+                <label className="md-calc">
+                  <span>Mass</span>
+                  <input inputMode="decimal" value={massKg} aria-label="Equipment mass in kilograms" onChange={(e) => setMassKg(e.target.value)} />
+                  <span>kg →</span>
+                  <strong className="md-num">{Number.isFinite(mass) && mass >= 0 ? `${weightNewtons(mass).toFixed(1)} N` : '—'}</strong>
+                </label>
+              </MetricCard>
+            </div>
+
+            <SolarCyclePanel selectedUtc={utcMs} selectedMode={timeMode} latitude={c.latitude} longitudeEast={c.longitudeEast} />
+
             <section className="md-wx" aria-label="Weather observations">
               <div className="md-wx__head">
                 <div className="md-wx__text">
-                  <h2 className="md-wx__title">Weather observations</h2>
+                  <h3 className="md-wx__title">Weather observations</h3>
                   <p className="md-wx__label">
                     {wx
                       ? `Historical observations — Perseverance rover, Jezero crater${wxRover?.state === 'ok' ? ` (${fmtCoord(wxRover.reading.rover)})` : ''} · ${fmtDay(wx.slot.utcMs)}, sol ${wx.period.sol}, ${wx.slot.ltst.slice(-8, -3)} LTST`
@@ -376,21 +407,8 @@ export default function DashboardPage({ active, onOpenMap, onOpenExplore }: Prop
               </div>
             </section>
 
-            <SolarCyclePanel selectedUtc={utcMs} selectedMode={timeMode} latitude={c.latitude} longitudeEast={c.longitudeEast} />
-
-            <div className="md-row md-row--three">
-              <MetricCard title="Local Mars Time" v={timeValue} />
-              <MetricCard title="Martian Season" v={seasonValue} />
-              <MetricCard title="Gravity" v={gravityValue}>
-                <label className="md-calc">
-                  <span>Mass</span>
-                  <input inputMode="decimal" value={massKg} aria-label="Equipment mass in kilograms" onChange={(e) => setMassKg(e.target.value)} />
-                  <span>kg →</span>
-                  <strong className="md-num">{Number.isFinite(mass) && mass >= 0 ? `${weightNewtons(mass).toFixed(1)} N` : '—'}</strong>
-                </label>
-              </MetricCard>
-            </div>
-
+            <h2 className="md-h2">Scientific details</h2>
+            <p className="md-h2__hint">Sources, coverage, methods and limitations behind the values above.</p>
             <div className="md-secs">
               <Section title="Environmental Conditions">
                 <p>

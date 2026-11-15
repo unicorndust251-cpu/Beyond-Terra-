@@ -26,6 +26,7 @@ import {
   type RouteMetrics,
 } from '../model';
 import { MODE_LABELS } from './RouteSection';
+import RouteHazards from './RouteHazards';
 import { InfoTip, Stat } from './ui';
 
 interface Props {
@@ -105,8 +106,18 @@ function taskMinutesLabel(t: TaskTiming): string {
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="mp-sheet">
-      <h3 className="mp-sheet__title">{title}</h3>
+      <h4 className="mp-sheet__title">{title}</h4>
       {children}
+    </section>
+  );
+}
+
+/** One chapter of the briefing: a heading and its sections. */
+function Group({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="mp-group">
+      <h3 className="mp-group__title">{title}</h3>
+      <div className="mp-group__body">{children}</div>
     </section>
   );
 }
@@ -133,7 +144,8 @@ export function ReviewSection({ state, metrics, duration }: ReviewProps) {
 
   return (
     <div className="mp-review">
-      <Section title="Mission overview">
+      <Group title="Route overview">
+      <Section title="At a glance">
         <dl className="mp-stats">
           <Stat label="Route status">
             <span className={`mp-status mp-status--${status}`}>{ROUTE_STATUS_LABELS[status]}</span>
@@ -146,7 +158,7 @@ export function ReviewSection({ state, metrics, duration }: ReviewProps) {
         </dl>
       </Section>
 
-      <Section title="Route details">
+      <Section title="Stops">
         <ol className="mp-stoplist">
           {stops.map((s) => (
             <li key={s.key}>
@@ -189,8 +201,10 @@ export function ReviewSection({ state, metrics, duration }: ReviewProps) {
           terrain.
         </p>
       </Section>
+      </Group>
 
-      <Section title="Astronaut configuration">
+      <Group title="Mission preparation">
+      <Section title="Crew">
         <dl className="mp-stats">
           <Stat label="Crew">{state.crew === 1 ? 'One astronaut' : 'Two astronauts'}</Stat>
           <Stat
@@ -237,11 +251,6 @@ export function ReviewSection({ state, metrics, duration }: ReviewProps) {
           <p className="mp-hint">No equipment selected</p>
         )}
         <dl className="mp-stats">
-          {(Object.keys(MASS_GROUP_LABELS) as MassGroup[]).map((g) => (
-            <Stat key={g} label={MASS_GROUP_LABELS[g]}>
-              {mass.byGroup[g].toFixed(1)} kg
-            </Stat>
-          ))}
           <Stat label="Carried equipment" emphasis>
             {knownMass}
           </Stat>
@@ -251,6 +260,15 @@ export function ReviewSection({ state, metrics, duration }: ReviewProps) {
             </Stat>
           ))}
           {mass.unallocatedUnits > 0 && <Stat label="Not assigned to a carrier">{mass.unallocatedUnits} unit(s)</Stat>}
+        </dl>
+        <details className="mp-more">
+          <summary>Mass breakdown, values and cost</summary>
+        <dl className="mp-stats">
+          {(Object.keys(MASS_GROUP_LABELS) as MassGroup[]).map((g) => (
+            <Stat key={g} label={MASS_GROUP_LABELS[g]}>
+              {mass.byGroup[g].toFixed(1)} kg
+            </Stat>
+          ))}
           {mass.inSuitItems.length > 0 && <Stat label="Counted with the suit">{mass.inSuitKg.toFixed(1)} kg</Stat>}
           <Stat label="Spacesuit">{mass.suitKg !== null ? `${mass.suitKg.toFixed(1)} kg (your assumption)` : 'No verified value'}</Stat>
           <Stat label="Sample mass">Not estimated</Stat>
@@ -275,8 +293,11 @@ export function ReviewSection({ state, metrics, duration }: ReviewProps) {
             {cost.notProvided > 0 && `${cost.notProvided} item(s) have no cost provided.`}
           </p>
         )}
+        </details>
       </Section>
+      </Group>
 
+      <Group title="Mission activities">
       <Section title="Checkpoint tasks">
         <dl className="mp-stats">
           <Stat label="Scheduled">{assigned}</Stat>
@@ -300,7 +321,7 @@ export function ReviewSection({ state, metrics, duration }: ReviewProps) {
         )}
       </Section>
 
-      <Section title="Mission timeline">
+      <Section title="Time budget">
         <dl className="mp-stats">
           <Stat label="Travel">{hasRoute ? formatDuration(duration.travelHours) : '—'}</Stat>
           <Stat label="Tasks">{formatDuration(duration.taskHours)}</Stat>
@@ -317,7 +338,10 @@ export function ReviewSection({ state, metrics, duration }: ReviewProps) {
           </p>
         )}
       </Section>
+      </Group>
 
+      <Group title="Terrain assessment">
+      <RouteHazards />
       <Section title="Warnings and limitations">
         <ul className="mp-warnings">
           {missing.length > 0 && (
@@ -339,6 +363,7 @@ export function ReviewSection({ state, metrics, duration }: ReviewProps) {
           <li>Speeds, equipment masses and task times are demo estimates or your own values, not NASA specifications.</li>
         </ul>
       </Section>
+      </Group>
     </div>
   );
 }

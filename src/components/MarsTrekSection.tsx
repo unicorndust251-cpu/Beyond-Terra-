@@ -78,6 +78,7 @@ export default function MarsTrekSection({ load, revealed, onRevealStarted }: Pro
 
   const setHandle = useCallback(
     (handle: MarsMapHandle | null) => {
+      if (handleRef.current !== handle && handle) done.current = false;
       handleRef.current = handle;
       tryReveal();
     },
