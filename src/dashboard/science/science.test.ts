@@ -1,7 +1,7 @@
 // Scientific engine tests. Run with `npm test` (scripts/run-tests.mjs).
 import { formatClock, localSolar, marsTime, planetographicLatitude, ttMinusUtc } from './marsTime';
 import { celsiusToFahrenheit, kelvinToCelsius, martianSeason, paToKPa, paToMbar, weightNewtons, windFromDirection, windSpeed } from './seasonsAndUnits';
-import { formatDurationHours, marsHoursToEarthHours, solarEvents } from './solarEvents';
+import { formatDurationHours, formatEarthCountdown, marsHoursToEarthHours, nextSolarEvent, solarEvents } from './solarEvents';
 
 export const results: Array<{ name: string; ok: boolean; detail: string }> = [];
 const near = (name: string, got: number, want: number, tol: number) =>
@@ -136,4 +136,51 @@ const truthy = (name: string, ok: boolean, detail = '') => results.push({ name, 
   near('Wind from the north (blowing south) → 0°', windFromDirection(0, -5) % 360, 0, 1e-9);
   near('24 Mars hours = 24.6598 Earth hours', marsHoursToEarthHours(24), 24.659790041, 1e-6);
   truthy('Duration format', formatDurationHours(12.5) === '12 h 30 min', formatDurationHours(12.5));
+}
+
+/* --- cross-check against NASA's own processing: the MEDA labels state Ls at each product's start --- */
+{
+  const labelled: Array<[string, number]> = [
+    ['2021-05-31T22:23:00.282Z', 52.734], // sol 100, CAL_ATS label
+    ['2022-07-16T22:17:59.706Z', 267.272], // sol 500
+    ['2023-12-12T16:11:40.611Z', 163.071], // sol 1000
+    ['2026-05-13T06:57:14.732Z', 281.325], // sol 1859
+  ];
+  for (const [iso, ls] of labelled) near(`Ls at ${iso.slice(0, 10)} matches the MEDA label`, marsTime(Date.parse(iso)).Ls, ls, 0.01);
+}
+
+/* --- next sunrise / sunset (countdowns) --- */
+{
+  const lat = 18.41;
+  const lon = 77.69;
+  const ev = solarEvents(Date.parse('2026-11-15T12:00:00Z'), lat, lon);
+  const noon = ev.noonMs;
+  const nAtNoon = nextSolarEvent(noon, lat, lon);
+  truthy('At solar noon the next event is sunset, this sol', nAtNoon?.kind === 'sunset' && Math.abs(nAtNoon.utcMs - ev.sunsetMs!) < 1000 && nAtNoon.solsAhead === 0, JSON.stringify(nAtNoon));
+  const afterSunset = ev.sunsetMs! + 60000;
+  const nNight = nextSolarEvent(afterSunset, lat, lon);
+  truthy('After sunset the next event is sunrise on the NEXT sol', nNight?.kind === 'sunrise' && nNight.utcMs > ev.solEndMs && nNight.solsAhead >= 1, JSON.stringify(nNight));
+  near('Next sunrise is about one sol after this one', (nNight!.utcMs - ev.sunriseMs!) / 1000, 88775.244, 120);
+  const beforeRise = ev.sunriseMs! - 3600e3;
+  const nMorning = nextSolarEvent(beforeRise, lat, lon);
+  truthy('Before dawn the next event is this sunrise', nMorning?.kind === 'sunrise' && Math.abs(nMorning.utcMs - ev.sunriseMs!) < 1000);
+  truthy('Countdown format (Earth time)', formatEarthCountdown(3 * 3600e3 + 5 * 60e3) === '3 h 05 min' && formatEarthCountdown(65e3) === '1 min 05 s');
+  // Polar night: nothing for several sols
+  let m = Date.parse('2026-01-01T00:00:00Z');
+  let winter = { m, d: 999 };
+  for (let i = 0; i < 700; i++, m += 86400000) {
+    const L = marsTime(m).Ls;
+    const d = Math.abs(((L - 270 + 540) % 360) - 180);
+    if (d < winter.d) winter = { m, d };
+  }
+  truthy('85° N in polar night: no sunrise in the next 3 sols', nextSolarEvent(winter.m, 85, 0, 3) === null);
+  // Sun direction: Jezero mid-morning has the Sun in the eastern sky (azimuth 0–180°)
+  const morning = localSolar(marsTime(ev.sunriseMs! + 2 * 3600e3), lat, lon);
+  truthy('Morning Sun is in the east (azimuth 0–180°)', morning.azimuth! > 0 && morning.azimuth! < 180, String(morning.azimuth));
+  const afternoon = localSolar(marsTime(ev.sunsetMs! - 2 * 3600e3), lat, lon);
+  truthy('Afternoon Sun is in the west (azimuth 180–360°)', afternoon.azimuth! > 180 && afternoon.azimuth! < 360, String(afternoon.azimuth));
+  // Southern location: noon Sun is in the north when the Sun is north of the observer
+  const south = solarEvents(Date.parse('2026-11-15T12:00:00Z'), -45, 0);
+  const sNoon = localSolar(marsTime(south.noonMs), -45, 0);
+  truthy('At 45° S the noon Sun is due north', Math.abs(((sNoon.azimuth! + 180) % 360) - 180) < 2, String(sNoon.azimuth));
 }

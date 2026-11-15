@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "generated": "2026-11-15T12:39:24.875Z",
+  "archive": "https://atmos.nmsu.edu/PDS/data/PDS4/Mars2020/mars2020_meda/",
+  "documentation": "https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/PERSEVERANCE/meda.html",
+  "citation": "Rodriguez-Manfredi et al. (2021), MEDA bundle, NASA PDS Atmospheres Node, doi:10.17189/1522849",
+  "landing": {
+    "latitude": 18.44462715,
+    "longitudeEast": 77.45088572,
+    "source": "https://mars.nasa.gov/mmgis-maps/M20/Layers/json/M20_waypoints.json"
+  },
+  "marsRadiusM": 3389500,
+  "slotSeconds": 600,
+  "rules": {
+    "airTemperature": "Calibrated ATS: median of the three mast (RSM) sensors ATS_LOCAL_TEMP1–3 (kelvin); records with fewer than two values are skipped. Body-mounted sensors 4–5 are not used.",
+    "groundTemperature": "Calibrated TIRS GROUND_TEMP (ground brightness temperature, kelvin). Rejected when TIRS_GROUND_FOOTPRINT_NOT_IN_SHADOW, ROVER_LOW_TILT, ROVER_STILL or WHEEL_OUTSIDE_TIRS_DOWNWARD_LOOKING_FOV is 0. A blank flag is recorded as not determined.",
+    "pressure": "Calibrated PS BAROCAP1_PRESSURE (pascal): the transducer in use (TRANSDUCER). Blank uncertainty = not provided.",
+    "windSpeed": "Derived WS HORIZONTAL_WIND_SPEED (meter/second), only while ROVER_STILL = 1. The product supplies a speed (not east/north components).",
+    "missing": "Blank CSV fields are missing values (the labels declare no special constants); they are never read as zero.",
+    "timestamps": "UTC interpolated from each record’s SCLK between the label’s start/stop date-time and spacecraft-clock anchors.",
+    "sampling": "One actual record per 10-minute slot (the nearest valid record within ±90 s); no averaging."
+  },
+  "sols": [
+    {
+      "sol": 100,
+      "file": "sol_0100.json",
+      "startUtc": "2021-05-31T22:23:00.282Z",
+      "stopUtc": "2021-06-01T22:06:31.455Z",
+      "lsStart": 52.734,
+      "lsStop": 53.17
+    },
+    {
+      "sol": 500,
+      "file": "sol_0500.json",
+      "startUtc": "2022-07-16T22:17:59.706Z",
+      "stopUtc": "2022-07-17T22:17:03.386Z",
+      "lsStart": 267.272,
+      "lsStop": 267.902
+    },
+    {
+      "sol": 1000,
+      "file": "sol_1000.json",
+      "startUtc": "2023-12-12T16:11:40.611Z",
+      "stopUtc": "2023-12-13T15:55:34.284Z",
+      "lsStart": 163.071,
+      "lsStop": 163.6
+    },
+    {
+      "sol": 1859,
+      "file": "sol_1859.json",
+      "startUtc": "2026-05-13T06:57:14.732Z",
+      "stopUtc": "2026-05-14T07:36:49.438Z",
+      "lsStart": 281.325,
+      "lsStop": 281.962
+    }
+  ]
+}
