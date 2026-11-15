@@ -17,6 +17,7 @@ interface Props {
   active: boolean;
   onExploreOnMap: (landmark: Landmark) => void;
   onOpenPlanner: () => void;
+  onOpenDashboard: () => void;
 }
 
 /** Zoom to use when the globe turns to a landmark: closer for small features. */
@@ -27,7 +28,7 @@ function focusDistance(l: Landmark): number {
 }
 
 /** The Explore page: catalogue, interactive globe and Scientific Importance panel. */
-export default function ExplorePage({ active, onExploreOnMap, onOpenPlanner }: Props) {
+export default function ExplorePage({ active, onExploreOnMap, onOpenPlanner, onOpenDashboard }: Props) {
   const root = useRef<HTMLDivElement>(null);
   const host = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -87,6 +88,9 @@ export default function ExplorePage({ active, onExploreOnMap, onOpenPlanner }: P
           </button>
           <button type="button" onClick={onOpenPlanner}>
             Mission Planner
+          </button>
+          <button type="button" onClick={onOpenDashboard}>
+            Mars Dashboard
           </button>
         </nav>
       </header>

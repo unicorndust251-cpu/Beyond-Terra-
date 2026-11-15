@@ -11,6 +11,7 @@ import {
 import { durationSummary, initialMissionState, missionReducer, routeMetrics, routeStops, type StopKey } from '../model';
 import ExplorationPanel from '../exploration/ExplorationPanel';
 import { useExploration } from '../exploration/useExploration';
+import { activeMissionStore } from '../missionBridge';
 import { useMapSync } from '../useMapSync';
 import EquipmentSection from './EquipmentSection';
 import LandmarkLocationCard, { type LandmarkRole } from './LandmarkLocationCard';
@@ -110,6 +111,23 @@ export default function MissionPlannerPanel() {
     setFitRequest((n) => n + 1);
   }, []);
   const saved = useSavedRoutes(state, dispatch, onOpened);
+
+  // Publish the live mission for read-only views (the Mars Dashboard)
+  useEffect(() => {
+    activeMissionStore.set({
+      state,
+      dispatch,
+      savedName: saved.current?.name ?? null,
+      dirty: saved.dirty,
+      openTab: (t) => {
+        showPanel(true);
+        setTab(t);
+      },
+    });
+    // showPanel only sets state
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, saved.current, saved.dirty]);
+  useEffect(() => () => activeMissionStore.set(null), []);
 
   // The summary appears with the route: open on desktop so the results are in view at once;
   // on phones it opens when the route is calculated, taking turns with the planner

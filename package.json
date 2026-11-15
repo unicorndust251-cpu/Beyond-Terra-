@@ -9,7 +9,8 @@
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit && node scripts/check-boundaries.mjs",
     "preview": "vite preview",
-    "check:boundaries": "node scripts/check-boundaries.mjs"
+    "check:boundaries": "node scripts/check-boundaries.mjs",
+    "test": "node scripts/run-tests.mjs"
   },
   "dependencies": {
     "gsap": "^3.12.5",

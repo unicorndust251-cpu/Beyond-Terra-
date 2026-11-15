@@ -7,6 +7,7 @@ interface Props {
   /** The landmark globe has been opened before (the button then reads Back to Globe). */
   visitedGlobe: boolean;
   onOpenGlobe: () => void;
+  onOpenDashboard: () => void;
 }
 
 /**
@@ -15,7 +16,7 @@ interface Props {
  * by ID), never the clicked pixel; the pin owns its click, so the map's own click handler
  * does not also fire. The mission planner then offers Set as Start / Destination / Checkpoint.
  */
-export default function MapReturnBar({ visitedGlobe, onOpenGlobe }: Props) {
+export default function MapReturnBar({ visitedGlobe, onOpenGlobe, onOpenDashboard }: Props) {
   const landmark = useSelectedLandmark();
   const bridge = useMapBridge();
 
@@ -56,6 +57,9 @@ export default function MapReturnBar({ visitedGlobe, onOpenGlobe }: Props) {
         ) : (
           'Explore Landmarks'
         )}
+      </button>
+      <button type="button" className="ex-return__back ex-return__dash" onClick={onOpenDashboard}>
+        Mars Dashboard
       </button>
     </div>
   );

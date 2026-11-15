@@ -4,12 +4,16 @@ import MarsTrekSection from './components/MarsTrekSection';
 import MapReturnBar from './explore/MapReturnBar';
 import { prefersReducedMotion, shouldPlayIntro } from './intro/introGate';
 import { useMapBridge } from './shared';
+// Starts tracking the inspected location (globe landmark or map point) from page load
+import './shared/focus';
 import { landmarkCoordinate, type Landmark } from './shared/landmarks';
 
 // The intro is loaded separately, so the website itself never waits for it
 const AstronautIntro = lazy(() => import('./intro/AstronautIntro'));
 // The landmark globe loads when first opened from the map
 const ExplorePage = lazy(() => import('./explore/ExplorePage'));
+// The Mars Dashboard loads when first opened
+const DashboardPage = lazy(() => import('./dashboard/DashboardPage'));
 
 /** If the intro's code cannot load or crashes, go straight to the website. */
 class IntroBoundary extends Component<{ onError: () => void; children: ReactNode }, { failed: boolean }> {
@@ -80,8 +84,10 @@ export default function App() {
 
   // Over the map, the landmark globe can be opened; both stay mounted once opened, so the
   // globe keeps its selection and the map keeps the whole Marswalk plan
-  const [exploring, setExploring] = useState(false);
+  const [overlay, setOverlay] = useState<'explore' | 'dashboard' | null>(null);
+  const exploring = overlay === 'explore';
   const [exploreMounted, setExploreMounted] = useState(false);
+  const [dashboardMounted, setDashboardMounted] = useState(false);
   const [mapRevealStarted, setMapRevealStarted] = useState(false);
   // Each Explore on Mars Trek is a numbered request, so choosing the same landmark again flies again
   const [flyRequest, setFlyRequest] = useState<{ landmark: Landmark; n: number } | null>(null);
@@ -119,7 +125,7 @@ export default function App() {
 
   // Explore on Mars Trek: fly the map to the landmark (after the map's own reveal has begun)
   useEffect(() => {
-    if (exploring || !flyRequest || !bridge || !mapRevealStarted || flown.current === flyRequest.n) return;
+    if (overlay || !flyRequest || !bridge || !mapRevealStarted || flown.current === flyRequest.n) return;
     flown.current = flyRequest.n;
     const c = landmarkCoordinate(flyRequest.landmark);
     const zoom = mapZoomFor(flyRequest.landmark);
@@ -128,28 +134,38 @@ export default function App() {
     // Only the camera is offset; the landmark's marker stays at its stored coordinate
     const centre = { latitude: Math.max(-85, Math.min(85, c.latitude + y * d)), longitudeEast: c.longitudeEast - x * d };
     bridge.flyTo(centre, { zoom, durationSeconds: 2.4 });
-  }, [exploring, flyRequest, bridge, mapRevealStarted]);
+  }, [overlay, flyRequest, bridge, mapRevealStarted]);
 
   const openExplore = () => {
     setExploreMounted(true);
-    setExploring(true);
+    setOverlay('explore');
+  };
+  const openDashboard = () => {
+    setDashboardMounted(true);
+    setOverlay('dashboard');
   };
 
   return (
     <>
       {/* The map waits underneath, out of focus, loading while the globe is shown */}
       <MarsTrekSection load={phase !== 'intro'} revealed={stage !== 'globe'} onRevealStarted={() => setMapRevealStarted(true)} />
-      {stage === 'map' && !exploring && <MapReturnBar visitedGlobe={exploreMounted} onOpenGlobe={openExplore} />}
+      {stage === 'map' && !overlay && <MapReturnBar visitedGlobe={exploreMounted} onOpenGlobe={openExplore} onOpenDashboard={openDashboard} />}
       {exploreMounted && (
         <Suspense fallback={null}>
           <ExplorePage
             active={exploring}
             onExploreOnMap={(l) => {
               setFlyRequest((r) => ({ landmark: l, n: (r?.n ?? 0) + 1 }));
-              setExploring(false);
+              setOverlay(null);
             }}
-            onOpenPlanner={() => setExploring(false)}
+            onOpenPlanner={() => setOverlay(null)}
+            onOpenDashboard={openDashboard}
           />
+        </Suspense>
+      )}
+      {dashboardMounted && (
+        <Suspense fallback={null}>
+          <DashboardPage active={overlay === 'dashboard'} onOpenMap={() => setOverlay(null)} onOpenExplore={openExplore} />
         </Suspense>
       )}
       {stage !== 'map' && (
