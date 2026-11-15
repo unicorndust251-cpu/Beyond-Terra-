@@ -311,7 +311,8 @@ export default function DashboardPage({ active, onOpenMap, onOpenExplore }: Prop
           <p className="md-empty">Choose a landmark, enter coordinates, or select a point on the map to see its dashboard.</p>
         ) : (
           <>
-            <div className="md-row md-row--four">
+            <h2 className="md-h2">Location &amp; terrain</h2>
+            <div className="md-row md-row--four md-strip">
               <MetricCard title="Location" v={locationValue} />
               <MetricCard title="Elevation" v={tv.elevation} />
               <MetricCard title="Slope" v={tv.slope} />
@@ -319,10 +320,26 @@ export default function DashboardPage({ active, onOpenMap, onOpenExplore }: Prop
             </div>
             {error && <p className="md-error">Terrain data could not be loaded: {error}</p>}
 
+            <h2 className="md-h2">Martian conditions</h2>
+            <div className="md-row md-row--three md-strip">
+              <MetricCard title="Local Mars Time" v={timeValue} />
+              <MetricCard title="Martian Season" v={seasonValue} />
+              <MetricCard title="Gravity" v={gravityValue}>
+                <label className="md-calc">
+                  <span>Mass</span>
+                  <input inputMode="decimal" value={massKg} aria-label="Equipment mass in kilograms" onChange={(e) => setMassKg(e.target.value)} />
+                  <span>kg →</span>
+                  <strong className="md-num">{Number.isFinite(mass) && mass >= 0 ? `${weightNewtons(mass).toFixed(1)} N` : '—'}</strong>
+                </label>
+              </MetricCard>
+            </div>
+
+            <SolarCyclePanel selectedUtc={utcMs} selectedMode={timeMode} latitude={c.latitude} longitudeEast={c.longitudeEast} />
+
             <section className="md-wx" aria-label="Weather observations">
               <div className="md-wx__head">
                 <div className="md-wx__text">
-                  <h2 className="md-wx__title">Weather observations</h2>
+                  <h3 className="md-wx__title">Weather observations</h3>
                   <p className="md-wx__label">
                     {wx
                       ? `Historical observations — Perseverance rover, Jezero crater${wxRover?.state === 'ok' ? ` (${fmtCoord(wxRover.reading.rover)})` : ''} · ${fmtDay(wx.slot.utcMs)}, sol ${wx.period.sol}, ${wx.slot.ltst.slice(-8, -3)} LTST`
@@ -399,21 +416,8 @@ export default function DashboardPage({ active, onOpenMap, onOpenExplore }: Prop
               </div>
             </section>
 
-            <SolarCyclePanel selectedUtc={utcMs} selectedMode={timeMode} latitude={c.latitude} longitudeEast={c.longitudeEast} />
-
-            <div className="md-row md-row--three">
-              <MetricCard title="Local Mars Time" v={timeValue} />
-              <MetricCard title="Martian Season" v={seasonValue} />
-              <MetricCard title="Gravity" v={gravityValue}>
-                <label className="md-calc">
-                  <span>Mass</span>
-                  <input inputMode="decimal" value={massKg} aria-label="Equipment mass in kilograms" onChange={(e) => setMassKg(e.target.value)} />
-                  <span>kg →</span>
-                  <strong className="md-num">{Number.isFinite(mass) && mass >= 0 ? `${weightNewtons(mass).toFixed(1)} N` : '—'}</strong>
-                </label>
-              </MetricCard>
-            </div>
-
+            <h2 className="md-h2">Scientific details</h2>
+            <p className="md-h2__hint">Sources, coverage, methods and limitations behind the values above.</p>
             <div className="md-secs">
               <Section title="Environmental Conditions">
                 <p>
@@ -559,7 +563,7 @@ export default function DashboardPage({ active, onOpenMap, onOpenExplore }: Prop
           </>
         )}
 
-        <h2 className="md-h2">Mission</h2>
+        <h2 className="md-h2">Mission overview</h2>
         {!hasMission || !m || !metrics || !duration || !eq ? (
           <div className="md-mission-empty">
             <p>

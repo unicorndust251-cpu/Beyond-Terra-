@@ -1,5 +1,6 @@
 /* Mars Dashboard: Poppins, the Beyond Terra palette, compact scientific cards. */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+@import '../styles/fieldnotes.css';
 
 .md {
   --md-bg: #171413;
@@ -1069,5 +1070,369 @@
 @media (prefers-reduced-motion: reduce) {
   .md-skeleton {
     animation: none;
+  }
+}
+
+/* =======================================================================================
+   Field notebook: the dashboard's visual layer, shared with the Mission Planner
+   (tokens in src/styles/fieldnotes.css). Same surfaces, radii, type and controls.
+   ======================================================================================= */
+
+.md {
+  --md-bg: var(--fn-bg);
+  --md-card: var(--fn-section);
+  --md-line: var(--fn-line);
+  --md-dim: var(--fn-text-2);
+  --md-faint: var(--fn-text-3);
+  font-family: var(--fn-font);
+}
+
+/* ----- top bar ----- */
+.md-top {
+  border-bottom-color: var(--fn-line);
+}
+
+.md-top__nav {
+  gap: 2px;
+  padding: 4px;
+  border-radius: var(--fn-r-section);
+  background: var(--fn-section);
+}
+
+.md-top__nav button {
+  min-height: 32px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--fn-r-control);
+  font-size: 13px;
+  font-weight: var(--fn-regular);
+  color: var(--fn-text-2);
+}
+
+.md-top__nav button.is-active {
+  background: var(--fn-control);
+  color: var(--fn-text);
+  font-weight: var(--fn-medium);
+}
+
+/* ----- heading block ----- */
+.md-head h1 {
+  font-size: 28px;
+  font-weight: var(--fn-medium);
+  letter-spacing: -0.015em;
+}
+
+.md-head__place strong {
+  font-weight: var(--fn-medium);
+}
+
+.md-head__time {
+  color: var(--fn-text-3);
+}
+
+.md-tag {
+  border-color: var(--fn-line-2);
+  border-radius: 999px;
+  font-weight: var(--fn-regular);
+}
+
+/* ----- controls ----- */
+.md-search input,
+.md-coords input,
+.md-field select,
+.md-field input,
+.md-calc input,
+.md select {
+  min-height: 40px;
+  border: 1px solid var(--fn-line-2);
+  border-radius: var(--fn-r-control);
+  background: var(--fn-inset);
+  font-family: var(--fn-font);
+}
+
+.md-search input:focus,
+.md-coords input:focus,
+.md-field select:focus,
+.md-calc input:focus {
+  border-color: var(--fn-soft);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(214, 163, 139, 0.12);
+}
+
+.md-search__list {
+  border: 1px solid var(--fn-line-2);
+  border-radius: var(--fn-r-control);
+  background: var(--fn-panel);
+  box-shadow: var(--fn-shadow);
+}
+
+.md-btn {
+  min-height: 38px;
+  border: 1px solid transparent;
+  border-radius: var(--fn-r-control);
+  background: var(--fn-control);
+  font-weight: var(--fn-medium);
+}
+
+.md-btn:hover:not(:disabled) {
+  border-color: transparent;
+  background: #463b38;
+}
+
+.md-btn--primary {
+  border-radius: 999px;
+  background: var(--fn-accent);
+  color: #1c1715;
+}
+
+.md-btn--primary:hover:not(:disabled) {
+  background: var(--fn-soft);
+}
+
+.md-chip {
+  border: 1px solid var(--fn-line-2);
+  border-radius: 999px;
+  background: transparent;
+  font-weight: var(--fn-regular);
+}
+
+.md-chip:hover {
+  background: var(--fn-section);
+}
+
+/* ----- chapter headings ----- */
+.md-h2 {
+  margin: 34px auto 12px;
+  font-size: 17px;
+  font-weight: var(--fn-medium);
+  letter-spacing: -0.005em;
+  text-transform: none;
+  color: var(--fn-text);
+}
+
+.md-head + .md-h2,
+.md-main > .md-h2:first-of-type {
+  margin-top: 26px;
+}
+
+.md-h2__hint {
+  margin: -6px auto 12px;
+  font-size: 13px;
+  color: var(--fn-text-3);
+}
+
+/* ----- measurement cards ----- */
+.md-card {
+  gap: 3px;
+  padding: 16px 18px;
+  border: 0;
+  border-radius: var(--fn-r-section);
+  background: var(--fn-section);
+}
+
+.md-card h3 {
+  font-size: var(--fn-meta);
+  font-weight: var(--fn-medium);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fn-text-3);
+}
+
+.md-card__value {
+  font-size: 22px;
+  font-weight: var(--fn-medium);
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.md-card__detail {
+  font-size: var(--fn-small);
+  color: var(--fn-text-2);
+}
+
+.md-card__full {
+  font-size: 13px;
+  color: var(--fn-text-2);
+}
+
+.md-card__info {
+  font-size: 12.5px;
+  font-weight: var(--fn-regular);
+  color: var(--fn-soft);
+}
+
+.md-badge {
+  padding: 1px 9px;
+  border: 0;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: var(--fn-regular);
+  letter-spacing: 0.01em;
+}
+
+.md-prov,
+.md-obs {
+  font-size: 12px;
+}
+
+.md-prov dt,
+.md-obs dt {
+  color: var(--fn-text-3);
+}
+
+/* Related values read as one strip: one surface, hairlines between */
+.md-strip {
+  gap: 0;
+  border-radius: 18px;
+  background: var(--fn-section);
+  overflow: hidden;
+}
+
+.md-strip > .md-card {
+  border-radius: 0;
+  background: transparent;
+}
+
+.md-strip > .md-card + .md-card {
+  box-shadow: inset 1px 0 0 var(--fn-line);
+}
+
+/* ----- weather ----- */
+.md-wx {
+  margin-top: 14px;
+}
+
+.md-wx__title {
+  font-size: var(--fn-heading);
+  font-weight: var(--fn-medium);
+}
+
+.md-wx__label {
+  color: var(--fn-text-2);
+}
+
+/* ----- day and night ----- */
+.md-solar {
+  padding: 20px 22px 18px;
+  border: 0;
+  border-radius: 18px;
+  background: var(--fn-section);
+}
+
+.md-solar h2 {
+  font-size: 17px;
+  font-weight: var(--fn-medium);
+  letter-spacing: -0.005em;
+}
+
+.md-solar__sub {
+  color: var(--fn-text-3);
+}
+
+.md-solar__state,
+.md-mode-badge {
+  border-color: var(--fn-line-2);
+  border-radius: 999px;
+  font-weight: var(--fn-regular);
+}
+
+.md-events dt {
+  font-size: var(--fn-meta);
+  color: var(--fn-text-3);
+}
+
+.md-events dd {
+  font-weight: var(--fn-regular);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ----- expandable sections, mission, help and sources ----- */
+.md-sec {
+  border: 0;
+  border-radius: var(--fn-r-section);
+  background: var(--fn-section);
+}
+
+.md-sec summary {
+  padding: 15px 18px;
+  font-size: var(--fn-body);
+  font-weight: var(--fn-medium);
+}
+
+.md-sec__body {
+  color: var(--fn-text-2);
+}
+
+.md-sec__body h4 {
+  font-weight: var(--fn-medium);
+}
+
+.md-facts dt {
+  color: var(--fn-text-3);
+}
+
+.md-mission-empty,
+.md-help,
+.md-source {
+  border: 0;
+  border-radius: var(--fn-r-section);
+  background: var(--fn-section);
+}
+
+.md-help__topics button {
+  border-radius: var(--fn-r-control);
+}
+
+.md-help__topics button.is-active {
+  background: var(--fn-control);
+}
+
+/* ----- tablets and phones ----- */
+@media (max-width: 1180px) {
+  .md-strip.md-row--four {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .md-strip.md-row--four > .md-card:nth-child(n + 3) {
+    box-shadow: inset 0 1px 0 var(--fn-line);
+  }
+  .md-strip.md-row--four > .md-card:nth-child(4) {
+    box-shadow:
+      inset 0 1px 0 var(--fn-line),
+      inset 1px 0 0 var(--fn-line);
+  }
+}
+
+@media (max-width: 860px) {
+  .md-strip.md-row--three {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .md-strip.md-row--three > .md-card + .md-card {
+    box-shadow: inset 0 1px 0 var(--fn-line);
+  }
+}
+
+@media (max-width: 560px) {
+  .md-strip.md-row--four,
+  .md-strip.md-row--three {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .md-strip > .md-card + .md-card,
+  .md-strip.md-row--four > .md-card:nth-child(n + 3) {
+    box-shadow: inset 0 1px 0 var(--fn-line);
+  }
+  .md-top__nav {
+    padding: 3px;
+  }
+  .md-top__nav button {
+    padding: 0 10px;
+  }
+  .md-head h1 {
+    font-size: 23px;
+  }
+  .md-card {
+    padding: 14px 16px;
+  }
+  .md-solar {
+    padding: 16px;
   }
 }

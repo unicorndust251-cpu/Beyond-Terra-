@@ -83,7 +83,7 @@ export default function RouteSection({
       <div className="mp-stops">
         <LocationField
           label="Starting point"
-          placeholder="Select starting location"
+          placeholder="Choose your starting point"
           accent="start"
           symbol="S"
           location={state.start}
@@ -97,7 +97,7 @@ export default function RouteSection({
           <LocationField
             key={c.id}
             label={`Waypoint ${i + 1}`}
-            placeholder="Select waypoint"
+            placeholder="Choose this stop"
             accent="checkpoint"
             symbol={String(i + 1)}
             location={c.location}
@@ -116,11 +116,11 @@ export default function RouteSection({
               <path d="M8 4v8M4 8h8" />
             </svg>
           </span>
-          Add waypoint
+          Add a stop along the way
         </button>
         <LocationField
           label="Destination"
-          placeholder="Select destination"
+          placeholder="Choose your destination"
           accent="destination"
           symbol="D"
           location={state.destination}
@@ -181,7 +181,7 @@ export default function RouteSection({
 
         <Disclosure
           label="Scientific objectives"
-          value={state.objectives.length ? `${state.objectives.length} selected` : 'Select'}
+          value={state.objectives.length ? `${state.objectives.length} selected` : 'Choose'}
           open={openRow === 'objectives'}
           onToggle={() => toggle('objectives')()}
         >

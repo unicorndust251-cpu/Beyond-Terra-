@@ -3,6 +3,7 @@
    Poppins for the interface (loaded for the planner only), Exo 2 for the brand line,
    tabular figures for measurements. */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+@import '../styles/fieldnotes.css';
 
 .mp-panel,
 .mp-sum,
@@ -2666,4 +2667,987 @@
 .mp-lmk__ground {
   margin-top: 8px;
   font-size: 12px;
+}
+
+/* =======================================================================================
+   Field notebook: the planner's visual layer (tokens in src/styles/fieldnotes.css).
+   Deep chocolate panel, slightly lighter inner sections, hairline dividers, Poppins at
+   400/500. Later in the file than the rules it refines, so it applies at equal specificity.
+   ======================================================================================= */
+
+.mp-panel,
+.mp-sum,
+.mp-pick-hint,
+.mp-lmk {
+  --mp-bg: var(--fn-panel);
+  --mp-surface: var(--fn-section);
+  --mp-muted: var(--fn-surface);
+  --mp-mint: var(--fn-sage);
+  --mp-line: var(--fn-line);
+  --mp-line-strong: var(--fn-line-2);
+  --mp-dim: var(--fn-text-2);
+  --mp-faint: var(--fn-text-3);
+  --mp-font: var(--fn-font);
+}
+
+/* ----- the panel: solid, softly rounded, clear of the map's attribution line ----- */
+.mp-panel,
+.mp-panel.mp-panel {
+  width: min(372px, calc(100vw - 32px));
+  max-height: calc(100% - var(--bt-topbar) - env(safe-area-inset-top, 0px) - 52px - var(--bt-edge-bottom) - 30px);
+  border: 1px solid var(--fn-line);
+  border-radius: var(--fn-r-panel);
+  background: var(--fn-panel);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: var(--fn-shadow);
+  font-size: var(--fn-body);
+  line-height: 1.5;
+}
+
+.mp-panel:not(.is-open) {
+  width: auto;
+}
+
+.mp-panel.is-wide {
+  width: min(460px, calc(100vw - 32px));
+}
+
+.mp-sum.is-beside-panel {
+  left: calc(max(16px, env(safe-area-inset-left, 0px)) + min(372px, calc(100vw - 32px)) + 12px);
+}
+
+.mp-panel.is-wide ~ .mp-sum.is-beside-panel {
+  left: calc(max(16px, env(safe-area-inset-left, 0px)) + min(460px, calc(100vw - 32px)) + 12px);
+}
+
+.mp-panel__header {
+  align-items: center;
+  padding: 20px 16px 14px 22px;
+}
+
+.mp-panel__eyebrow {
+  gap: 6px;
+  font-family: var(--fn-font);
+  font-size: var(--fn-meta);
+  font-weight: var(--fn-medium);
+  letter-spacing: 0.14em;
+  color: var(--fn-text-3);
+}
+
+.mp-panel__eyebrow::before {
+  display: none;
+}
+
+.mp-panel__eyebrow span {
+  color: var(--fn-text-3);
+}
+
+.mp-panel__title {
+  margin-top: 4px;
+  font-family: var(--fn-font);
+  font-size: var(--fn-title);
+  font-weight: var(--fn-medium);
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+
+.mp-panel__collapse.mp-icon-btn {
+  width: 34px;
+  height: 34px;
+  margin: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--fn-section);
+  color: var(--fn-text-2);
+}
+
+.mp-panel__collapse.mp-icon-btn:hover {
+  background: var(--fn-section-2);
+  color: var(--fn-text);
+}
+
+/* Understated segmented tabs; the indicator is a plain raised surface */
+.mp-tabs {
+  margin: 0 18px 12px;
+  padding: 4px;
+  border: 0;
+  border-radius: var(--fn-r-section);
+  background: var(--fn-section);
+  box-shadow: none;
+}
+
+.mp-tabs::before {
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc((100% - 8px) / var(--mp-tab-count));
+  border: 0;
+  border-radius: var(--fn-r-control);
+  background: var(--fn-control);
+  box-shadow: none;
+}
+
+.mp-tabs button {
+  min-height: 34px;
+  border-radius: var(--fn-r-control);
+  font-size: 13px;
+  font-weight: var(--fn-medium);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--fn-text-3);
+}
+
+.mp-tabs button:hover {
+  color: var(--fn-text-2);
+}
+
+.mp-tabs button.is-active {
+  color: var(--fn-text);
+}
+
+.mp-tabs__count {
+  font-weight: var(--fn-regular);
+}
+
+.mp-panel__body {
+  padding: 4px 22px 22px;
+  scrollbar-color: var(--fn-control) transparent;
+}
+
+/* ----- controls ----- */
+.mp-panel :focus-visible,
+.mp-sum :focus-visible,
+.mp-lmk :focus-visible {
+  outline: 2px solid var(--fn-soft);
+  outline-offset: 2px;
+}
+
+.mp-btn {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: var(--fn-r-control);
+  background: var(--fn-control);
+  color: var(--fn-text);
+  font-size: 13px;
+  font-weight: var(--fn-medium);
+}
+
+.mp-btn:hover:not(:disabled) {
+  border-color: transparent;
+  background: #463b38;
+}
+
+.mp-btn--ghost {
+  border-color: var(--fn-line-2);
+  background: transparent;
+}
+
+.mp-btn--ghost:hover:not(:disabled) {
+  border-color: var(--fn-line-2);
+  background: var(--fn-section);
+}
+
+.mp-btn--small {
+  min-height: 30px;
+  padding: 0 12px;
+  font-size: 12.5px;
+}
+
+/* The one strong action on screen: a copper pill */
+.mp-btn--primary {
+  min-height: 46px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--fn-accent);
+  color: #1c1715;
+  font-size: var(--fn-body);
+  font-weight: var(--fn-medium);
+}
+
+.mp-btn--primary:hover:not(:disabled) {
+  background: var(--fn-soft);
+}
+
+.mp-btn--primary:disabled {
+  background: var(--fn-control);
+  color: var(--fn-text-3);
+  opacity: 1;
+}
+
+.mp-btn--accent {
+  border-color: transparent;
+  background: rgba(184, 120, 96, 0.22);
+  color: var(--fn-peach);
+}
+
+.mp-btn--accent:hover:not(:disabled) {
+  background: rgba(184, 120, 96, 0.32);
+}
+
+.mp-btn--danger {
+  border-color: transparent;
+  background: rgba(232, 160, 138, 0.12);
+  color: var(--fn-alert);
+}
+
+.mp-btn--icon,
+.mp-icon-btn {
+  width: 30px;
+  height: 30px;
+  min-height: 30px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--fn-section);
+  color: var(--fn-text-2);
+}
+
+.mp-icon-btn:hover,
+.mp-btn--icon:hover {
+  background: var(--fn-section-2);
+  color: var(--fn-text);
+}
+
+.mp-link {
+  font-size: 13px;
+  font-weight: var(--fn-regular);
+  color: var(--fn-soft);
+}
+
+.mp-link:hover:not(:disabled) {
+  color: var(--fn-peach);
+}
+
+.mp-panel input[type='number'],
+.mp-panel input:not([type]),
+.mp-panel input[type='text'],
+.mp-panel input[type='search'],
+.mp-panel select,
+.mp-panel textarea,
+.mp-sum select {
+  min-height: 40px;
+  padding: 6px 12px;
+  border: 1px solid var(--fn-line-2);
+  border-radius: var(--fn-r-control);
+  background: var(--fn-inset);
+  color: var(--fn-text);
+  font-family: var(--fn-font);
+  font-size: 13.5px;
+}
+
+.mp-panel input:focus,
+.mp-panel select:focus,
+.mp-panel textarea:focus {
+  border-color: var(--fn-soft);
+  box-shadow: 0 0 0 3px rgba(214, 163, 139, 0.12);
+}
+
+.mp-hint {
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--fn-text-3);
+}
+
+.mp-eyebrow {
+  font-size: var(--fn-meta);
+  font-weight: var(--fn-medium);
+  letter-spacing: 0.12em;
+  color: var(--fn-text-3);
+}
+
+.mp-check {
+  gap: 12px;
+  font-size: var(--fn-body);
+}
+
+.mp-check input {
+  width: 20px;
+  height: 20px;
+}
+
+/* Segmented choices inside an open row */
+.mp-segmented {
+  gap: 2px;
+  padding: 3px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--fn-inset);
+}
+
+.mp-segmented button {
+  min-height: 34px;
+  border: 0;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: var(--fn-regular);
+  color: var(--fn-text-2);
+}
+
+.mp-segmented button.is-active {
+  border: 0;
+  background: var(--fn-control);
+  color: var(--fn-text);
+  font-weight: var(--fn-medium);
+  box-shadow: none;
+}
+
+.mp-chip {
+  padding: 6px 11px;
+  border: 1px solid var(--fn-line-2);
+  border-radius: var(--fn-r-control);
+  font-size: 12.5px;
+  color: var(--fn-text-2);
+}
+
+.mp-chip.is-on {
+  border-color: transparent;
+  background: rgba(184, 120, 96, 0.24);
+  color: var(--fn-text);
+}
+
+.mp-field,
+.mp-field > span:first-child {
+  font-size: 13px;
+  color: var(--fn-text-2);
+}
+
+/* ----- route: an itinerary on a thin line ----- */
+.mp-stops {
+  --mp-rail: rgba(232, 194, 173, 0.16);
+  --mp-node: 20px;
+  --mp-node-y: 31px;
+  --mp-gap: 10px;
+}
+
+.mp-loc {
+  border: 1px solid transparent;
+  border-radius: var(--fn-r-section);
+  background: var(--fn-section);
+}
+
+.mp-loc:hover {
+  border-color: transparent;
+  background: var(--fn-section-2);
+}
+
+.mp-loc.is-open {
+  border-color: var(--fn-line-2);
+  background: var(--fn-section);
+  box-shadow: none;
+}
+
+.mp-loc.is-picking {
+  border-color: rgba(214, 163, 139, 0.55);
+}
+
+.mp-loc__head {
+  min-height: 62px;
+  padding: 12px 14px 12px 16px;
+  border-radius: var(--fn-r-section);
+}
+
+.mp-loc__pin {
+  font-size: 10px;
+  font-weight: var(--fn-medium);
+}
+
+.mp-loc--start .mp-loc__pin {
+  background: var(--fn-sage);
+  box-shadow: 0 0 0 4px rgba(157, 185, 154, 0.14);
+}
+
+.mp-loc--destination .mp-loc__pin {
+  background: var(--fn-coral);
+  box-shadow: 0 0 0 4px rgba(217, 146, 122, 0.16);
+}
+
+.mp-loc--checkpoint .mp-loc__pin {
+  border: 1px solid var(--fn-line-2);
+  background: var(--fn-control);
+  color: var(--fn-peach);
+}
+
+.mp-loc.is-open .mp-loc__pin,
+.mp-loc__head:hover .mp-loc__pin {
+  box-shadow: 0 0 0 5px rgba(232, 194, 173, 0.1);
+}
+
+.mp-loc__label,
+.mp-loc--start .mp-loc__label,
+.mp-loc--destination .mp-loc__label {
+  font-size: 10.5px;
+  font-weight: var(--fn-medium);
+  letter-spacing: 0.12em;
+}
+
+.mp-loc__label {
+  color: var(--fn-text-3);
+}
+
+.mp-loc--start .mp-loc__label {
+  color: rgba(157, 185, 154, 0.9);
+}
+
+.mp-loc--destination .mp-loc__label {
+  color: rgba(217, 146, 122, 0.95);
+}
+
+.mp-loc__name {
+  font-size: 15px;
+  font-weight: var(--fn-regular);
+  letter-spacing: 0;
+}
+
+/* Coordinates stay available, quietly */
+.mp-loc__value {
+  font-family: var(--fn-font);
+  font-size: 12px;
+  letter-spacing: 0;
+  color: var(--fn-text-3);
+}
+
+.mp-loc__placeholder {
+  font-size: 15px;
+  color: var(--fn-text-2);
+}
+
+.mp-loc__body {
+  margin: 0 14px;
+  padding: 14px 0 16px;
+  border-top-color: var(--fn-line);
+}
+
+.mp-loc__inputs label span {
+  font-size: 12px;
+  color: var(--fn-text-3);
+}
+
+.mp-loc__matches {
+  border: 1px solid var(--fn-line-2);
+  border-radius: var(--fn-r-control);
+  background: var(--fn-panel);
+  box-shadow: var(--fn-shadow);
+}
+
+.mp-loc__actions {
+  gap: 6px 16px;
+}
+
+.mp-add {
+  min-height: 48px;
+  border: 1px dashed var(--fn-line-2);
+  border-radius: var(--fn-r-section);
+  background: transparent;
+  color: var(--fn-text-2);
+  font-size: var(--fn-body);
+  font-weight: var(--fn-regular);
+}
+
+.mp-add:hover {
+  border-color: rgba(232, 194, 173, 0.28);
+  background: var(--fn-section);
+  color: var(--fn-text);
+}
+
+/* ----- the settings list under the itinerary ----- */
+.mp-rows {
+  margin-top: 18px;
+  border-top: 0;
+}
+
+.mp-row {
+  border-bottom: 1px solid var(--fn-line);
+}
+
+.mp-row:last-child {
+  border-bottom: 0;
+}
+
+.mp-row__head {
+  min-height: 52px;
+  padding: 14px 2px;
+}
+
+.mp-row__label {
+  font-size: var(--fn-body);
+  font-weight: var(--fn-regular);
+}
+
+.mp-row__value {
+  font-size: 13px;
+  color: var(--fn-text-2);
+}
+
+/* An open row shows its settings on a lighter inner section */
+.mp-row__body {
+  gap: 14px;
+  margin: 0 0 14px;
+  padding: 14px;
+  border-radius: var(--fn-r-section);
+  background: var(--fn-section);
+}
+
+.mp-checklist li {
+  padding: 9px 0;
+}
+
+.mp-checklist li + li {
+  border-top-color: var(--fn-line);
+}
+
+.mp-checklist__row .mp-check {
+  font-size: 13.5px;
+}
+
+.mp-checklist__action {
+  margin: 6px 0 0 32px;
+}
+
+.mp-tasks__stop legend {
+  font-size: 12px;
+  font-weight: var(--fn-medium);
+  color: var(--fn-text-2);
+}
+
+.mp-cta {
+  gap: 12px;
+  margin-top: 22px;
+}
+
+/* ----- equipment: a packing list ----- */
+.mp-loadout {
+  border: 0;
+  border-radius: var(--fn-r-section);
+  background: var(--fn-section);
+}
+
+.mp-loadout__total {
+  font-weight: var(--fn-medium);
+  color: var(--fn-peach);
+}
+
+.mp-equipment__views {
+  gap: 2px;
+  padding: 4px;
+  border: 0;
+  border-radius: var(--fn-r-section);
+  background: var(--fn-section);
+}
+
+.mp-equipment__views button {
+  min-height: 34px;
+  border: 0;
+  border-radius: var(--fn-r-control);
+  background: transparent;
+  font-size: 13px;
+  font-weight: var(--fn-regular);
+  color: var(--fn-text-2);
+}
+
+.mp-equipment__views button.is-active,
+.mp-equipment__views button[aria-selected='true'],
+.mp-equipment__views button[aria-pressed='true'] {
+  background: var(--fn-control);
+  color: var(--fn-text);
+  font-weight: var(--fn-medium);
+}
+
+.mp-ltable thead th {
+  font-size: 11px;
+  font-weight: var(--fn-regular);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--fn-text-3);
+}
+
+.mp-ltable tbody tr:first-child > * {
+  border-color: var(--fn-line);
+}
+
+.mp-ltable__name strong,
+.mp-ltable__name {
+  font-weight: var(--fn-regular);
+}
+
+.mp-menu__item {
+  border-radius: var(--fn-r-control);
+}
+
+.mp-menu__item strong {
+  font-size: 13.5px;
+  font-weight: var(--fn-medium);
+}
+
+.mp-editor {
+  border: 0;
+  border-radius: var(--fn-r-section);
+  background: var(--fn-section);
+}
+
+.mp-editor__h {
+  font-size: var(--fn-meta);
+  font-weight: var(--fn-medium);
+  letter-spacing: 0.12em;
+  color: var(--fn-text-3);
+}
+
+.mp-tag {
+  border-radius: 999px;
+  font-weight: var(--fn-regular);
+}
+
+.mp-disclaimer {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  padding: 0 2px;
+  border: 0;
+  background: none;
+  font-size: 12px;
+  color: var(--fn-text-3);
+}
+
+.mp-loadout {
+  padding: 14px 16px 10px;
+}
+
+.mp-loadout .mp-more {
+  padding-top: 2px;
+  border-top: 1px solid var(--fn-line);
+}
+
+/* ----- summary: an expedition briefing ----- */
+.mp-review {
+  gap: 26px;
+}
+
+.mp-group__title {
+  margin: 0 0 10px;
+  font-size: var(--fn-heading);
+  font-weight: var(--fn-medium);
+  letter-spacing: -0.005em;
+  color: var(--fn-text);
+}
+
+.mp-group__body {
+  display: grid;
+  gap: 4px;
+  padding: 4px 16px;
+  border-radius: var(--fn-r-section);
+  background: var(--fn-section);
+}
+
+.mp-group .mp-sheet {
+  padding: 12px 0;
+}
+
+.mp-group .mp-sheet + .mp-sheet {
+  margin: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--fn-line);
+}
+
+.mp-sheet__title {
+  margin: 0 0 6px;
+  font-size: var(--fn-meta);
+  font-weight: var(--fn-medium);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fn-text-3);
+}
+
+.mp-stat {
+  padding: 6px 0;
+}
+
+.mp-stat + .mp-stat {
+  border-top-color: var(--fn-line);
+}
+
+.mp-stat dt {
+  font-size: 13px;
+  color: var(--fn-text-2);
+}
+
+.mp-stat dd {
+  font-size: 13px;
+  font-weight: var(--fn-regular);
+}
+
+.mp-stat.is-emphasis dd {
+  font-weight: var(--fn-medium);
+  color: var(--fn-peach);
+}
+
+.mp-stoplist__label {
+  color: var(--fn-text-3);
+}
+
+.mp-stoplist__place {
+  font-weight: var(--fn-regular);
+}
+
+.mp-budget {
+  border: 0;
+  border-radius: var(--fn-r-control);
+  background: var(--fn-inset);
+}
+
+.mp-more {
+  margin-top: 6px;
+}
+
+.mp-more > summary {
+  padding: 8px 0 2px;
+  font-size: 12.5px;
+  color: var(--fn-soft);
+  cursor: pointer;
+  list-style: none;
+}
+
+.mp-more > summary::-webkit-details-marker {
+  display: none;
+}
+
+.mp-more > summary::after {
+  content: ' \203A';
+}
+
+.mp-more[open] > summary::after {
+  content: '';
+}
+
+/* Hazard findings read from the hazards module: only their frame in the briefing */
+.mp-group .mp-hz {
+  margin: 0;
+  padding: 12px 0;
+  border: 0;
+  background: none;
+}
+
+.mp-group .mp-hz + .mp-sheet {
+  border-top: 1px solid var(--fn-line);
+}
+
+/* ----- saving and the saved archive ----- */
+.mp-save {
+  border-top-color: var(--fn-line);
+}
+
+.mp-saved__row {
+  padding: 14px 16px;
+  border: 0;
+  border-radius: var(--fn-r-section);
+  background: var(--fn-section);
+}
+
+.mp-saved__row:hover {
+  background: var(--fn-section-2);
+}
+
+.mp-saved__name {
+  font-size: 15px;
+  font-weight: var(--fn-medium);
+}
+
+.mp-saved__route,
+.mp-saved__meta,
+.mp-saved__date {
+  font-size: 12.5px;
+  color: var(--fn-text-3);
+}
+
+.mp-saved__badge {
+  border-radius: 999px;
+  font-weight: var(--fn-regular);
+}
+
+.mp-saved__empty {
+  border: 0;
+  border-radius: var(--fn-r-section);
+  background: var(--fn-section);
+}
+
+.mp-saved__empty-title {
+  font-size: var(--fn-heading);
+  font-weight: var(--fn-medium);
+}
+
+/* ----- the route summary along the bottom of the map ----- */
+.mp-sum {
+  max-height: 40%;
+  border: 1px solid var(--fn-line);
+  border-radius: var(--fn-r-panel);
+  background: var(--fn-panel);
+  box-shadow: var(--fn-shadow);
+  font-size: 13.5px;
+}
+
+.mp-sum__header {
+  padding: 12px 14px 12px 20px;
+}
+
+.mp-sum__header h2 {
+  font-size: 13px;
+  font-weight: var(--fn-medium);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--fn-text-2);
+}
+
+.mp-sum__headline {
+  font-size: 15px;
+  font-weight: var(--fn-medium);
+  color: var(--fn-peach);
+}
+
+.mp-sum__body {
+  border-top-color: var(--fn-line);
+  padding: 4px 20px 16px;
+}
+
+.mp-sum__label,
+.mp-sum__figures dt {
+  font-size: var(--fn-meta);
+  font-weight: var(--fn-medium);
+  letter-spacing: 0.1em;
+  color: var(--fn-text-3);
+}
+
+.mp-sum__name,
+.mp-sum__figures dd {
+  font-weight: var(--fn-regular);
+}
+
+.mp-sum__place--start .mp-sum__pin {
+  background: var(--fn-sage);
+}
+
+.mp-sum__place--destination .mp-sum__pin {
+  background: var(--fn-coral);
+}
+
+/* Exploration preview inside the summary */
+.mp-xp {
+  border: 0;
+  border-radius: var(--fn-r-section);
+  background: var(--fn-section);
+}
+
+.mp-xp__head h3 {
+  font-size: var(--fn-meta);
+  font-weight: var(--fn-medium);
+  letter-spacing: 0.12em;
+  color: var(--fn-text-3);
+}
+
+.mp-xp__badge {
+  border-radius: 999px;
+  font-weight: var(--fn-regular);
+}
+
+/* ----- small floating cards ----- */
+.mp-lmk {
+  border: 1px solid var(--fn-line);
+  border-radius: 18px;
+  background: var(--fn-panel);
+  box-shadow: var(--fn-shadow);
+  font-family: var(--fn-font);
+}
+
+.mp-lmk h3 {
+  font-size: 17px;
+  font-weight: var(--fn-medium);
+}
+
+.mp-pick-hint {
+  border: 1px solid var(--fn-line-2);
+  border-radius: 999px;
+  background: var(--fn-panel);
+  font-family: var(--fn-font);
+}
+
+/* ----- tablets: the summary sits above the bar of Explore / Dashboard buttons ----- */
+@media (max-width: 900px) {
+  .mp-sum,
+  .mp-sum.is-beside-panel,
+  .mp-panel.is-wide ~ .mp-sum.is-beside-panel {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 86px);
+  }
+}
+
+/* ----- phones: a sheet at the top, the summary above the bottom bar ----- */
+@media (max-width: 640px) {
+  .mp-panel,
+  .mp-panel.mp-panel,
+  .mp-panel.is-wide {
+    left: 8px;
+    right: 8px;
+    width: auto;
+    max-height: 50%;
+    border-radius: 18px;
+  }
+
+  .mp-panel:not(.is-open) {
+    right: auto;
+  }
+
+  .mp-panel__header {
+    padding: 14px 12px 10px 18px;
+  }
+
+  .mp-panel__title {
+    font-size: 18px;
+  }
+
+  .mp-tabs {
+    margin: 0 12px 8px;
+  }
+
+  .mp-tabs button {
+    min-height: 38px;
+    font-size: 12.5px;
+  }
+
+  .mp-panel__body {
+    padding: 4px 16px 16px;
+  }
+
+  .mp-sum,
+  .mp-sum.is-beside-panel,
+  .mp-panel.is-wide ~ .mp-sum.is-beside-panel {
+    left: 8px;
+    right: 68px;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 86px);
+    max-height: 34%;
+    border-radius: 16px;
+  }
+
+  .mp-sum__header {
+    padding: 10px 10px 10px 16px;
+  }
+
+  .mp-row__body {
+    padding: 12px;
+  }
+
+  .mp-group__body {
+    padding: 4px 12px;
+  }
+}
+
+@media (pointer: coarse) {
+  .mp-btn,
+  .mp-chip {
+    min-height: 40px;
+  }
+
+  .mp-icon-btn,
+  .mp-btn--icon {
+    width: 38px;
+    height: 38px;
+    min-height: 38px;
+  }
 }

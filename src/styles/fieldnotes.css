@@ -1,0 +1,96 @@
+/* Field notebook: the shared design tokens of the Mission Planner and the Mars Dashboard.
+   Scoped to their own containers, so the Hazards module, the globe and the intro are never
+   affected. Warm chocolate surfaces, a few low-contrast hairlines, Poppins at two weights. */
+.mp-panel,
+.mp-sum,
+.mp-pick-hint,
+.mp-lmk,
+.md {
+  /* surfaces, darkest to lightest */
+  --fn-bg: #171413;
+  --fn-panel: #1e1917;
+  --fn-section: #2a2220;
+  --fn-section-2: #322826;
+  --fn-control: #3b3230;
+  --fn-inset: rgba(0, 0, 0, 0.22);
+  /* lines */
+  --fn-line: rgba(232, 194, 173, 0.08);
+  --fn-line-2: rgba(232, 194, 173, 0.15);
+  /* text */
+  --fn-text: #f3e5dc;
+  --fn-text-2: rgba(243, 229, 220, 0.66);
+  --fn-text-3: rgba(243, 229, 220, 0.46);
+  /* palette */
+  --fn-accent: #b87860;
+  --fn-peach: #e8c2ad;
+  --fn-soft: #d6a38b;
+  --fn-muted: #8d756e;
+  --fn-surface: #63504a;
+  --fn-sage: #9db99a;
+  --fn-coral: #d9927a;
+  --fn-alert: #e8a08a;
+  /* shape */
+  --fn-r-panel: 20px;
+  --fn-r-section: 14px;
+  --fn-r-control: 10px;
+  --fn-shadow: 0 18px 44px -24px rgba(0, 0, 0, 0.7);
+  /* type: one family, two weights */
+  --fn-font: 'Poppins', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --fn-title: 21px;
+  --fn-heading: 15px;
+  --fn-body: 14px;
+  --fn-small: 12.5px;
+  --fn-meta: 11px;
+  --fn-regular: 400;
+  --fn-medium: 500;
+  --fn-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/* The two controls everything is built from: a checkbox and a radio, drawn the same way */
+.mp-panel input[type='checkbox'],
+.md input[type='checkbox'] {
+  appearance: none;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  border: 1.5px solid rgba(243, 229, 220, 0.34);
+  border-radius: 6px;
+  background: transparent center / 12px no-repeat;
+  cursor: pointer;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s;
+}
+
+.mp-panel input[type='checkbox']:checked,
+.md input[type='checkbox']:checked {
+  border-color: var(--fn-text);
+  background-color: var(--fn-text);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6.2 5 8.6l4.6-5' fill='none' stroke='%231e1917' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+.mp-panel input[type='radio'],
+.md input[type='radio'] {
+  appearance: none;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  border: 1.5px solid rgba(243, 229, 220, 0.34);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.mp-panel input[type='radio']:checked,
+.md input[type='radio']:checked {
+  border-color: var(--fn-text);
+  background: radial-gradient(circle, var(--fn-text) 0 4px, transparent 4.5px);
+}
+
+.mp-panel input[type='checkbox']:hover:not(:checked),
+.md input[type='checkbox']:hover:not(:checked),
+.mp-panel input[type='radio']:hover:not(:checked),
+.md input[type='radio']:hover:not(:checked) {
+  border-color: rgba(243, 229, 220, 0.6);
+}

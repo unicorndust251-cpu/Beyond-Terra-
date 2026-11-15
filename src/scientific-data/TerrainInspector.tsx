@@ -95,11 +95,12 @@ export default function TerrainInspector() {
       <button
         type="button"
         className="sd-card__ground"
+        title="NASA rover photographs near this point"
         onClick={() =>
           openGroundPerspective({ coordinate: selected.coordinate, name: selected.name, context: selected.landmarkId ? 'landmark' : selected.source === 'manual' ? 'custom' : 'map-point' })
         }
       >
-        Ground Perspective · NASA rover photographs
+        Ground Perspective · rover photos
       </button>
     </section>
   );

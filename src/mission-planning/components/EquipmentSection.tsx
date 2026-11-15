@@ -654,11 +654,6 @@ export default function EquipmentSection({ state, dispatch, duration }: Props) {
         </div>
         {mass.unknownItems.length > 0 && <p className="mp-hint mp-hint--alert">{describeKnownMass(mass.knownKg, mass.unknownItems.length)}.</p>}
         <dl className="mp-stats">
-          {(Object.keys(MASS_GROUP_LABELS) as MassGroup[]).map((g) => (
-            <Stat key={g} label={MASS_GROUP_LABELS[g]}>
-              {kg(mass.byGroup[g])}
-            </Stat>
-          ))}
           {mass.carriers.map((c) => (
             <Stat key={c} label={CARRIER_LABELS[c]}>
               {kg(mass.byCarrier[c] ?? 0)}
@@ -669,6 +664,19 @@ export default function EquipmentSection({ state, dispatch, duration }: Props) {
               {mass.unallocatedUnits} unit{mass.unallocatedUnits > 1 ? 's' : ''} · {kg(mass.unallocatedKg)}
             </Stat>
           )}
+          <Stat label="Scheduled equipment time" emphasis>
+            {formatDuration(activityMin / 60)}
+            {unknownActivity ? ` + ${unknownActivity} unknown` : ''}
+          </Stat>
+        </dl>
+        <details className="mp-more">
+          <summary>Mass breakdown, suit, weight and cost</summary>
+        <dl className="mp-stats">
+          {(Object.keys(MASS_GROUP_LABELS) as MassGroup[]).map((g) => (
+            <Stat key={g} label={MASS_GROUP_LABELS[g]}>
+              {kg(mass.byGroup[g])}
+            </Stat>
+          ))}
           {mass.inSuitItems.length > 0 && <Stat label="Counted with the suit">{kg(mass.inSuitKg)}</Stat>}
           <Stat
             label={
@@ -713,13 +721,10 @@ export default function EquipmentSection({ state, dispatch, duration }: Props) {
           >
             {(mass.knownKg * MARS_GRAVITY).toFixed(0)} N
           </Stat>
-          <Stat label="Scheduled equipment time" emphasis>
-            {formatDuration(activityMin / 60)}
-            {unknownActivity ? ` + ${unknownActivity} unknown` : ''}
-          </Stat>
           <Stat label="Cost">{costText || 'Not provided'}</Stat>
         </dl>
         {cost.noCurrency.length > 0 && <p className="mp-hint">Cost without a currency is not summed: {cost.noCurrency.join(', ')}.</p>}
+        </details>
       </section>
 
       <p className="mp-disclaimer">
