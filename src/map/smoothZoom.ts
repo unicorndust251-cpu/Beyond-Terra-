@@ -60,6 +60,11 @@ export class SmoothZoom {
     this.opts.instant = instant;
   }
 
+  /** Stops an in-flight zoom when the page is backgrounded. */
+  stop() {
+    this.cancel();
+  }
+
   get isZooming() {
     return this.active;
   }

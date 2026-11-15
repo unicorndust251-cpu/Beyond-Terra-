@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { selectedLocationStore, useMapBridge, type MarsCoordinate, type SelectedLocation } from '../shared';
+import { openGroundPerspective, selectedLocationStore, useMapBridge, type MarsCoordinate, type SelectedLocation } from '../shared';
 import { useFocusedLocation } from '../shared/focus';
 import {
   formatLandmarkCoordinates,
@@ -274,6 +274,22 @@ export default function DashboardPage({ active, onOpenMap, onOpenExplore }: Prop
               </button>
               <button type="button" className="md-btn md-btn--primary" disabled={!c} onClick={viewOnMap}>
                 View on Map
+              </button>
+              <button
+                type="button"
+                className="md-btn"
+                disabled={!c}
+                onClick={() =>
+                  c &&
+                  openGroundPerspective({
+                    coordinate: c,
+                    name: landmark ? landmark.name : location?.name,
+                    context: landmark ? 'landmark' : location?.source === 'mission-plan' ? 'checkpoint' : 'custom',
+                    contextLabel: landmark ? undefined : location?.source === 'mission-plan' ? 'Mission stop' : undefined,
+                  })
+                }
+              >
+                Ground Perspective
               </button>
             </div>
             {hasMission && (

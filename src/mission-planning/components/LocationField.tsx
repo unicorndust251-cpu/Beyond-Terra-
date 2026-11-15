@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { fromEast360, toEast360 } from '../../shared';
+import { fromEast360, openGroundPerspective, toEast360 } from '../../shared';
 import { LANDMARKS } from '../data/landmarks';
 import { formatLatitude, formatLongitude, locationName, parseCoordinate, parseLatitude, parseLongitudeEast } from '../geo';
 import type { PlannedLocation } from '../model';
@@ -189,6 +189,15 @@ export default function LocationField({ label, placeholder = 'Select a location'
             <button type="button" className={`mp-link${picking ? ' is-active' : ''}`} onClick={onPick} aria-pressed={picking}>
               {picking ? 'Cancel map pick' : 'Pick on map'}
             </button>
+            {location && (
+              <button
+                type="button"
+                className="mp-link"
+                onClick={() => openGroundPerspective({ coordinate: location.coordinate, name: locationName(location.name), context: accent, contextLabel: label })}
+              >
+                Ground Perspective
+              </button>
+            )}
             {location && (
               <button type="button" className="mp-link" onClick={() => onChange(null)}>
                 Clear

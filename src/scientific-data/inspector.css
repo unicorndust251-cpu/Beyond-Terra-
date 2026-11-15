@@ -261,3 +261,24 @@
   .sd-rows,
   .sd-rows.is-loading .sd-placeholder { animation: none; }
 }
+
+/* Opens Ground Perspective (NASA rover photographs) for this point */
+.sd-card__ground {
+  display: block;
+  width: calc(100% - 28px);
+  margin: 2px 14px 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--sd-line);
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sd-card__ground:hover,
+.sd-card__ground:focus-visible {
+  border-color: var(--sd-accent);
+}

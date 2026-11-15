@@ -2661,3 +2661,9 @@
   height: 9px;
   margin-top: 0;
 }
+
+/* Ground Perspective (NASA rover photographs) for the landmark */
+.mp-lmk__ground {
+  margin-top: 8px;
+  font-size: 12px;
+}

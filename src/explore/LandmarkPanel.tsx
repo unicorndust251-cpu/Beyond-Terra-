@@ -10,6 +10,8 @@ import {
   type Landmark,
   type LandmarkSource,
 } from '../shared/landmarks';
+import { openGroundPerspective } from '../shared';
+import { landmarkCoordinate } from '../shared/landmarks';
 import LandmarkThumb, { THUMB_CREDIT } from './LandmarkThumb';
 
 interface Props {
@@ -249,6 +251,13 @@ export default function LandmarkPanel({ landmark: l, expanded, onExpand, onSelec
             View Scientific Importance
           </button>
         )}
+        <button
+          type="button"
+          className="ex-link ex-panel__ground"
+          onClick={() => openGroundPerspective({ coordinate: landmarkCoordinate(l), name: l.name, context: 'landmark' })}
+        >
+          Ground Perspective · NASA rover photographs
+        </button>
         <div className="ex-panel__nav">
           <button type="button" className="ex-link" onClick={() => onSelect(prev.id)} aria-label={`Previous landmark: ${prev.name}`}>
             ‹ Previous
