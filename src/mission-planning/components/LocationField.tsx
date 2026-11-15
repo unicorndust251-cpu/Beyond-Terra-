@@ -8,6 +8,8 @@ import { Chevron } from './ui';
 interface Props {
   /** Row heading, e.g. "Starting point". */
   label: string;
+  /** Shown while no location is set, e.g. "Select destination". */
+  placeholder?: string;
   location: PlannedLocation | null;
   onChange: (location: PlannedLocation | null) => void;
   /** This stop is waiting for a click on the map. */
@@ -30,7 +32,7 @@ const trim = (v: number) => String(Number(v.toFixed(6)));
  * One route stop: a compact row showing the chosen place, which opens to set it by typed
  * coordinates, a verified landmark, or a click on the map.
  */
-export default function LocationField({ label, location, onChange, picking, onPick, onRemove, onMove, accent, symbol, open, onToggle }: Props) {
+export default function LocationField({ label, placeholder = 'Select a location', location, onChange, picking, onPick, onRemove, onMove, accent, symbol, open, onToggle }: Props) {
   const id = useId();
   const [lat, setLat] = useState('');
   const [lon, setLon] = useState('');
@@ -94,7 +96,7 @@ export default function LocationField({ label, location, onChange, picking, onPi
               </span>
             </>
           ) : (
-            <span className="mp-loc__placeholder">{picking ? 'Click the map to place it…' : 'Select a location'}</span>
+            <span className="mp-loc__placeholder">{picking ? 'Click the map to place it…' : placeholder}</span>
           )}
         </span>
         <Chevron open={open} />

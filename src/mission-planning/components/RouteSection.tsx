@@ -79,9 +79,11 @@ export default function RouteSection({
 
   return (
     <div className="mp-route">
+      {/* Listed in travel order, so the rail reads start → waypoints → destination */}
       <div className="mp-stops">
         <LocationField
           label="Starting point"
+          placeholder="Select starting location"
           accent="start"
           symbol="S"
           location={state.start}
@@ -91,21 +93,11 @@ export default function RouteSection({
           open={openRow === 'start'}
           onToggle={toggle('start')}
         />
-        <LocationField
-          label="Destination"
-          accent="destination"
-          symbol="D"
-          location={state.destination}
-          onChange={(location) => dispatch({ type: 'set-destination', location })}
-          picking={picking === 'destination'}
-          onPick={() => onPick('destination')}
-          open={openRow === 'destination'}
-          onToggle={toggle('destination')}
-        />
         {state.checkpoints.map((c, i) => (
           <LocationField
             key={c.id}
             label={`Waypoint ${i + 1}`}
+            placeholder="Select waypoint"
             accent="checkpoint"
             symbol={String(i + 1)}
             location={c.location}
@@ -119,8 +111,25 @@ export default function RouteSection({
           />
         ))}
         <button type="button" className="mp-add" onClick={() => dispatch({ type: 'add-checkpoint' })}>
-          <span aria-hidden="true">+</span> Add waypoint
+          <span className="mp-add__node" aria-hidden="true">
+            <svg viewBox="0 0 16 16">
+              <path d="M8 4v8M4 8h8" />
+            </svg>
+          </span>
+          Add waypoint
         </button>
+        <LocationField
+          label="Destination"
+          placeholder="Select destination"
+          accent="destination"
+          symbol="D"
+          location={state.destination}
+          onChange={(location) => dispatch({ type: 'set-destination', location })}
+          picking={picking === 'destination'}
+          onPick={() => onPick('destination')}
+          open={openRow === 'destination'}
+          onToggle={toggle('destination')}
+        />
         {state.checkpoints.length > 0 && <p className="mp-hint">Waypoints are visited in order, between the starting point and the destination.</p>}
       </div>
 

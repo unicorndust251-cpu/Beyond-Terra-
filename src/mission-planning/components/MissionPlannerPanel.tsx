@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState, type CSSProperties } from 'react';
 import {
   normalizeLongitudeEast,
   selectedLocationStore,
@@ -237,7 +237,13 @@ export default function MissionPlannerPanel() {
 
         {open && (
           <>
-            <div className="mp-tabs" role="tablist" aria-label="Planner sections">
+            <div
+              className="mp-tabs"
+              role="tablist"
+              aria-label="Planner sections"
+              // Positions the sliding indicator under the open tab
+              style={{ '--mp-tab': TABS.findIndex((t) => t.id === tab) } as CSSProperties}
+            >
               {TABS.map((t) => (
                 <button
                   key={t.id}

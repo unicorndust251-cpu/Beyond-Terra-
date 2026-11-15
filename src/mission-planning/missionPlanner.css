@@ -33,16 +33,29 @@
   position: absolute;
   top: calc(var(--bt-topbar) + env(safe-area-inset-top, 0px) + 52px);
   left: max(16px, env(safe-area-inset-left, 0px));
-  width: min(340px, calc(100vw - 32px));
+  width: min(360px, calc(100vw - 32px));
   max-height: calc(100% - var(--bt-topbar) - env(safe-area-inset-top, 0px) - 72px);
   display: flex;
   flex-direction: column;
-  border-radius: 8px;
-  background: var(--mp-bg);
-  border: 1px solid var(--mp-line);
-  box-shadow: 0 8px 28px rgba(5, 5, 7, 0.35);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(48, 39, 37, 0.5), rgba(23, 20, 19, 0) 140px), var(--mp-bg);
+  border: 1px solid rgba(214, 163, 139, 0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(243, 229, 220, 0.05),
+    0 2px 6px rgba(5, 5, 7, 0.25),
+    0 22px 48px -16px rgba(5, 5, 7, 0.7);
   font-size: 13px;
   line-height: 1.45;
+  transition: width 0.22s var(--ease-out);
+}
+
+/* Translucent where the browser can blur the map behind it; solid otherwise */
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .mp-panel {
+    background: linear-gradient(180deg, rgba(48, 39, 37, 0.42), rgba(23, 20, 19, 0) 140px), rgba(23, 20, 19, 0.8);
+    -webkit-backdrop-filter: blur(18px) saturate(1.15);
+    backdrop-filter: blur(18px) saturate(1.15);
+  }
 }
 
 .mp-panel:not(.is-open) {
@@ -78,71 +91,129 @@
 }
 
 .mp-panel__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin: 0;
   font-family: var(--font-display);
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 600;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--mp-faint);
 }
 
+/* A small copper status light before the brand line */
+.mp-panel__eyebrow::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--mp-copper);
+  box-shadow: 0 0 0 3px rgba(214, 163, 139, 0.14);
+}
+
 .mp-panel__eyebrow span {
-  margin: 0 4px;
   color: var(--mp-muted);
 }
 
 .mp-panel__title {
-  margin: 6px 0 0;
-  font-size: 18px;
+  margin: 7px 0 0;
+  font-family: var(--font-display);
+  font-size: 19px;
   font-weight: 600;
-  letter-spacing: -0.01em;
+  letter-spacing: 0.005em;
   color: var(--mp-text);
+}
+
+.mp-panel:not(.is-open) .mp-panel__header {
+  padding-bottom: 16px;
 }
 
 .mp-panel__collapse {
   margin-top: -2px;
+  border-radius: 8px;
+  transition:
+    border-color 0.2s,
+    color 0.2s,
+    background 0.2s;
 }
 
+.mp-panel__collapse:hover {
+  background: rgba(243, 229, 220, 0.04);
+}
+
+/* Segmented tabs with one indicator that slides to the open tab (--mp-tab is its index) */
 .mp-tabs {
+  --mp-tab-count: 4;
+  position: relative;
   display: flex;
-  gap: 2px;
-  margin: 0 16px 6px;
+  margin: 0 16px 8px;
   padding: 3px;
+  border-radius: 10px;
+  background: rgba(5, 5, 7, 0.42);
+  border: 1px solid rgba(141, 117, 110, 0.16);
+  box-shadow: inset 0 1px 2px rgba(5, 5, 7, 0.35);
+}
+
+.mp-tabs::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc((100% - 6px) / var(--mp-tab-count));
   border-radius: 7px;
-  background: var(--mp-surface);
+  background: linear-gradient(180deg, rgba(184, 120, 96, 0.26), rgba(184, 120, 96, 0.14));
+  border: 1px solid rgba(214, 163, 139, 0.32);
+  box-shadow:
+    inset 0 1px 0 rgba(243, 229, 220, 0.08),
+    0 2px 8px rgba(5, 5, 7, 0.3);
+  transform: translateX(calc(var(--mp-tab, 0) * 100%));
+  transition: transform 0.24s var(--ease-out);
+  pointer-events: none;
 }
 
 .mp-tabs button {
-  flex: 1;
-  min-height: 30px;
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 0 4px;
   border: 0;
-  border-radius: 5px;
+  border-radius: 7px;
   background: none;
-  color: var(--mp-dim);
+  color: var(--mp-faint);
   font: inherit;
-  font-size: 12.5px;
-  font-weight: 500;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
   cursor: pointer;
-  transition:
-    background 0.15s,
-    color 0.15s;
+  transition: color 0.2s;
 }
 
 .mp-tabs button:hover {
-  color: var(--mp-text);
+  color: var(--mp-dim);
 }
 
 .mp-tabs button.is-active {
-  background: var(--mp-muted);
   color: var(--mp-text);
+}
+
+.mp-panel .mp-tabs button:focus-visible {
+  outline-offset: -2px;
 }
 
 /* The only scrolling area of the sidebar */
 .mp-panel__body {
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 6px 20px 18px;
+  padding: 8px 20px 18px;
   scrollbar-width: thin;
   scrollbar-color: var(--mp-muted) transparent;
 }
@@ -441,22 +512,89 @@
 
 /* ----- Route tab: stops ------------------------------------------------------------- */
 
+/* Each stop is a field on a thin rail; its node sits in the left gutter. Every item draws
+   its own rail above (::before, across the gap) and below (::after) its node, so the line
+   stays continuous however tall an open field grows. */
 .mp-stops {
+  --mp-rail-gutter: 30px;
+  --mp-rail-x: -20px; /* rail centre, from an item's left edge */
+  --mp-node: 18px;
+  --mp-node-y: 29px; /* node centre, from an item's top edge */
+  --mp-gap: 8px;
+  --mp-rail: rgba(214, 163, 139, 0.3);
   display: grid;
+  gap: var(--mp-gap);
+  padding: 4px 0 0 var(--mp-rail-gutter);
+}
+
+.mp-loc,
+.mp-add {
+  position: relative;
+}
+
+.mp-loc::before,
+.mp-loc::after,
+.mp-add::before,
+.mp-add::after {
+  content: '';
+  position: absolute;
+  left: calc(var(--mp-rail-x) - 0.5px);
+  width: 1px;
+  background: var(--mp-rail);
+  pointer-events: none;
+}
+
+.mp-loc::before {
+  top: calc(-1 * var(--mp-gap));
+  height: calc(var(--mp-node-y) - var(--mp-node) / 2 - 4px + var(--mp-gap));
+}
+
+.mp-loc::after {
+  top: calc(var(--mp-node-y) + var(--mp-node) / 2 + 4px);
+  bottom: 0;
+}
+
+.mp-loc--start::before,
+.mp-loc--destination::after {
+  display: none;
 }
 
 .mp-loc {
-  border-bottom: 1px solid var(--mp-line);
+  border: 1px solid rgba(141, 117, 110, 0.2);
+  border-radius: 11px;
+  background: rgba(243, 229, 220, 0.022);
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.mp-loc:hover {
+  border-color: rgba(141, 117, 110, 0.4);
+  background: rgba(243, 229, 220, 0.04);
+}
+
+.mp-loc.is-open {
+  border-color: rgba(214, 163, 139, 0.38);
+  background: rgba(48, 39, 37, 0.42);
+  box-shadow: 0 0 0 3px rgba(184, 120, 96, 0.07);
+}
+
+.mp-loc.is-picking {
+  border-style: dashed;
+  border-color: rgba(214, 163, 139, 0.65);
 }
 
 .mp-loc__head {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: 1fr auto;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   width: 100%;
-  padding: 12px 0;
+  min-height: 58px;
+  padding: 10px 12px 10px 14px;
   border: 0;
+  border-radius: 10px;
   background: none;
   color: inherit;
   font: inherit;
@@ -464,28 +602,42 @@
   cursor: pointer;
 }
 
+/* The node on the rail; carries the same letter or number as the pin on the map */
 .mp-loc__pin {
+  position: absolute;
+  top: calc(var(--mp-node-y) - var(--mp-node) / 2);
+  left: calc(var(--mp-rail-x) - var(--mp-node) / 2);
   display: grid;
   place-items: center;
-  width: 18px;
-  height: 18px;
+  width: var(--mp-node);
+  height: var(--mp-node);
   border-radius: 50%;
-  font-size: 9.5px;
+  font-size: 9px;
   font-weight: 700;
   line-height: 1;
   color: var(--mp-bg);
+  transition: box-shadow 0.2s ease;
 }
 
 .mp-loc--start .mp-loc__pin {
   background: var(--mp-mint);
+  box-shadow: 0 0 0 3px rgba(143, 185, 150, 0.12);
 }
 
 .mp-loc--destination .mp-loc__pin {
   background: var(--mp-accent);
+  box-shadow: 0 0 0 3px rgba(184, 120, 96, 0.16);
 }
 
 .mp-loc--checkpoint .mp-loc__pin {
-  background: var(--mp-copper);
+  border: 1px solid var(--mp-copper);
+  background: var(--mp-bg);
+  color: var(--mp-copper);
+}
+
+.mp-loc.is-open .mp-loc__pin,
+.mp-loc__head:hover .mp-loc__pin {
+  box-shadow: 0 0 0 4px rgba(214, 163, 139, 0.16);
 }
 
 .mp-loc__text {
@@ -495,26 +647,37 @@
 }
 
 .mp-loc__label {
-  font-size: 10.5px;
+  font-size: 9.5px;
   font-weight: 600;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--mp-faint);
+}
+
+.mp-loc--start .mp-loc__label {
+  color: rgba(143, 185, 150, 0.8);
+}
+
+.mp-loc--destination .mp-loc__label {
+  color: rgba(214, 163, 139, 0.85);
 }
 
 .mp-loc__name {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 500;
+  letter-spacing: -0.005em;
   color: var(--mp-text);
 }
 
 .mp-loc__value {
-  font-size: 11.5px;
+  font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.02em;
   font-variant-numeric: tabular-nums;
-  color: var(--mp-dim);
+  color: var(--mp-faint);
 }
 
 .mp-loc__placeholder {
@@ -526,10 +689,30 @@
   color: var(--mp-copper);
 }
 
+/* A dropdown: the chevron points down, and up once the field is open */
+.mp-loc__head .mp-chevron {
+  transform: rotate(90deg);
+}
+
+.mp-loc__head .mp-chevron.is-open {
+  transform: rotate(-90deg);
+  color: var(--mp-copper);
+}
+
 .mp-loc__body {
   display: grid;
   gap: 10px;
-  padding: 0 0 14px 30px;
+  margin: 0 12px;
+  padding: 12px 0 13px;
+  border-top: 1px solid var(--mp-line);
+  animation: mp-reveal 0.2s var(--ease-out);
+}
+
+@keyframes mp-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
 }
 
 .mp-loc__search {
@@ -617,29 +800,78 @@
   color: var(--mp-alert);
 }
 
+/* Add waypoint: a step on the rail, between the waypoints and the destination */
 .mp-add {
-  justify-self: start;
-  margin: 10px 0 2px;
-  padding: 4px 0;
-  border: 0;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px dashed rgba(141, 117, 110, 0.38);
+  border-radius: 11px;
   background: none;
-  color: var(--mp-copper);
+  color: var(--mp-dim);
   font: inherit;
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 500;
+  letter-spacing: 0.04em;
   cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.mp-add::before {
+  top: calc(-1 * var(--mp-gap));
+  height: calc(50% - var(--mp-node) / 2 - 4px + var(--mp-gap));
+}
+
+.mp-add::after {
+  top: calc(50% + var(--mp-node) / 2 + 4px);
+  bottom: 0;
 }
 
 .mp-add:hover {
-  color: var(--mp-soft);
+  border-color: rgba(214, 163, 139, 0.55);
+  background: rgba(184, 120, 96, 0.06);
+  color: var(--mp-text);
 }
 
-.mp-add span {
-  margin-right: 4px;
+.mp-add__node {
+  position: absolute;
+  top: calc(50% - var(--mp-node) / 2);
+  left: calc(var(--mp-rail-x) - var(--mp-node) / 2);
+  display: grid;
+  place-items: center;
+  width: var(--mp-node);
+  height: var(--mp-node);
+  border: 1px dashed rgba(214, 163, 139, 0.55);
+  border-radius: 50%;
+  background: var(--mp-bg);
+  color: var(--mp-copper);
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.mp-add:hover .mp-add__node {
+  border-style: solid;
+  border-color: var(--mp-copper);
+  background: rgba(184, 120, 96, 0.18);
+}
+
+.mp-add__node svg {
+  width: 10px;
+  height: 10px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
 }
 
 .mp-stops .mp-hint {
-  margin-bottom: 4px;
+  margin: 2px 0 4px;
 }
 
 /* ----- Route tab: settings rows ------------------------------------------------------ */
@@ -1681,7 +1913,7 @@
 }
 
 .mp-sum.is-beside-panel {
-  left: calc(max(16px, env(safe-area-inset-left, 0px)) + min(340px, calc(100vw - 32px)) + 12px);
+  left: calc(max(16px, env(safe-area-inset-left, 0px)) + min(360px, calc(100vw - 32px)) + 12px);
 }
 
 .mp-sum__header {
@@ -1871,10 +2103,32 @@
     right: 8px;
     width: auto;
     max-height: 58%;
+    border-radius: 12px;
+  }
+
+  /* Folded, the sheet shrinks to its title so the map stays reachable */
+  .mp-panel:not(.is-open) {
+    right: auto;
   }
 
   .mp-panel__header {
     padding: 14px 12px 10px 16px;
+  }
+
+  .mp-panel:not(.is-open) .mp-panel__header {
+    padding-bottom: 12px;
+  }
+
+  .mp-panel__title {
+    font-size: 17px;
+  }
+
+  .mp-tabs {
+    margin: 0 12px 6px;
+  }
+
+  .mp-tabs button {
+    letter-spacing: 0.06em;
   }
 
   .mp-panel__body {
@@ -1950,11 +2204,30 @@
   }
 }
 
+/* Touch screens: taller targets for the tabs and the waypoint control */
+@media (pointer: coarse) {
+  .mp-tabs button {
+    min-height: 38px;
+  }
+
+  .mp-add {
+    min-height: 46px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .mp-chevron,
   .mp-tabs button,
+  .mp-tabs::before,
+  .mp-panel,
+  .mp-loc,
+  .mp-add,
   .mp-btn {
     transition: none;
+  }
+
+  .mp-loc__body {
+    animation: none;
   }
 }
 
