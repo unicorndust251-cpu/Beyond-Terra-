@@ -1,7 +1,15 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { selectedLocationStore, useMapBridge, type MarsCoordinate, type SelectedLocation } from '../shared';
 import { useFocusedLocation } from '../shared/focus';
-import { formatLandmarkCoordinates, landmarkById, searchLandmarks, selectedLandmarkStore } from '../shared/landmarks';
+import {
+  formatLandmarkCoordinates,
+  HAZARD_FRAMING,
+  landmarkById,
+  landmarkHazards,
+  NO_CALCULATED_ALTERNATIVE,
+  searchLandmarks,
+  selectedLandmarkStore,
+} from '../shared/landmarks';
 import { useActiveMission } from '../mission-planning';
 import { CARRIER_LABELS, describeKnownMass, provenanceCounts } from '../mission-planning/loadout';
 import { MASS_GROUP_LABELS, type MassGroup } from '../mission-planning/data/equipment';
@@ -85,6 +93,7 @@ export default function DashboardPage({ active, onOpenMap, onOpenExplore }: Prop
   }, [focus, mission?.state.start]);
   const c = location?.coordinate ?? null;
   const landmark = landmarkById(location?.landmarkId);
+  const hazards = landmark ? landmarkHazards(landmark) : null;
 
   // Solar time
   const t = useMemo(() => marsTime(utcMs), [utcMs]);
@@ -400,10 +409,27 @@ export default function DashboardPage({ active, onOpenMap, onOpenExplore }: Prop
               </Section>
 
               <Section title="Hazards">
-                <p>
-                  The Hazards module is not part of this build, so no hazard observations are shown. The absence of a marker does not mean a location or
-                  route is safe.
-                </p>
+                {hazards ? (
+                  <>
+                    <h4>Possible mission hazards (landmark level, to assess locally)</h4>
+                    <p>{hazards.concerns}</p>
+                    <h4>Proposed response</h4>
+                    <p>{hazards.response}</p>
+                    <h4>Calculated alternative</h4>
+                    <p>{NO_CALCULATED_ALTERNATIVE}</p>
+                    <p className="md-note">{HAZARD_FRAMING}</p>
+                    <p className="md-note">
+                      Source cited for this group of summaries:{' '}
+                      <a href={hazards.source.url} target="_blank" rel="noreferrer noopener">
+                        {hazards.source.label}
+                      </a>
+                      . These are not mapped hazard observations with locations, dates or footprints.
+                    </p>
+                  </>
+                ) : (
+                  <p>No hazard concerns are recorded for this exact location, and no mapped hazard observations are connected to this build.</p>
+                )}
+                <p className="md-note">The absence of a hazard here does not mean a location or route is safe.</p>
               </Section>
 
               <Section title="Radiation">

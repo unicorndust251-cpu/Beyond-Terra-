@@ -1,5 +1,15 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { COORDINATE_CONVENTION, formatLandmarkCoordinates, GENERAL_SOURCES, LANDMARKS, type Landmark, type LandmarkSource } from '../shared/landmarks';
+import {
+  COORDINATE_CONVENTION,
+  formatLandmarkCoordinates,
+  GENERAL_SOURCES,
+  HAZARD_FRAMING,
+  landmarkHazards,
+  LANDMARKS,
+  NO_CALCULATED_ALTERNATIVE,
+  type Landmark,
+  type LandmarkSource,
+} from '../shared/landmarks';
 import LandmarkThumb, { THUMB_CREDIT } from './LandmarkThumb';
 
 interface Props {
@@ -58,6 +68,7 @@ export default function LandmarkPanel({ landmark: l, expanded, onExpand, onSelec
   const next = LANDMARKS[(i + 1) % LANDMARKS.length];
   const coords = formatLandmarkCoordinates(l);
   const q = qualifiers(l);
+  const hazards = landmarkHazards(l);
   const cautions = CAUTIONS.filter((c) => c.when.test(`${l.importance} ${l.investigation} ${l.terrain}`));
 
   useEffect(() => {
@@ -154,7 +165,30 @@ export default function LandmarkPanel({ landmark: l, expanded, onExpand, onSelec
                 ))}
               </ul>
             </Section>
-            <Section id="ex-sources" title="E · Sources and imagery">
+            <Section id="ex-hazards" title="E · Possible mission hazards">
+              {hazards ? (
+                <>
+                  <p>{hazards.concerns}</p>
+                  <p className="ex-note">{HAZARD_FRAMING}</p>
+                </>
+              ) : (
+                <p className="ex-note">No hazard concerns are recorded for this landmark.</p>
+              )}
+            </Section>
+            <Section id="ex-response" title="F · Proposed response">
+              {hazards ? (
+                <>
+                  <p>{hazards.response}</p>
+                  <p className="ex-note">A planning proposal: reconnaissance, a different approach, remote observation, another target or postponement. Not an approved astronaut procedure.</p>
+                </>
+              ) : (
+                <p className="ex-note">No proposed response is recorded for this landmark.</p>
+              )}
+            </Section>
+            <Section id="ex-alternative" title="G · Calculated alternative">
+              <p>{NO_CALCULATED_ALTERNATIVE}</p>
+            </Section>
+            <Section id="ex-sources" title="H · Sources and imagery">
               <h4>Coordinate</h4>
               <ul className="ex-src">
                 <li>
@@ -175,6 +209,15 @@ export default function LandmarkPanel({ landmark: l, expanded, onExpand, onSelec
                       <SourceLink key={s.url} s={s} />
                     ))}
                   </ul>
+                </>
+              )}
+              {hazards && (
+                <>
+                  <h4>Hazard summaries</h4>
+                  <ul className="ex-src">
+                    <SourceLink s={{ label: hazards.source.label, url: hazards.source.url, publisher: 'NASA' }} />
+                  </ul>
+                  <p className="ex-note">Cited for this group of landmark summaries; it does not support every statement for every landmark. {hazards.source.note}</p>
                 </>
               )}
               <h4>General</h4>

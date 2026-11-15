@@ -130,3 +130,12 @@ export const selectedLandmarkStore = createStore<string | null>(null);
 export function useSelectedLandmark(): Landmark | undefined {
   return landmarkById(useStore(selectedLandmarkStore));
 }
+
+export { HAZARD_FRAMING, NO_CALCULATED_ALTERNATIVE, HAZARD_GROUP_SOURCES, type LandmarkHazardRecord } from './hazards.data';
+import { HAZARD_GROUP_SOURCES as GROUPS, LANDMARK_HAZARDS } from './hazards.data';
+
+/** The landmark's hazard concerns and proposed response, with the source cited for its group. */
+export function landmarkHazards(l: Landmark) {
+  const h = LANDMARK_HAZARDS.find((x) => x.n === l.n);
+  return h ? { ...h, source: GROUPS[h.group] } : null;
+}
