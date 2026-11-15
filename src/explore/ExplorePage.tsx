@@ -87,7 +87,7 @@ export default function ExplorePage({ active, onExploreOnMap, onPlanHere, onOpen
     <div ref={root} className={`ex${selected ? ' has-selection' : ''}${expanded ? ' is-expanded' : ''}`} aria-hidden={!active}>
       <header className="ex-top">
         <span className="ex-top__brand">BEYOND TERRA</span>
-        <MainNav current="explore" />
+        <MainNav current="explore" onGlobe />
       </header>
 
       <aside className={`ex-cat${catalogueOpen ? ' is-open' : ''}`} aria-label="Landmark catalogue">

@@ -14,7 +14,7 @@ const NAV_ITEMS: NavItem[] = [
  * The one main navigation, shown in the map's top bar, on the landmark globe and on the
  * Mars Dashboard. On narrow screens the destinations fold into a compact menu.
  */
-export default function MainNav({ current }: { current: Section }) {
+export default function MainNav({ current, onGlobe = false }: { current: Section; onGlobe?: boolean }) {
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
   const layersOpen = useMapLayersPanelOpen();
@@ -39,7 +39,10 @@ export default function MainNav({ current }: { current: Section }) {
 
   const go = (s: Section) => {
     setOpen(false);
-    if (s !== current) navigate(s);
+    // Explore Mars opens the landmark globe (search, 46 landmarks, Plan Mission Here)
+    if (s === 'explore') {
+      if (!onGlobe) navigate('explore', { globe: true });
+    } else if (s !== current) navigate(s);
   };
 
   return (
