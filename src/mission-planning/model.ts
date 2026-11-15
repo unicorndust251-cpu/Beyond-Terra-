@@ -101,7 +101,7 @@ export type ItemPatch = Partial<
 export type MissionAction =
   | { type: 'set-start'; location: PlannedLocation | null }
   | { type: 'set-destination'; location: PlannedLocation | null }
-  | { type: 'add-checkpoint' }
+  | { type: 'add-checkpoint'; location?: PlannedLocation }
   | { type: 'set-checkpoint'; id: string; location: PlannedLocation | null }
   | { type: 'remove-checkpoint'; id: string }
   | { type: 'move-checkpoint'; id: string; by: -1 | 1 }
@@ -153,7 +153,7 @@ export function missionReducer(state: MissionState, action: MissionAction): Miss
     case 'set-destination':
       return { ...state, destination: action.location };
     case 'add-checkpoint':
-      return { ...state, checkpoints: [...state.checkpoints, { id: newId('cp'), location: null }] };
+      return { ...state, checkpoints: [...state.checkpoints, { id: newId('cp'), location: action.location ?? null }] };
     case 'set-checkpoint':
       return {
         ...state,

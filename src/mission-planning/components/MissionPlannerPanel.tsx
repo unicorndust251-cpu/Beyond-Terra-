@@ -12,8 +12,10 @@ import {
 import { durationSummary, initialMissionState, missionReducer, routeMetrics, routeStatus, routeStops, type StopKey } from '../model';
 import ExplorationPanel from '../exploration/ExplorationPanel';
 import { useExploration } from '../exploration/useExploration';
+import { activeMissionStore } from '../missionBridge';
 import { useMapSync } from '../useMapSync';
 import EquipmentSection from './EquipmentSection';
+import LandmarkLocationCard, { type LandmarkRole } from './LandmarkLocationCard';
 import RouteSection, { type RouteRow } from './RouteSection';
 import RouteSummary from './RouteSummary';
 import { SavedRoutesSection, SaveControls, useSavedRoutes } from './SavedRoutes';
@@ -111,6 +113,23 @@ export default function MissionPlannerPanel() {
   }, []);
   const saved = useSavedRoutes(state, dispatch, onOpened);
 
+  // Publish the live mission for read-only views (the Mars Dashboard)
+  useEffect(() => {
+    activeMissionStore.set({
+      state,
+      dispatch,
+      savedName: saved.current?.name ?? null,
+      dirty: saved.dirty,
+      openTab: (t) => {
+        showPanel(true);
+        setTab(t);
+      },
+    });
+    // showPanel only sets state
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, saved.current, saved.dirty]);
+  useEffect(() => () => activeMissionStore.set(null), []);
+
   // The summary appears with the route: open on desktop so the results are in view at once;
   // on phones it opens when the route is calculated, taking turns with the planner
   useEffect(() => {
@@ -136,19 +155,34 @@ export default function MissionPlannerPanel() {
   const exploration = useExploration(state);
   useMapSync(state, exploration.highlight);
 
-  const setStop = useCallback((stop: StopKey, coordinate: MarsCoordinate) => {
-    const location = { coordinate };
+  const setStop = useCallback((stop: StopKey, coordinate: MarsCoordinate, name?: string) => {
+    const location = name ? { coordinate, name } : { coordinate };
     if (stop === 'start') dispatch({ type: 'set-start', location });
     else if (stop === 'destination') dispatch({ type: 'set-destination', location });
     else dispatch({ type: 'set-checkpoint', id: stop, location });
   }, []);
 
-  // "Pick on map": the next map click after arming sets that stop
+  // "Pick on map": the next map click after arming sets that stop. A landmark marker gives
+  // its stored coordinate and name; anywhere else, the clicked point
   useEffect(() => {
-    if (!picking || !selection || selection === armedWith.current || selection.source !== 'map-click') return;
-    setStop(picking, selection.coordinate);
+    if (!picking || !selection || selection === armedWith.current) return;
+    if (selection.source === 'landmark') setStop(picking, selection.coordinate, selection.name);
+    else if (selection.source === 'map-click') setStop(picking, selection.coordinate);
+    else return;
     setPicking(null);
   }, [selection, picking, setStop]);
+
+  /** A landmark picked from its marker, assigned to a mission role with its stored coordinate. */
+  const assignLandmark = (role: LandmarkRole) => {
+    if (selection?.source !== 'landmark') return;
+    const location = { coordinate: selection.coordinate, name: selection.name };
+    if (role === 'start') dispatch({ type: 'set-start', location });
+    else if (role === 'destination') dispatch({ type: 'set-destination', location });
+    else dispatch({ type: 'add-checkpoint', location });
+    showPanel(true);
+    setTab('route');
+    setOpenRow(null);
+  };
 
   useEffect(() => {
     if (!picking) return undefined;
@@ -225,6 +259,7 @@ export default function MissionPlannerPanel() {
 
   return (
     <>
+      {selection?.source === 'landmark' && !picking && <LandmarkLocationCard selection={selection} onAssign={assignLandmark} />}
       {pickingLabel && (
         <p className="mp-pick-hint" role="status">
           Click the map to set <strong>{pickingLabel}</strong> · <kbd>Esc</kbd> to cancel

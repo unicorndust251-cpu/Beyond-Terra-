@@ -25,13 +25,16 @@ export interface CoordinateBounds {
 }
 
 /** Where a selection came from. */
-export type LocationSource = 'map-click' | 'search' | 'mission-plan' | 'scientific-layer' | 'manual';
+/** 'landmark': a catalogue landmark's marker, with its stored coordinate (never the clicked pixel). */
+export type LocationSource = 'map-click' | 'search' | 'mission-plan' | 'scientific-layer' | 'manual' | 'landmark';
 
 export interface SelectedLocation {
   coordinate: MarsCoordinate;
   /** e.g. an IAU feature name; omitted for an arbitrary point. */
   name?: string;
   source: LocationSource;
+  /** The landmark catalogue ID, when the location is a catalogue landmark. */
+  landmarkId?: string;
 }
 
 export interface MissionCheckpoint {
