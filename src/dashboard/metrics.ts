@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { MarsCoordinate } from '../shared';
 import { GEOLOGIC_MAP, inspectTerrain, JEZERO_CTX_DTM, MOLA_MEGDR, type TerrainInspection } from '../scientific-data/terrain';
 import type { ScientificDataset } from '../shared';
+import { areoidHeight } from './science/seasonsAndUnits';
 import { sourceById } from './sources';
 
 /** One displayed value and where it comes from (the dashboard's provenance record). */
@@ -79,7 +80,7 @@ export function terrainValues(t: TerrainInspection | null, loading: boolean) {
       ? {
           ...common,
           value: `${Math.round(e.value.metres).toLocaleString()} m`,
-          detail: `${(e.value.metres / 1000).toFixed(2)} km above the areoid`,
+          detail: areoidHeight(e.value.metres),
           status: 'observed',
           appliesTo: `${useLocal ? '20 m post' : '1/16° bin'} containing ${where}`,
           method: `${e.value.method}. Height relative to the Mars areoid (MOLA reference), not a sea level.`,

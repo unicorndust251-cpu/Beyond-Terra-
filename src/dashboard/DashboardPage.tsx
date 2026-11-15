@@ -27,14 +27,13 @@ import {
 import { quadrangleAt } from '../science/workspace/quadrangles';
 import MetricCard from './MetricCard';
 import EnvironmentCard from './environment/EnvironmentCard';
-import { loadIndex, loadSol, middayOf, roverCoordinate, type MedaIndex } from './environment/meda';
 import { useMedaObservations } from './environment/useMeda';
 import { fmtCoord, terrainValues, useTerrain, type SciValue } from './metrics';
 import { formatClock, localSolar, marsTime, SOL_SECONDS } from './science/marsTime';
 import { EARTH_GRAVITY, MARS_GRAVITY, martianSeason, weightNewtons } from './science/seasonsAndUnits';
 import SolarCyclePanel from './SolarCyclePanel';
 import { SOURCES } from './sources';
-import { selectedClock, useSelectedUtc } from './timeStore';
+import { useSelectedUtc } from './timeStore';
 import './dashboard.css';
 
 interface Props {
@@ -68,6 +67,9 @@ const HELP: Array<[string, string]> = [
   ['How do I choose a location?', 'Search a landmark or type coordinates above, pick a landmark on the globe (Explore), click the map, or use a stop of your mission plan.'],
   ['How do I open the Mission Planner?', 'Use “Mission Planner” in the top bar, or “Open Mission Planner” in the Current Mission section. Your plan is kept while you switch views.'],
 ];
+
+/** A UTC calendar day, e.g. "13 May 2026". */
+const fmtDay = (ms: number) => new Date(ms).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
 
 /** The Mars Dashboard: location, terrain, solar time and the active mission in one view. */
 export default function DashboardPage({ active, onOpenMap, onOpenExplore }: Props) {
@@ -140,25 +142,10 @@ export default function DashboardPage({ active, onOpenMap, onOpenExplore }: Prop
         method: 'Planetocentric latitude, east longitude 0–360°. Region: USGS Mars chart quadrangle.',
       }
     : { value: null, status: 'unavailable', detail: 'Select a location' };
-  // Perseverance MEDA observations, matched to this place and the selected (not preview) time
-  const meda = useMedaObservations(c, utcMs);
-  const [medaIndex, setMedaIndex] = useState<MedaIndex | null>(null);
-  useEffect(() => {
-    loadIndex().then(setMedaIndex, () => setMedaIndex(null));
-  }, [meda.state.status]);
-  /** Shows an archived Jezero record: its time, and the rover's position if this place is far from it. */
-  const showArchived = async (file: string) => {
-    if (!medaIndex) return;
-    const sol = await loadSol(file);
-    const t0 = middayOf(sol);
-    if (t0 === null) return;
-    selectedClock.setTime(t0);
-    const pos = sol.rover.reduce((b, r) => (Math.abs(r[0] - t0) < Math.abs(b[0] - t0) ? r : b));
-    if (pos[1] !== null && pos[2] !== null) {
-      const rover = roverCoordinate(medaIndex, pos[1], pos[2]);
-      selectedLocationStore.set({ coordinate: rover, name: `Perseverance, sol ${sol.sol}`, source: 'manual' });
-    }
-  };
+  // Perseverance MEDA observations at the chosen historical period (not the astronomy clock)
+  const meda = useMedaObservations(c);
+  const wx = meda.selection;
+  const wxRover = meda.state.status === 'ready' ? Object.values(meda.state.fields).find((f) => f.state === 'ok') : undefined;
   const timeValue: SciValue = solar
     ? {
         value: formatClock(solar.LTST),
@@ -308,51 +295,99 @@ export default function DashboardPage({ active, onOpenMap, onOpenExplore }: Prop
           <p className="md-empty">Choose a landmark, enter coordinates, or select a point on the map to see its dashboard.</p>
         ) : (
           <>
-            <div className="md-row md-row--six">
+            <div className="md-row md-row--four">
               <MetricCard title="Location" v={locationValue} />
               <MetricCard title="Elevation" v={tv.elevation} />
               <MetricCard title="Slope" v={tv.slope} />
               <MetricCard title="Surface Material" v={tv.material} />
-              <EnvironmentCard
-                field="airTemperatureC"
-                title="Air Temperature"
-                fullName="Near-surface air temperature"
-                explanation="Air temperature measured by the MEDA Air Temperature Sensors on the Perseverance mast. Air temperature is the atmosphere just above the ground, not the ground itself."
-                state={meda.state}
-                onRetry={meda.retry}
-              />
-              <EnvironmentCard
-                field="surfaceTemperatureC"
-                title="Surface Temperature"
-                fullName="Ground (surface) brightness temperature"
-                explanation="Ground temperature measured remotely by the MEDA Thermal Infrared Sensor, which looks down at a patch of ground beside the rover. It is a brightness temperature (thermal emission), measured separately from the air temperature."
-                state={meda.state}
-                onRetry={meda.retry}
-              />
             </div>
             {error && <p className="md-error">Terrain data could not be loaded: {error}</p>}
 
+            <section className="md-wx" aria-label="Weather observations">
+              <div className="md-wx__head">
+                <div className="md-wx__text">
+                  <h2 className="md-wx__title">Weather observations</h2>
+                  <p className="md-wx__label">
+                    {wx
+                      ? `Historical observations — Perseverance rover, Jezero crater${wxRover?.state === 'ok' ? ` (${fmtCoord(wxRover.reading.rover)})` : ''} · ${fmtDay(wx.slot.utcMs)}, sol ${wx.period.sol}, ${wx.slot.ltst.slice(-8, -3)} LTST`
+                      : meda.state.status === 'error'
+                        ? 'The observation archive could not be loaded.'
+                        : 'Loading the observation archive…'}
+                  </p>
+                  <p className="md-wx__note">
+                    <span className="md-badge md-badge--unavailable">Not live weather</span> Archived NASA PDS records, separate from the current Mars time and
+                    day/night view.
+                  </p>
+                </div>
+                {wx && (
+                  <div className="md-wx__pick">
+                    <label className="md-field">
+                      <span>Observation Date</span>
+                      <select value={wx.period.file} onChange={(e) => meda.select(e.target.value)}>
+                        {[...wx.periods]
+                          .sort((a, b) => b.sol - a.sol)
+                          .map((p) => (
+                            <option key={p.file} value={p.file}>
+                              {fmtDay(p.defaultSlot.utcMs)} · sol {p.sol}
+                              {p.counts.windSpeedMs ? '' : ' · no wind record'}
+                            </option>
+                          ))}
+                      </select>
+                    </label>
+                    <label className="md-field">
+                      <span>Observation time</span>
+                      <select value={wx.slot.utcMs} onChange={(e) => meda.select(wx.period.file, Number(e.target.value))}>
+                        {wx.period.slots.map((s) => (
+                          <option key={s.utcMs} value={s.utcMs}>
+                            {s.ltst.slice(-8, -3)} LTST · {s.fields.length} of 4 measurements
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                )}
+              </div>
+              <div className="md-row md-row--four">
+                <EnvironmentCard
+                  field="airTemperatureC"
+                  title="Air Temperature"
+                  fullName="Near-surface air temperature"
+                  explanation="Air temperature measured by the MEDA Air Temperature Sensors on the Perseverance mast. Air temperature is the atmosphere just above the ground, not the ground itself."
+                  state={meda.state}
+                  onRetry={meda.retry}
+                />
+                <EnvironmentCard
+                  field="surfaceTemperatureC"
+                  title="Surface Temperature"
+                  fullName="Ground (surface) brightness temperature"
+                  explanation="Ground temperature measured remotely by the MEDA Thermal Infrared Sensor, which looks down at a patch of ground beside the rover. It is a brightness temperature (thermal emission), measured separately from the air temperature."
+                  state={meda.state}
+                  onRetry={meda.retry}
+                />
+                <EnvironmentCard
+                  field="windSpeedMs"
+                  title="Wind Speed"
+                  fullName="Horizontal wind speed"
+                  explanation="Horizontal wind speed retrieved by the MEDA team from the wind sensors on the rover mast (derived product), used only while the rover is still. The MEDA wind sensor was damaged during the mission: the archive has no valid derived wind speed after sol 313."
+                  state={meda.state}
+                  onRetry={meda.retry}
+                />
+                <EnvironmentCard
+                  field="pressurePa"
+                  title="Atmospheric Pressure"
+                  fullName="Surface atmospheric pressure"
+                  explanation="Atmospheric pressure measured by the MEDA pressure sensor inside the rover body. It changes through the sol and the seasons; it is never estimated here from elevation."
+                  state={meda.state}
+                  onRetry={meda.retry}
+                />
+              </div>
+            </section>
+
             <SolarCyclePanel selectedUtc={utcMs} selectedMode={timeMode} latitude={c.latitude} longitudeEast={c.longitudeEast} />
 
-            <div className="md-row md-row--five">
+            <div className="md-row md-row--three">
               <MetricCard title="Local Mars Time" v={timeValue} />
               <MetricCard title="Martian Season" v={seasonValue} />
-              <EnvironmentCard
-                field="windSpeedMs"
-                title="Wind Speed"
-                fullName="Horizontal wind speed"
-                explanation="Horizontal wind speed retrieved by the MEDA team from the wind sensors on the rover mast (derived product), used only while the rover is still. The MEDA wind sensor was damaged during the mission, so later sols have no wind product."
-                state={meda.state}
-                onRetry={meda.retry}
-              />
-              <EnvironmentCard
-                field="pressurePa"
-                title="Atmospheric Pressure"
-                fullName="Surface atmospheric pressure"
-                explanation="Atmospheric pressure measured by the MEDA pressure sensor inside the rover body. It changes through the sol and the seasons; it is never estimated here from elevation."
-                state={meda.state}
-                onRetry={meda.retry}
-              />
               <MetricCard title="Gravity" v={gravityValue}>
                 <label className="md-calc">
                   <span>Mass</span>
@@ -370,21 +405,14 @@ export default function DashboardPage({ active, onOpenMap, onOpenExplore }: Prop
                   shown only for places within 30 km of the rover and times within 30 minutes of a record. They are historical observations at
                   Jezero, never live weather and never applied to other landmarks.
                 </p>
-                {medaIndex && (
-                  <div className="md-archive">
-                    <span>Archived Jezero observations in this build:</span>
-                    {medaIndex.sols.map((s) => (
-                      <button key={s.sol} type="button" className="md-chip" onClick={() => void showArchived(s.file)}>
-                        Sol {s.sol} · {s.startUtc.slice(0, 10)}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                <p className="md-note">Choosing a sol sets the dashboard to about 13:00 LTST that sol and, if needed, to the rover position.</p>
+                <p className="md-note">
+                  Choose the period with Observation Date above the weather cards. It starts on the latest archived sol and does not change the date
+                  used for Mars time or the day/night view.
+                </p>
                 <ul className="md-list">
                   <li>
-                    Humidity, dust opacity and radiation are also measured by MEDA but are not connected yet. Wind speed exists in the archive only for
-                    early sols.
+                    Humidity, dust opacity and radiation are also measured by MEDA but are not connected yet. The archive has valid derived wind speeds
+                    only up to sol 313 (the wind sensor was damaged), so later periods have no wind reading.
                   </li>
                   <li>
                     <strong>Mars Climate Database</strong> model output could give modelled values anywhere; it is not connected, and would be labelled

@@ -1,59 +1,130 @@
-import { useEffect, useState } from 'react';
-import type { MarsCoordinate } from '../../shared';
-import { loadIndex, loadSol, matchObservations, resetCache, solFor, type EnvField, type FieldResult, type MedaIndex } from './meda';
+import { useEffect, useMemo, useState } from 'react';
+import { createStore, useStore, type MarsCoordinate } from '../../shared';
+import {
+  latestPeriod,
+  loadIndex,
+  loadSol,
+  matchObservations,
+  observationPeriod,
+  resetCache,
+  type EnvField,
+  type FieldResult,
+  type MedaIndex,
+  type MedaSol,
+  type ObservationPeriod,
+  type ObservationSlot,
+} from './meda';
 
 export type MedaState =
   | { status: 'loading' }
   | { status: 'error'; message: string }
   | { status: 'ready'; index: MedaIndex; fields: Record<EnvField, FieldResult> };
 
-const ALL: EnvField[] = ['airTemperatureC', 'surfaceTemperatureC', 'windSpeedMs', 'pressurePa'];
+/**
+ * The historical observation period the weather cards show: a sol file and a record time in
+ * it. null means automatic (the latest period, at its suggested time). This is separate from
+ * the astronomy clock (timeStore): the live clock never changes it, and choosing a period
+ * never changes the date used for Mars time or the day/night view.
+ */
+export const weatherSelectionStore = createStore<{ file: string; slotUtc: number } | null>(null);
+
+interface Archive {
+  index: MedaIndex;
+  sols: Map<string, MedaSol>;
+  periods: ObservationPeriod[];
+}
+
+let archivePromise: Promise<Archive> | null = null;
+
+/** The index and every sol it lists, with the periods built from their valid records. */
+function loadArchive(): Promise<Archive> {
+  if (!archivePromise) {
+    archivePromise = (async () => {
+      const index = await loadIndex();
+      const sols = new Map<string, MedaSol>();
+      const periods: ObservationPeriod[] = [];
+      for (const entry of index.sols) {
+        const sol = await loadSol(entry.file);
+        sols.set(entry.file, sol);
+        const p = observationPeriod(entry, sol);
+        if (p) periods.push(p);
+      }
+      return { index, sols, periods };
+    })();
+    archivePromise.catch(() => (archivePromise = null));
+  }
+  return archivePromise;
+}
+
+export interface WeatherSelection {
+  periods: ObservationPeriod[];
+  period: ObservationPeriod;
+  slot: ObservationSlot;
+  /** True until the visitor chooses a period or time. */
+  automatic: boolean;
+}
 
 /**
- * MEDA readings for a place and time. Re-matched when the place changes or the time moves to
- * another minute; requests are cached, and Retry clears failed ones.
+ * MEDA readings for a place, at the selected historical observation period. Requests are
+ * cached; Retry clears failed ones.
  */
-export function useMedaObservations(place: MarsCoordinate | null, utcMs: number): { state: MedaState; retry: () => void } {
+export function useMedaObservations(place: MarsCoordinate | null): {
+  state: MedaState;
+  selection: WeatherSelection | null;
+  select: (file: string, slotUtc?: number) => void;
+  retry: () => void;
+} {
   const [attempt, setAttempt] = useState(0);
-  const [state, setState] = useState<MedaState>({ status: 'loading' });
-  const minute = Math.floor(utcMs / 60000);
-  const key = place ? `${place.latitude},${place.longitudeEast}` : '';
+  const [archive, setArchive] = useState<Archive | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const chosen = useStore(weatherSelectionStore);
 
   useEffect(() => {
-    if (!place) return undefined;
     let cancelled = false;
-    setState((s) => (s.status === 'ready' ? s : { status: 'loading' }));
-    (async () => {
-      try {
-        const index = await loadIndex();
-        const t = minute * 60000 + (utcMs % 60000);
-        const entry = solFor(index, t);
-        let fields: Record<EnvField, FieldResult>;
-        if (!entry) {
-          const covered = index.sols.map((s) => `sol ${s.sol} (${s.startUtc.slice(0, 10)})`).join(', ');
-          const r: FieldResult = { state: 'unavailable', reason: `No MEDA record at the selected time. This build holds archived Jezero observations for ${covered}.` };
-          fields = Object.fromEntries(ALL.map((f) => [f, r])) as Record<EnvField, FieldResult>;
-        } else {
-          const sol = await loadSol(entry.file);
-          fields = matchObservations(index, sol, place, t);
-        }
-        if (!cancelled) setState({ status: 'ready', index, fields });
-      } catch (e) {
-        if (!cancelled) setState({ status: 'error', message: e instanceof Error ? e.message : String(e) });
-      }
-    })();
+    setError(null);
+    loadArchive().then(
+      (a) => !cancelled && setArchive(a),
+      (e) => !cancelled && setError(e instanceof Error ? e.message : String(e)),
+    );
     return () => {
       cancelled = true;
     };
-    // minute and key capture the inputs; attempt re-runs after Retry
+  }, [attempt]);
+
+  const selection = useMemo<WeatherSelection | null>(() => {
+    if (!archive) return null;
+    const auto = latestPeriod(archive.periods);
+    const period = (chosen && archive.periods.find((p) => p.file === chosen.file)) || auto;
+    if (!period) return null;
+    const slot = (chosen && period.slots.find((s) => s.utcMs === chosen.slotUtc)) || period.defaultSlot;
+    return { periods: archive.periods, period, slot, automatic: !chosen };
+  }, [archive, chosen]);
+
+  const key = place ? `${place.latitude},${place.longitudeEast}` : '';
+  const state = useMemo<MedaState>(() => {
+    if (error) return { status: 'error', message: error };
+    if (!archive || !place) return { status: 'loading' };
+    if (!selection) {
+      const r: FieldResult = { state: 'unavailable', reason: 'The bundled MEDA archive holds no valid records.' };
+      return { status: 'ready', index: archive.index, fields: { airTemperatureC: r, surfaceTemperatureC: r, windSpeedMs: r, pressurePa: r } };
+    }
+    const sol = archive.sols.get(selection.period.file)!;
+    return { status: 'ready', index: archive.index, fields: matchObservations(archive.index, sol, place, selection.slot.utcMs) };
+    // key captures the place
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, minute, attempt]);
+  }, [archive, error, selection, key]);
 
   return {
-    state: place ? state : { status: 'loading' },
+    state,
+    selection,
+    select: (file, slotUtc) => {
+      const period = archive?.periods.find((p) => p.file === file);
+      if (period) weatherSelectionStore.set({ file, slotUtc: slotUtc ?? period.defaultSlot.utcMs });
+    },
     retry: () => {
       resetCache();
-      setState({ status: 'loading' });
+      archivePromise = null;
+      setArchive(null);
       setAttempt((n) => n + 1);
     },
   };

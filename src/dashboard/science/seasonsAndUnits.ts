@@ -34,6 +34,12 @@ export const kelvinToCelsius = (k: number) => k - 273.15;
 export const celsiusToFahrenheit = (c: number) => (c * 9) / 5 + 32;
 export const paToKPa = (pa: number) => pa / 1000;
 export const paToMbar = (pa: number) => pa / 100;
+/** Height relative to the areoid in words: −2,629 m → "2.63 km below the areoid". */
+export function areoidHeight(metres: number): string {
+  const km = (Math.abs(metres) / 1000).toFixed(2);
+  if (km === '0.00') return 'At the areoid';
+  return `${km} km ${metres < 0 ? 'below' : 'above'} the areoid`;
+}
 /** Weight in newtons at the reference gravity; the mass itself is unchanged. */
 export const weightNewtons = (massKg: number, g = MARS_GRAVITY) => massKg * g;
 /** Wind speed from eastward and northward components (same units in, same units out). */
