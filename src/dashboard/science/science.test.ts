@@ -1,6 +1,6 @@
 // Scientific engine tests. Run with `npm test` (scripts/run-tests.mjs).
 import { formatClock, localSolar, marsTime, planetographicLatitude, ttMinusUtc } from './marsTime';
-import { celsiusToFahrenheit, kelvinToCelsius, martianSeason, paToKPa, paToMbar, weightNewtons, windFromDirection, windSpeed } from './seasonsAndUnits';
+import { areoidHeight, celsiusToFahrenheit, kelvinToCelsius, martianSeason, paToKPa, paToMbar, weightNewtons, windFromDirection, windSpeed } from './seasonsAndUnits';
 import { formatDurationHours, formatEarthCountdown, marsHoursToEarthHours, nextSolarEvent, solarEvents } from './solarEvents';
 
 export const results: Array<{ name: string; ok: boolean; detail: string }> = [];
@@ -131,6 +131,9 @@ const truthy = (name: string, ok: boolean, detail = '') => results.push({ name, 
   near('610 Pa = 0.61 kPa', paToKPa(610), 0.61, 1e-12);
   near('610 Pa = 6.1 mbar', paToMbar(610), 6.1, 1e-12);
   near('10 kg → 37.1 N', weightNewtons(10), 37.1, 1e-9);
+  truthy('−2,629 m → 2.63 km below the areoid', areoidHeight(-2629) === '2.63 km below the areoid', areoidHeight(-2629));
+  truthy('21,229 m → 21.23 km above the areoid', areoidHeight(21229) === '21.23 km above the areoid', areoidHeight(21229));
+  truthy('A few metres either side → at the areoid', areoidHeight(-3) === 'At the areoid' && areoidHeight(4) === 'At the areoid');
   near('Wind speed 3-4-5', windSpeed(3, 4), 5, 1e-12);
   near('Wind from the west (blowing east) → 270°', windFromDirection(5, 0), 270, 1e-9);
   near('Wind from the north (blowing south) → 0°', windFromDirection(0, -5) % 360, 0, 1e-9);

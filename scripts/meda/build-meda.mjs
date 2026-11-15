@@ -17,7 +17,9 @@ const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const CACHE = join(ROOT, '.cache', 'meda');
 const OUT = join(ROOT, 'public', 'data', 'meda');
 const ARCHIVE = 'https://atmos.nmsu.edu/PDS/data/PDS4/Mars2020/mars2020_meda/';
-const DEFAULT_SOLS = [100, 500, 1000, 'latest'];
+// 313 is the last sol whose derived wind product (DER_WS) holds valid speeds: sols 314–315
+// contain only the fill value, and later sols have no wind product
+const DEFAULT_SOLS = [100, 313, 500, 1000, 'latest'];
 const SLOT_S = 600; // one record per 10 minutes of UTC
 const MATCH_S = 90; // nearest record within ±90 s of each slot
 
@@ -126,11 +128,19 @@ async function loadProduct(key, sol) {
   return { key, sol: solNumber, label, rows, col, csvUrl: dir + csvName, xmlUrl: dir + xmlName, csvName };
 }
 
-/** A number, or null for blank or non-finite fields (blank means missing in these products). */
+/**
+ * Fill value written where no retrieval exists. The labels do not declare it, but the derived
+ * wind product uses it in place of a speed (with WIND_DIRECTION also 999999999 and a blank
+ * uncertainty): 2,327 rows on sol 100, and every row on sols 314–315, after the wind sensor
+ * was damaged. No MEDA quantity is near this value, so it is never read as a measurement.
+ */
+const FILL = '999999999';
+
+/** A number, or null for blank, fill or non-finite fields (blank means missing in these products). */
 function num(s, constants) {
   if (s === undefined) return null;
   const t = s.trim();
-  if (t === '' || constants.some((c) => c.value === t)) return null;
+  if (t === '' || t === FILL || constants.some((c) => c.value === t)) return null;
   const v = Number(t);
   return Number.isFinite(v) ? v : null;
 }
@@ -203,6 +213,7 @@ async function buildSol(sol) {
   // Wind: the derived horizontal wind speed, only while the rover is still
   const wind = !ws ? none : records(ws, (_, n, s) => {
     if (s('ROVER_STILL') === '0') return 'rover moving';
+    if (s('HORIZONTAL_WIND_SPEED') === FILL) return `fill value ${FILL} (no wind retrieval)`;
     const v = n('HORIZONTAL_WIND_SPEED');
     if (v === null) return 'no value';
     if (v < 0) return 'negative speed';
@@ -275,8 +286,8 @@ const index = {
     airTemperature: 'Calibrated ATS: median of the three mast (RSM) sensors ATS_LOCAL_TEMP1–3 (kelvin); records with fewer than two values are skipped. Body-mounted sensors 4–5 are not used.',
     groundTemperature: 'Calibrated TIRS GROUND_TEMP (ground brightness temperature, kelvin). Rejected when TIRS_GROUND_FOOTPRINT_NOT_IN_SHADOW, ROVER_LOW_TILT, ROVER_STILL or WHEEL_OUTSIDE_TIRS_DOWNWARD_LOOKING_FOV is 0. A blank flag is recorded as not determined.',
     pressure: 'Calibrated PS BAROCAP1_PRESSURE (pascal): the transducer in use (TRANSDUCER). Blank uncertainty = not provided.',
-    windSpeed: 'Derived WS HORIZONTAL_WIND_SPEED (meter/second), only while ROVER_STILL = 1. The product supplies a speed (not east/north components).',
-    missing: 'Blank CSV fields are missing values (the labels declare no special constants); they are never read as zero.',
+    windSpeed: 'Derived WS HORIZONTAL_WIND_SPEED (meter/second), only while ROVER_STILL = 1; the fill value 999999999 is rejected. The product supplies a speed (not east/north components).',
+    missing: 'Blank CSV fields are missing values (the labels declare no special constants); they are never read as zero. The fill value 999999999, used by the wind product where no retrieval exists, is also missing.',
     timestamps: 'UTC interpolated from each record’s SCLK between the label’s start/stop date-time and spacecraft-clock anchors.',
     sampling: 'One actual record per 10-minute slot (the nearest valid record within ±90 s); no averaging.',
   },

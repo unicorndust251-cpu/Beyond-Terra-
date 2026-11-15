@@ -11,7 +11,9 @@ import type { MarsCoordinate } from '../../shared';
  *
  * Matching rules: a reading is used only if the selected location is within APPLY_KM of the
  * rover's actual position on that sol, and the sensor's nearest valid record is within
- * MAX_GAP_MIN of the selected time. Each field is matched separately and keeps its own time.
+ * MAX_GAP_MIN of the selected observation time. Each field is matched separately and keeps
+ * its own time. The observation time is a chosen historical period (see observationPeriod),
+ * separate from the dashboard's astronomy clock.
  */
 
 export type EnvField = 'airTemperatureC' | 'surfaceTemperatureC' | 'windSpeedMs' | 'pressurePa';
@@ -62,6 +64,12 @@ export interface MedaSol {
 }
 
 /* ------------------------------------------------------------- validation & units */
+
+/**
+ * The archive's fill value where no retrieval exists (used by the derived wind product). The
+ * build script already rejects it; it is checked again here so it can never reach a card.
+ */
+export const FILL_VALUES = [999999999];
 
 /** A finite number, or null. Empty strings, null, undefined, NaN, ±Infinity and sentinels are null. */
 export function finiteOrNull(v: unknown, sentinels: number[] = []): number | null {
@@ -195,7 +203,7 @@ export function matchObservations(index: MedaIndex, sol: MedaSol, place: MarsCoo
     if (!p) out.airTemperatureC = unavailable(NO_PRODUCT);
     else {
     const unit = p.units.ATS_LOCAL_TEMP1;
-    const row = nearest(sol.airTemperature.filter((r) => finiteOrNull(r[3]) !== null), utcMs);
+    const row = nearest(sol.airTemperature.filter((r) => finiteOrNull(r[3], FILL_VALUES) !== null), utcMs);
     if (!row) out.airTemperatureC = unavailable(NO_RECORD);
     else {
       const lo = finiteOrNull(row[4]);
@@ -222,7 +230,7 @@ export function matchObservations(index: MedaIndex, sol: MedaSol, place: MarsCoo
     if (!p) out.surfaceTemperatureC = unavailable(NO_PRODUCT);
     else {
     const unit = p.units.GROUND_TEMP;
-    const row = nearest(sol.groundTemperature.filter((r) => finiteOrNull(r[3]) !== null), utcMs);
+    const row = nearest(sol.groundTemperature.filter((r) => finiteOrNull(r[3], FILL_VALUES) !== null), utcMs);
     if (!row) out.surfaceTemperatureC = unavailable(NO_RECORD);
     else {
       const unc = finiteOrNull(row[4]);
@@ -248,7 +256,7 @@ export function matchObservations(index: MedaIndex, sol: MedaSol, place: MarsCoo
     if (!p) out.pressurePa = unavailable(NO_PRODUCT);
     else {
     const unit = p.units.BAROCAP1_PRESSURE;
-    const row = nearest(sol.pressure.filter((r) => finiteOrNull(r[3]) !== null), utcMs);
+    const row = nearest(sol.pressure.filter((r) => finiteOrNull(r[3], FILL_VALUES) !== null), utcMs);
     if (!row) out.pressurePa = unavailable(NO_RECORD);
     else {
       const unc = finiteOrNull(row[4]);
@@ -273,7 +281,7 @@ export function matchObservations(index: MedaIndex, sol: MedaSol, place: MarsCoo
     if (!p) out.windSpeedMs = unavailable(NO_PRODUCT);
     else {
     const unit = p.units.HORIZONTAL_WIND_SPEED;
-    const row = nearest(sol.windSpeed.filter((r) => finiteOrNull(r[3]) !== null), utcMs);
+    const row = nearest(sol.windSpeed.filter((r) => finiteOrNull(r[3], FILL_VALUES) !== null), utcMs);
     if (!row) out.windSpeedMs = unavailable(NO_RECORD);
     else {
       out.windSpeedMs = {
@@ -294,15 +302,80 @@ export function matchObservations(index: MedaIndex, sol: MedaSol, place: MarsCoo
   return out;
 }
 
-/** A suggested demonstration time in a sol: the air-temperature record nearest 13:00 LTST. */
-export function middayOf(sol: MedaSol): number | null {
-  const hours = (ltst: string) => {
-    const m = ltst.match(/(\d{2}):(\d{2}):(\d{2})$/);
-    return m ? Number(m[1]) + Number(m[2]) / 60 : NaN;
-  };
-  let best: MedaSol['airTemperature'][number] | null = null;
-  for (const r of sol.airTemperature) if (Number.isFinite(hours(r[2])) && (!best || Math.abs(hours(r[2]) - 13) < Math.abs(hours(best[2]) - 13))) best = r;
-  return best ? best[0] : null;
+/* ------------------------------------------------------- observation periods */
+
+/**
+ * The weather cards show a chosen historical observation period (a sol in the archive), not
+ * the dashboard's astronomy clock: the bundled records cover only a few sols. Periods and
+ * their times are built from the valid records themselves, never from a list of dates.
+ */
+
+/** A time within a sol at which readings can be shown, and which measurements have a record near it. */
+export interface ObservationSlot {
+  /** UTC of an actual record. */
+  utcMs: number;
+  ltst: string;
+  /** Measurements with a valid record within MAX_GAP_MIN of utcMs. */
+  fields: EnvField[];
+}
+
+export interface ObservationPeriod {
+  sol: number;
+  file: string;
+  startUtc: string;
+  stopUtc: string;
+  /** Valid records per measurement on this sol. */
+  counts: Record<EnvField, number>;
+  /** One slot per LTST hour that has records, in time order. */
+  slots: ObservationSlot[];
+  /** Suggested slot: the most measurements, then the nearest to 13:00 LTST. */
+  defaultSlot: ObservationSlot;
+}
+
+const SERIES: Array<[EnvField, 'airTemperature' | 'groundTemperature' | 'windSpeed' | 'pressure']> = [
+  ['airTemperatureC', 'airTemperature'],
+  ['surfaceTemperatureC', 'groundTemperature'],
+  ['windSpeedMs', 'windSpeed'],
+  ['pressurePa', 'pressure'],
+];
+
+/** Hours into the sol from an LTST string such as "0315 13:02:11". */
+export function ltstHours(ltst: string): number {
+  const m = ltst.match(/(\d{2}):(\d{2}):(\d{2})$/);
+  return m ? Number(m[1]) + Number(m[2]) / 60 + Number(m[3]) / 3600 : NaN;
+}
+
+/** The sol's observation period, or null when it holds no valid record at all. */
+export function observationPeriod(entry: MedaIndex['sols'][number], sol: MedaSol): ObservationPeriod | null {
+  type Row = [number, number, string, ...unknown[]];
+  const valid = {} as Record<EnvField, Row[]>;
+  const counts = {} as Record<EnvField, number>;
+  for (const [f, key] of SERIES) {
+    valid[f] = (sol[key] as Row[]).filter((r) => finiteOrNull(r[3], FILL_VALUES) !== null);
+    counts[f] = valid[f].length;
+  }
+  const candidates = new Map<number, string>();
+  for (const [f] of SERIES) for (const r of valid[f]) candidates.set(r[0], r[2]);
+  const byHour = new Map<string, ObservationSlot>();
+  const score = (s: ObservationSlot) => s.fields.length * 100 - Math.abs((ltstHours(s.ltst) % 1) - 0.5);
+  for (const [utcMs, ltst] of [...candidates].sort((a, b) => a[0] - b[0])) {
+    if (!Number.isFinite(ltstHours(ltst))) continue;
+    // Key on the sol and hour ("0315 13"): a file can run a few minutes into the next sol
+    const hour = ltst.replace(/:\d{2}:\d{2}$/, '');
+    const slot: ObservationSlot = { utcMs, ltst, fields: SERIES.map(([f]) => f).filter((f) => nearest(valid[f], utcMs) !== null) };
+    const current = byHour.get(hour);
+    if (!current || score(slot) > score(current)) byHour.set(hour, slot);
+  }
+  const slots = [...byHour.values()].sort((a, b) => a.utcMs - b.utcMs);
+  if (!slots.length) return null;
+  const fromNoon = (s: ObservationSlot) => Math.abs(ltstHours(s.ltst) - 13);
+  const defaultSlot = slots.reduce((b, s) => (s.fields.length > b.fields.length || (s.fields.length === b.fields.length && fromNoon(s) < fromNoon(b)) ? s : b));
+  return { sol: entry.sol, file: entry.file, startUtc: entry.startUtc, stopUtc: entry.stopUtc, counts, slots, defaultSlot };
+}
+
+/** The most recent period: what the cards show until the visitor chooses another. */
+export function latestPeriod(periods: ObservationPeriod[]): ObservationPeriod | null {
+  return periods.reduce<ObservationPeriod | null>((b, p) => (!b || p.sol > b.sol ? p : b), null);
 }
 
 /* --------------------------------------------------------------------- loading */

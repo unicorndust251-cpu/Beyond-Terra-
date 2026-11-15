@@ -42,6 +42,9 @@ def utc(anchors, sclk):
     return u0 + (sclk - s0) * (u1 - u0) / (s1 - s0)
 
 
+# Fill value written where no wind retrieval exists (not declared in the labels)
+FILL = '999999999'
+
 failures = 0
 checked = 0
 
@@ -93,6 +96,13 @@ for path in sorted(glob.glob(os.path.join(OUT, 'sol_*.json'))):
                 expect(r['TIRS_GROUND_FOOTPRINT_NOT_IN_SHADOW'] != '0' and r['ROVER_LOW_TILT'] != '0' and r['ROVER_STILL'] != '0' and r['WHEEL_OUTSIDE_TIRS_DOWNWARD_LOOKING_FOV'] != '0', f'ground SCLK {sclk}: a rejected record was kept')
             if key == 'windSpeed':
                 expect(r['ROVER_STILL'] != '0', f'wind SCLK {sclk}: rover moving')
+                expect(r['HORIZONTAL_WIND_SPEED'].strip() != FILL, f'wind SCLK {sclk}: fill value kept as a speed')
+            expect(value is None or value != float(FILL), f'{key} SCLK {sclk}: fill value kept')
+        if key == 'windSpeed':
+            fills = sum(1 for r in rows.values() if r['ROVER_STILL'] != '0' and r['HORIZONTAL_WIND_SPEED'].strip() == FILL)
+            got = doc['rejected']['wind'].get(f'fill value {FILL} (no wind retrieval)', 0)
+            expect(fills == got, f'wind: {got} fill rows rejected, raw has {fills}')
+            print(f'  windSpeed: {fills} raw fill rows ({FILL}), all rejected')
         print(f'  {key}: {len(records)} records match raw rows · max value difference {worst:.4f} (rounding) · max UTC difference {worst_t:.1f} ms')
 
 print(f'\n{checked} checks, {failures} failures')

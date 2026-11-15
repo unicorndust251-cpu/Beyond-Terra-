@@ -164,3 +164,13 @@
     z-index: 5;
   }
 }
+
+/* In the map's top bar the navigation keeps its width; the region label gives way */
+.bt-top .bt-nav {
+  flex: none;
+}
+@media (max-width: 1280px) {
+  .bt-top .bt-top__region {
+    display: none;
+  }
+}

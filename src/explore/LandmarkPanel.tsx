@@ -105,12 +105,14 @@ export default function LandmarkPanel({ landmark: l, expanded, onExpand, onSelec
           <h2 id="ex-panel-title" ref={heading} tabIndex={-1}>
             {l.name}
           </h2>
-          <p className="ex-panel__coords" hidden={simple && !expanded}>
-            {coords}
-            <button type="button" className="ex-link" onClick={copy}>
-              {copied ? 'Copied' : 'Copy'}
-            </button>
-          </p>
+          {(!simple || expanded) && (
+            <p className="ex-panel__coords">
+              {coords}
+              <button type="button" className="ex-link" onClick={copy}>
+                {copied ? 'Copied' : 'Copy'}
+              </button>
+            </p>
+            )}
         </div>
         <button type="button" className="ex-icon" aria-label="Close landmark" onClick={onClose}>
           ×
