@@ -1,63 +1,62 @@
-/* Main navigation: four destinations and the Simple / Advanced setting. Beyond Terra palette. */
+/* Main navigation: direct, understated section links with a compact narrow-screen menu. */
 .bt-nav {
   display: flex;
   align-items: center;
-  gap: 10px;
   min-width: 0;
-  font-family: 'Poppins', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-family: var(--bt-font-ui, 'Poppins'), system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
 
-.bt-nav__tabs,
-.bt-mode {
+.bt-nav__tabs {
   display: flex;
-  gap: 2px;
-  padding: 3px;
-  border-radius: 999px;
-  background: rgba(23, 20, 19, 0.85);
-  box-shadow: inset 0 0 0 1px rgba(214, 163, 139, 0.16);
+  align-items: center;
+  gap: clamp(4px, 0.75vw, 12px);
 }
 
-.bt-nav__tabs button,
-.bt-mode button {
-  height: 30px;
-  padding: 0 13px;
+.bt-nav__tabs button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 40px;
+  padding: 0 8px;
   border: 0;
-  border-radius: 999px;
-  background: none;
-  color: rgba(243, 229, 220, 0.72);
-  font: 500 12.5px/1 'Poppins', system-ui, sans-serif;
+  background: transparent;
+  color: var(--bt-text-2, rgba(243, 229, 220, 0.72));
+  font: 500 13px/1.3 var(--bt-font-ui, 'Poppins'), system-ui, sans-serif;
   white-space: nowrap;
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition: color 0.15s ease;
 }
 
-.bt-nav__tabs button:hover,
-.bt-mode button:hover {
-  color: #f3e5dc;
+.bt-nav__tabs button::after {
+  position: absolute;
+  right: 8px;
+  bottom: 1px;
+  left: 8px;
+  height: 2px;
+  background: var(--bt-accent, #b87860);
+  content: '';
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.15s ease;
+}
+
+.bt-nav__tabs button:hover {
+  color: var(--bt-text, #f3e5dc);
 }
 
 .bt-nav__tabs button.is-active {
-  background: #b87860;
-  color: #fff;
+  color: var(--bt-text, #f3e5dc);
 }
 
-.bt-mode button {
-  height: 26px;
-  padding: 0 10px;
-  font-size: 11.5px;
-}
-
-.bt-mode button.is-active {
-  background: #63504a;
-  color: #f3e5dc;
+.bt-nav__tabs button.is-active::after {
+  transform: scaleX(1);
 }
 
 .bt-nav button:focus-visible {
-  outline: 2px solid #d6a38b;
+  outline: 2px solid var(--bt-accent-soft, #d6a38b);
   outline-offset: 2px;
 }
 
-/* Compact menu (narrow screens) */
 .bt-nav__menu {
   position: relative;
   display: none;
@@ -68,13 +67,18 @@
   align-items: center;
   gap: 6px;
   height: 36px;
-  padding: 0 12px 0 14px;
-  border: 0;
-  border-radius: 999px;
-  background: #b87860;
-  color: #fff;
-  font: 500 12.5px 'Poppins', system-ui, sans-serif;
+  padding: 0 10px;
+  border: 1px solid var(--bt-border, rgba(214, 163, 139, 0.18));
+  border-radius: 8px;
+  background: transparent;
+  color: var(--bt-text, #f3e5dc);
+  font: 500 13px var(--bt-font-ui, 'Poppins'), system-ui, sans-serif;
   cursor: pointer;
+}
+
+.bt-nav__menubtn:hover,
+.bt-nav__menubtn[aria-expanded='true'] {
+  background: var(--bt-hover, rgba(243, 229, 220, 0.06));
 }
 
 .bt-nav__menubtn svg {
@@ -92,14 +96,14 @@
   top: 42px;
   left: 0;
   z-index: 3000;
-  width: 250px;
+  width: 240px;
   margin: 0;
   padding: 6px;
   list-style: none;
-  border-radius: 12px;
-  border: 1px solid rgba(214, 163, 139, 0.16);
-  background: #171413;
-  box-shadow: 0 18px 40px -16px rgba(0, 0, 0, 0.85);
+  border: 1px solid var(--bt-border, rgba(214, 163, 139, 0.18));
+  border-radius: 10px;
+  background: var(--bt-bg, #171413);
+  box-shadow: var(--bt-shadow, 0 10px 24px rgba(0, 0, 0, 0.3));
 }
 
 .bt-nav__list button {
@@ -109,30 +113,30 @@
   min-height: 44px;
   padding: 8px 10px;
   border: 0;
-  border-radius: 8px;
+  border-radius: 6px;
   background: none;
-  color: #f3e5dc;
-  font: 500 13px 'Poppins', system-ui, sans-serif;
+  color: var(--bt-text, #f3e5dc);
+  font: 500 13px var(--bt-font-ui, 'Poppins'), system-ui, sans-serif;
   text-align: left;
   cursor: pointer;
 }
 
 .bt-nav__list button small {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 400;
-  color: rgba(243, 229, 220, 0.55);
+  color: var(--bt-text-3, rgba(243, 229, 220, 0.52));
 }
 
 .bt-nav__list button:hover,
 .bt-nav__list button.is-active {
-  background: #302725;
+  background: var(--bt-surface, #302725);
 }
 
 .bt-nav__list button.is-active span {
-  color: #d6a38b;
+  color: var(--bt-accent-soft, #d6a38b);
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 900px) {
   .bt-nav__tabs {
     display: none;
   }
@@ -141,16 +145,9 @@
   }
 }
 
-@media (max-width: 480px) {
-  .bt-mode button {
-    padding: 0 8px;
-    font-size: 11px;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .bt-nav__tabs button,
-  .bt-mode button {
+  .bt-nav__tabs button::after {
     transition: none;
   }
 }
@@ -172,5 +169,25 @@
 @media (max-width: 1280px) {
   .bt-top .bt-top__region {
     display: none;
+  }
+}
+
+/* Phones: compact pills so the navigation clears the Layers button */
+@media (max-width: 480px) {
+  .bt-top .bt-nav {
+    right: 10px;
+  }
+  .bt-nav__menubtn {
+    height: 32px;
+    padding: 0 8px;
+    font-size: 13px;
+  }
+}
+@media (max-width: 640px) {
+  /* The menu opens leftward from the button at the right edge */
+  .bt-top .bt-nav__list {
+    left: auto;
+    right: 0;
+    width: min(260px, calc(100vw - 24px));
   }
 }

@@ -494,8 +494,8 @@ export const HAS_EXTENT: HazardCode[] = ['S', 'P', 'F', 'SL', 'U'];
 export const ROUTE_TESTABLE: HazardCode[] = ['S', 'F', 'P', 'SL'];
 
 /**
- * Plain-language names for Simple mode. The scientific names (`name`) stay in Advanced mode
- * and in every Scientific Details section; classifications are unchanged.
+ * Plain-language names for the main controls. The scientific names (`name`) stay in More
+ * Details and in every Scientific Information section; classifications are unchanged.
  */
 export const SIMPLE_NAME: Partial<Record<HazardCode, string>> = {
   L: 'Falling Rocks & Landslides',
@@ -509,11 +509,12 @@ export const SIMPLE_NAME: Partial<Record<HazardCode, string>> = {
   SL: 'Steep Slopes',
 };
 
-export function displayName(code: HazardCode, simple: boolean): string {
-  return (simple && SIMPLE_NAME[code]) || CATEGORY_BY_CODE[code]?.name || 'Unknown category';
+/** The plain name where one exists; the scientific name otherwise. */
+export function displayName(code: HazardCode): string {
+  return SIMPLE_NAME[code] || CATEGORY_BY_CODE[code]?.name || 'Unknown category';
 }
 
-/** Terrain hazard categories shown in Simple mode, and its presentation groups. */
+/** Terrain hazard categories in the main controls, and their presentation groups. */
 export const TERRAIN_CODES: HazardCode[] = ['L', 'S', 'B', 'P', 'F', 'G', 'I', 'D', 'SL'];
 export const SIMPLE_GROUPS: { id: 'all' | 'rocky' | 'surface'; label: string; codes: HazardCode[] }[] = [
   { id: 'all', label: 'All hazards', codes: TERRAIN_CODES },

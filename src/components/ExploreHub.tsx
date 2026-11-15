@@ -1,11 +1,8 @@
 import { useState } from 'react';
-import { useUiMode } from '../shared';
 import { formatLandmarkCoordinates, useSelectedLandmark, type Landmark } from '../shared/landmarks';
 import './ExploreHub.css';
 
 interface Props {
-  /** The globe has been opened before (the button then reads Back to Globe). */
-  visitedGlobe: boolean;
   onOpenGlobe(): void;
   onPlanHere(l: Landmark): void;
 }
@@ -15,9 +12,8 @@ interface Props {
  * globe) and, once a landmark is chosen, a way to start planning there. Collapsible, so the
  * map stays clear.
  */
-export default function ExploreHub({ visitedGlobe, onOpenGlobe, onPlanHere }: Props) {
+export default function ExploreHub({ onOpenGlobe, onPlanHere }: Props) {
   const landmark = useSelectedLandmark();
-  const simple = useUiMode() === 'simple';
   const [open, setOpen] = useState(true);
   return (
     <aside className={`bt-hub${open ? '' : ' is-collapsed'}`} aria-label="Explore Mars">
@@ -31,16 +27,16 @@ export default function ExploreHub({ visitedGlobe, onOpenGlobe, onPlanHere }: Pr
       </header>
       {open && (
         <>
-          <p className="bt-hub__lead">Choose a place to explore: search above, click the map, or pick one of 46 landmarks on the 3D globe.</p>
+          <p className="bt-hub__lead">Search for a location, select a point on the map, or explore 46 landmarks.</p>
           <button type="button" className="bt-hub__btn" onClick={onOpenGlobe}>
-            {visitedGlobe ? '← Back to the landmark globe' : 'Explore Landmarks'}
+            Explore Landmarks
           </button>
           {landmark && (
             <div className="bt-hub__sel">
               <p className="bt-hub__name">
                 <span aria-hidden="true">◆</span> {landmark.name}
               </p>
-              {!simple && <p className="bt-hub__coords">{formatLandmarkCoordinates(landmark)}</p>}
+              <p className="bt-hub__coords">{formatLandmarkCoordinates(landmark)}</p>
               <p className="bt-hub__text">{landmark.importance}</p>
               <button type="button" className="bt-hub__btn bt-hub__btn--ghost" onClick={() => onPlanHere(landmark)}>
                 Plan Mission Here

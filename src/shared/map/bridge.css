@@ -45,7 +45,7 @@
   height: 24px;
   display: grid;
   place-items: center;
-  font: 800 12px/1 'Manrope', system-ui, sans-serif;
+  font: 600 12px/1 'Poppins', system-ui, sans-serif;
   color: #171413;
 }
 
@@ -54,7 +54,7 @@
   border-radius: 7px;
   background: rgba(23, 20, 19, 0.95);
   color: #f3e5dc;
-  font: 600 11px/1.4 'Manrope', system-ui, sans-serif;
+  font: 500 11px/1.4 'Poppins', system-ui, sans-serif;
   box-shadow: 0 6px 18px rgba(5, 5, 7, 0.5);
 }
 
@@ -76,7 +76,7 @@
 
 .bt-map-card .leaflet-popup-content {
   margin: 10px 14px;
-  font: 12px/1.5 'Manrope', system-ui, sans-serif;
+  font: 13px/1.5 'Poppins', system-ui, sans-serif;
 }
 
 .bt-map-card .leaflet-popup-content p {

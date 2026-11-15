@@ -1,16 +1,7 @@
 import { useEffect, useState } from 'react';
-import {
-  patchHazardState,
-  requestHazardFocus,
-  useHazardState,
-  usePlannedRoute,
-  usePlannedRouteTotals,
-  useRouteHazardReport,
-  useUiMode,
-} from '../../shared';
-import { CATEGORY_BY_CODE, DRAWABLE, displayName } from '../categories';
+import { useHazardState } from '../../shared';
+import { DRAWABLE, displayName } from '../categories';
 import { swatchUrl } from '../patterns';
-
 
 const KIND: Partial<Record<string, string>> = {
   L: 'NASA location markers only',
@@ -36,7 +27,6 @@ const KIND: Partial<Record<string, string>> = {
 export function MapLegend({ shifted }: { shifted: boolean }) {
   const hz = useHazardState();
   const [open, setOpen] = useState(false);
-  const simple = useUiMode() === 'simple';
   // Fold away when an information panel opens, so the map stays visible; the user can reopen it
   useEffect(() => {
     if (shifted) setOpen(false);
@@ -64,8 +54,8 @@ export function MapLegend({ shifted }: { shifted: boolean }) {
                 <li key={c}>
                   <img className="hz-swatch hz-swatch--sm" src={swatchUrl(c)} alt="" width={16} height={16} />
                   <span>
-                    {displayName(c, simple)}
-                    {!simple && <small>{KIND[c]}</small>}
+                    {displayName(c)}
+                    <small>{KIND[c]}</small>
                   </span>
                 </li>
               ))}
@@ -104,119 +94,5 @@ export function MapLegend({ shifted }: { shifted: boolean }) {
         </div>
       )}
     </div>
-  );
-}
-
-const fmtKm = (km: number) => `${km < 10 ? km.toFixed(2) : km.toFixed(1)} km`;
-function fmtHours(h: number) {
-  if (!Number.isFinite(h)) return '—';
-  const total = Math.round(h * 60);
-  const hh = Math.floor(total / 60);
-  const mm = total % 60;
-  return hh ? `${hh} h ${mm} min` : `${mm} min`;
-}
-
-/** Below the map: the planner's distance and time, and which segments meet mapped hazards. */
-export function RouteStrip() {
-  const route = usePlannedRoute();
-  const totals = usePlannedRouteTotals();
-  const report = useRouteHazardReport();
-  const [open, setOpen] = useState(false);
-
-  if (!route || route.stops.length < 2) {
-    return (
-      <div className="hz-strip is-empty">
-        <p>Create a mission route to check for mapped hazards.</p>
-        <button type="button" className="hz-btn hz-btn--ghost hz-btn--sm" onClick={() => patchHazardState({ view: 'planner' })}>
-          Open Mission Planner
-        </button>
-      </div>
-    );
-  }
-
-  const segments = route.stops.length - 1;
-  const ready = report?.status === 'ready';
-  const hits = ready ? report.hits : [];
-  const affected = new Set(hits.map((h) => h.segmentIndex)).size;
-  const excluded = ready ? report.checks.filter((c) => c.state === 'excluded') : [];
-
-  return (
-    <section className={`hz-strip${open ? ' is-open' : ''}`} aria-label="Planned route">
-      <div className="hz-strip__row">
-        <p className="hz-strip__title">
-          Planned route
-          <small>
-            {route.stops[0].name ?? route.stops[0].label} → {route.stops[route.stops.length - 1].name ?? route.stops[route.stops.length - 1].label}
-          </small>
-        </p>
-        <dl className="hz-strip__figs">
-          <div>
-            <dt>Distance</dt>
-            <dd>{totals ? fmtKm(totals.distanceKm) : '—'}</dd>
-          </div>
-          <div>
-            <dt>Travel time</dt>
-            <dd>{totals ? fmtHours(totals.travelHours) : '—'}</dd>
-          </div>
-          <div>
-            <dt>With tasks</dt>
-            <dd>{totals ? fmtHours(totals.totalHours) : '—'}</dd>
-          </div>
-          <div>
-            <dt>Mapped findings</dt>
-            <dd>
-              {!report
-                ? 'Not tested'
-                : !ready
-                  ? 'Testing…'
-                  : hits.length
-                    ? `${hits.length} on ${affected} of ${segments} segment${segments === 1 ? '' : 's'}`
-                    : `None on ${segments} segment${segments === 1 ? '' : 's'}`}
-            </dd>
-          </div>
-        </dl>
-        <div className="hz-strip__btns">
-          <button type="button" className="hz-btn hz-btn--ghost hz-btn--sm" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
-            {open ? 'Hide details' : 'Affected segments'}
-          </button>
-          <button type="button" className="hz-btn hz-btn--ghost hz-btn--sm" onClick={() => patchHazardState({ view: 'planner' })}>
-            Mission Planner
-          </button>
-        </div>
-      </div>
-      {open && (
-        <div className="hz-strip__more">
-          {!ready ? (
-            <p className="hz-muted" role="status">
-              Testing the route against the mapped layers…
-            </p>
-          ) : hits.length ? (
-            <ol className="hz-strip__hits">
-              {hits.map((h) => (
-                <li key={h.id}>
-                  <img className="hz-swatch hz-swatch--sm" src={swatchUrl(h.code)} alt="" width={16} height={16} />
-                  <span>
-                    <strong>{CATEGORY_BY_CODE[h.code].name}</strong> · {h.segmentLabel} ·{' '}
-                    {h.fromKm === h.toKm ? `at about ${fmtKm(h.fromKm)}` : `about ${fmtKm(h.fromKm)} to ${fmtKm(h.toKm)}`} from the start
-                  </span>
-                  <button type="button" className="hz-link" onClick={() => requestHazardFocus(h.at)}>
-                    Show on map
-                  </button>
-                </li>
-              ))}
-            </ol>
-          ) : (
-            <p>The route line meets no mapped trough line or steep-slope cell. That is not a statement that it is safe.</p>
-          )}
-          {excluded.length > 0 && <p className="hz-muted">Excluded by you: {excluded.map((c) => CATEGORY_BY_CODE[c.code].name).join(', ')}.</p>}
-          {report?.slope && (
-            <p className="hz-muted">
-              Under the line: {fmtKm(report.slope.steepKm)} above {report.slope.thresholdDeg}° · {fmtKm(report.slope.belowKm)} below ·{' '}
-              {fmtKm(report.slope.unavailableKm)} without slope data. Distances and times are the planner’s straight-line estimates.
-            </p>
-          )}
-        </div>
-      )}
-    </section>
   );
 }

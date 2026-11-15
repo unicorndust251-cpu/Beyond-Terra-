@@ -1,19 +1,19 @@
 /* The map is the page. Palette applies to the interface only; NASA imagery is never tinted. */
 :root {
   /* Map workspace palette: quiet surfaces, warm copper only where it matters */
-  --bt-bg: #111110;
-  --bt-surface: #25211f;
-  --bt-panel: #1c1a19;
-  --bt-border: #38312e;
-  --bt-border-soft: rgba(56, 49, 46, 0.6);
-  --bt-text: #f3eae4;
-  --bt-text-2: #aaa09a;
-  --bt-text-3: #7f7772;
-  --bt-accent: #c58b70;
-  --bt-accent-soft: #d7ad96;
-  --bt-hover: rgba(243, 234, 228, 0.05);
-  --bt-active: rgba(197, 139, 112, 0.12);
-  --bt-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 30px rgba(0, 0, 0, 0.28);
+  --bt-bg: #171413;
+  --bt-surface: #302725;
+  --bt-panel: #302725;
+  --bt-border: rgba(214, 163, 139, 0.18);
+  --bt-border-soft: rgba(214, 163, 139, 0.12);
+  --bt-text: #f3e5dc;
+  --bt-text-2: rgba(243, 229, 220, 0.72);
+  --bt-text-3: rgba(243, 229, 220, 0.52);
+  --bt-accent: #b87860;
+  --bt-accent-soft: #d6a38b;
+  --bt-hover: rgba(243, 229, 220, 0.06);
+  --bt-active: rgba(184, 120, 96, 0.18);
+  --bt-shadow: 0 10px 28px rgba(5, 5, 7, 0.32);
   --bt-radius: 10px;
 
   /* Earlier names, kept as aliases of the palette above */
@@ -27,7 +27,7 @@
   --bt-ivory: var(--bt-text);
 
   --bt-font-display: 'Exo 2', 'Segoe UI', system-ui, sans-serif;
-  --bt-font-ui: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --bt-font-ui: 'Poppins', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --bt-font-science: var(--bt-font-ui);
   --bt-font-data: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
 
@@ -142,7 +142,7 @@
   flex-direction: column;
   padding: 2px;
   border-radius: var(--bt-radius);
-  background: rgba(28, 26, 25, 0.94);
+  background: rgba(48, 39, 37, 0.96);
   border: 1px solid var(--bt-border);
   box-shadow: var(--bt-shadow);
 }
@@ -212,7 +212,7 @@
   max-width: min(520px, 100%);
   padding: 4px 8px;
   border-radius: 6px;
-  background: rgba(17, 17, 16, 0.72);
+  background: rgba(23, 20, 19, 0.78);
   font: 400 10px/1.45 var(--bt-font-data);
   color: var(--bt-text-3);
   text-align: right;

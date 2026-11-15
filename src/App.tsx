@@ -184,7 +184,7 @@ export default function App() {
       {/* The map waits underneath, out of focus, loading while the globe is shown */}
       <MarsTrekSection load={phase !== 'intro'} revealed={stage !== 'globe'} onRevealStarted={() => setMapRevealStarted(true)} />
       {stage === 'map' && !overlay && <MapReturnBar visitedGlobe={exploreMounted} onOpenGlobe={openExplore} onOpenDashboard={openDashboard} hideControls />}
-      {stage === 'map' && !overlay && view === 'explore' && <ExploreHub visitedGlobe={exploreMounted} onOpenGlobe={openExplore} onPlanHere={(l) => showOnMap(l, true)} />}
+      {stage === 'map' && !overlay && view === 'explore' && <ExploreHub onOpenGlobe={openExplore} onPlanHere={(l) => showOnMap(l, true)} />}
       {exploreMounted && (
         <Suspense fallback={null}>
           <ExplorePage

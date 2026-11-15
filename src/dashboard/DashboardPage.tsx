@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { selectedLocationStore, useMapBridge, useUiMode, type MarsCoordinate, type SelectedLocation } from '../shared';
+import { selectedLocationStore, useMapBridge, type MarsCoordinate, type SelectedLocation } from '../shared';
 import { useFocusedLocation } from '../shared/focus';
 import {
   formatLandmarkCoordinates,
@@ -74,7 +74,6 @@ const fmtDay = (ms: number) => new Date(ms).toLocaleDateString('en-GB', { day: '
 
 /** The Mars Dashboard: location, terrain, solar time and the active mission in one view. */
 export default function DashboardPage({ active, onOpenMap, onOpenExplore }: Props) {
-  const simple = useUiMode() === 'simple';
   const root = useRef<HTMLDivElement>(null);
   const focus = useFocusedLocation();
   const mission = useActiveMission();
@@ -416,7 +415,7 @@ export default function DashboardPage({ active, onOpenMap, onOpenExplore }: Prop
                 </ul>
               </Section>
 
-              <Section title="Terrain and Surface" defaultOpen={!simple}>
+              <Section title="Terrain and Surface" defaultOpen>
                 <dl className="md-facts md-num">
                   <div>
                     <dt>Elevation</dt>

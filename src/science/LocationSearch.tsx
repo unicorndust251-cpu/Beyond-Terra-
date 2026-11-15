@@ -156,12 +156,12 @@ export default function LocationSearch() {
           ref={inputRef}
           type="text"
           role="combobox"
-          aria-label="Explore locations on Mars"
+          aria-label="Search Mars locations"
           aria-autocomplete="list"
           aria-expanded={showList}
           aria-controls={listId}
           aria-activedescendant={showList ? `${listId}-${active}` : undefined}
-          placeholder="Explore locations on Mars…"
+          placeholder="Search Mars locations…"
           autoComplete="off"
           spellCheck={false}
           value={query}

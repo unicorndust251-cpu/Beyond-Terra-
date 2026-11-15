@@ -19,18 +19,12 @@ import { searchObservations } from "../observations";
  * The Hazards view's top bar: find a place or observation, go to typed coordinates, and
  * set the date and time the excursion is planned for.
  */
-export default function HazardToolbar({
-  ctx,
-  simple,
-}: {
-  ctx: HazardContext;
-  simple?: boolean;
-}) {
+export default function HazardToolbar({ ctx }: { ctx: HazardContext }) {
   const [more, setMore] = useState(false);
   return (
     <div className="hz-toolbar" role="search" aria-label="Find a location">
       <SearchBox ctx={ctx} />
-      {!simple && (
+      {(
         <button
           type="button"
           className="hz-tb-morebtn"
@@ -40,7 +34,7 @@ export default function HazardToolbar({
           Coordinates &amp; time
         </button>
       )}
-      {!simple && (
+      {(
         <div className={`hz-tb-extra${more ? " is-open" : ""}`}>
           <CoordinateEntry ctx={ctx} />
           <PlannedTime />

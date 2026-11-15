@@ -1,26 +1,26 @@
 /* The selected-point card. Scoped to .sd-card / .sd-reopen only; nothing here touches the map. */
 .sd-card,
 .sd-reopen {
-  --sd-bg: rgba(48, 39, 37, 0.92);
-  --sd-line: rgba(255, 245, 238, 0.09);
-  --sd-text: #ede6e1;
-  --sd-text-2: rgba(237, 230, 225, 0.62);
-  --sd-text-3: rgba(237, 230, 225, 0.4);
-  --sd-accent: #b87860;
+  --sd-bg: rgba(48, 39, 37, 0.97);
+  --sd-line: var(--bt-border-soft, rgba(214, 163, 139, 0.12));
+  --sd-text: var(--bt-text, #f3e5dc);
+  --sd-text-2: var(--bt-text-2, rgba(243, 229, 220, 0.68));
+  --sd-text-3: var(--bt-text-3, rgba(243, 229, 220, 0.5));
+  --sd-accent: var(--bt-accent, #b87860);
   --sd-warn: #d9a05b;
   --sd-top: calc(var(--bt-topbar) + env(safe-area-inset-top, 0px) + 12px);
 
   position: absolute;
   top: var(--sd-top);
   right: var(--bt-edge);
-  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-family: 'Poppins', system-ui, -apple-system, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   color: var(--sd-text);
   pointer-events: auto;
 }
 
 .sd-card {
-  width: 272px;
+  width: 288px;
   max-width: calc(100% - 32px);
   max-height: calc(100% - var(--sd-top) - 16px);
   overflow-y: auto;
@@ -28,9 +28,7 @@
   border: 1px solid var(--sd-line);
   border-radius: 10px;
   background: var(--sd-bg);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  box-shadow: 0 12px 32px -16px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 7px 18px rgba(0, 0, 0, 0.26);
   animation: sd-in 0.2s ease-out;
   scrollbar-width: thin;
   scrollbar-color: var(--sd-line) transparent;
@@ -57,7 +55,7 @@
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  padding: 12px 10px 11px 14px;
+  padding: 10px 10px 9px 12px;
   border-bottom: 1px solid var(--sd-line);
 }
 
@@ -71,23 +69,22 @@
 }
 
 .sd-card__title h2 {
-  overflow: hidden;
   margin: 0;
   font-family: inherit;
-  font-size: 13.5px;
+  font-size: 16px;
   font-weight: 600;
-  line-height: 1.3;
-  letter-spacing: -0.006em;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
-.sd-card__coords {
-  margin: 2px 0 0;
-  font-size: 11.5px;
-  line-height: 1.35;
-  font-variant-numeric: tabular-nums;
-  color: var(--sd-text-3);
+.sd-card__eyebrow {
+  margin: 0 0 4px;
+  color: var(--sd-text-2);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  line-height: 1.4;
+  text-transform: uppercase;
 }
 
 .sd-card__close {
@@ -122,7 +119,7 @@
 /* Readings: label / value rows */
 .sd-rows {
   margin: 0;
-  padding: 4px 14px 6px;
+  padding: 2px 12px 4px;
   animation: sd-fade 0.2s ease-out;
 }
 
@@ -132,9 +129,9 @@
 
 .sd-row {
   display: grid;
-  grid-template-columns: 76px 1fr;
-  gap: 12px;
-  padding: 8px 0;
+  grid-template-columns: minmax(72px, 0.42fr) minmax(0, 1fr);
+  gap: 10px;
+  padding: 7px 0;
 }
 
 .sd-row + .sd-row {
@@ -142,8 +139,8 @@
 }
 
 .sd-row dt {
-  font-size: 12px;
-  line-height: 20px;
+  font-size: 12.5px;
+  line-height: 1.5;
   color: var(--sd-text-2);
 }
 
@@ -152,13 +149,13 @@
   flex-direction: column;
   min-width: 0;
   margin: 0;
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 500;
-  line-height: 20px;
+  line-height: 1.5;
 }
 
 .sd-num {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
@@ -172,13 +169,11 @@
 }
 
 .sd-secondary {
-  overflow: hidden;
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 400;
-  line-height: 1.4;
+  line-height: 1.5;
   color: var(--sd-text-3);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .sd-muted {
@@ -217,8 +212,6 @@
   border: 1px solid var(--sd-line);
   border-radius: 8px;
   background: var(--sd-bg);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
   color: var(--sd-text-2);
   font-size: 12px;
   font-weight: 500;
@@ -260,4 +253,21 @@
   .sd-reopen,
   .sd-rows,
   .sd-rows.is-loading .sd-placeholder { animation: none; }
+}
+
+.sd-card__title h2.sd-card__coordline {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: 0;
+  white-space: normal;
+  font-variant-numeric: tabular-nums;
+}
+
+.sd-card__place {
+  margin: 4px 0 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--sd-text-2, rgba(243, 229, 220, 0.75));
+  overflow-wrap: anywhere;
 }

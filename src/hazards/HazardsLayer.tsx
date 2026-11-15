@@ -11,7 +11,6 @@ import {
   toMapLatLng,
   useHazardState,
   useMissionConstraints,
-  useUiMode,
   usePlannedRoute,
   type HazardSelection,
   type MarsCoordinate,
@@ -19,7 +18,7 @@ import {
 import HazardPanel from './components/HazardPanel';
 import HazardDrawer from './components/HazardDrawer';
 import HazardToolbar from './components/HazardToolbar';
-import { MapLegend, RouteStrip } from './components/MapExtras';
+import { MapLegend } from './components/MapExtras';
 import { DuneLayer, duneBounds, hitTestDunes, loadDunes, selectedDuneOverlay, type DuneData, type DuneFeature } from './dunes';
 import { ObservationMarkers } from './observationMarkers';
 import { OBSERVATION_BY_ID } from './observations';
@@ -99,7 +98,6 @@ export default function HazardsLayer() {
   const [hover, setHover] = useState<{ x: number; y: number; label: string } | null>(null);
   const [cursor, setCursor] = useState<MarsCoordinate | null>(null);
   const inHazards = hz.view === 'hazards';
-  const uiMode = useUiMode();
 
   /* ---------------------------------------------------------------- data */
   useEffect(() => {
@@ -429,10 +427,9 @@ export default function HazardsLayer() {
   if (!inHazards) return null;
   return (
     <div className="hz-root">
-      <HazardToolbar ctx={ctx} simple={uiMode === 'simple'} />
+      <HazardToolbar ctx={ctx} />
       <HazardPanel ctx={ctx} />
       <MapLegend shifted={!!sel} />
-      {uiMode === 'advanced' && <RouteStrip />}
       {sel && <HazardDrawer ctx={ctx} selection={sel} onClose={() => closeSelection(setPoint, setSlopeCell)} onPick={(s) => pick(s, setSlopeCell, point)} />}
       {hover && (
         <div className="hz-hover" style={{ transform: `translate(${hover.x + 14}px, ${hover.y + 14}px)` }} aria-hidden="true">

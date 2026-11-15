@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, type ReactNode } from 'react';
-import { patchHazardState, toMapLatLng, usePlannedRoute, useHazardState, useUiMode, type HazardSelection, type MarsCoordinate } from '../../shared';
+import { patchHazardState, toMapLatLng, usePlannedRoute, useHazardState, type HazardSelection, type MarsCoordinate } from '../../shared';
 import { AVAILABILITY_LABEL, CATEGORY_BY_CODE, categoryName, displayName, type HazardCategory } from '../categories';
 import { formatCoord } from '../coordinateInput';
 import type { HazardContext } from '../HazardsLayer';
@@ -79,13 +79,12 @@ export default function HazardDrawer({ ctx, selection, onClose, onPick }: Props)
 /* ------------------------------------------------------------------ pieces */
 
 export function Head({ cats, title, id, kind, simpleTitle }: { cats: HazardCategory[]; title: string; id: string; kind: string; simpleTitle?: string }) {
-  const simple = useUiMode() === 'simple';
   return (
     <header className="hz-d-head">
       <img className="hz-swatch" src={swatchUrl(cats[0].code)} alt="" width={32} height={32} />
       <div>
-        <p className="hz-eyebrow">{cats.map((c) => displayName(c.code, simple)).join(' + ')}</p>
-        <h2 className="hz-d-title">{simple && simpleTitle ? simpleTitle : title}</h2>
+        <p className="hz-eyebrow">{cats.map((c) => c.name).join(' + ')}</p>
+        <h2 className="hz-d-title">{simpleTitle ?? title}</h2>
         <p className="hz-d-sub">
           <span className="hz-chip">{kind}</span> <span className="hz-id">{id}</span>
         </p>
@@ -96,7 +95,7 @@ export function Head({ cats, title, id, kind, simpleTitle }: { cats: HazardCateg
 
 /** The brief: what it is, why it matters, what the crew can do. Detail follows in Scientific Details. */
 export function Glance({ concern, evidence, cats }: { concern: ReactNode; evidence: ReactNode; cats: HazardCategory[] }) {
-  const simple = useUiMode() === 'simple';
+  void evidence; // kept for callers: the evidence is in Scientific Information, section 9
   const jump = () => {
     const sci = document.getElementById('hz-sci') as HTMLDetailsElement | null;
     if (sci) sci.open = true;
@@ -119,23 +118,16 @@ export function Glance({ concern, evidence, cats }: { concern: ReactNode; eviden
             </button>
           </dd>
         </div>
-        {!simple && (
-          <div>
-            <dt>Where is the evidence?</dt>
-            <dd>{evidence}</dd>
-          </div>
-        )}
       </dl>
     </div>
   );
 }
 
-/** The numbered scientific sections, folded in Simple mode and open in Advanced mode. */
+/** The numbered scientific sections: evidence, coordinates, sources and limitations, on request. */
 export function SciDetails({ children }: { children: ReactNode }) {
-  const simple = useUiMode() === 'simple';
   return (
-    <details className="hz-sci" id="hz-sci" open={!simple}>
-      <summary>Scientific Details</summary>
+    <details className="hz-sci" id="hz-sci">
+      <summary>Scientific Information</summary>
       {children}
     </details>
   );
@@ -482,7 +474,7 @@ function LineView({ ctx, f, data, at, onClose }: { ctx: HazardContext; f: Struct
   });
   return (
     <>
-      <Head cats={[cat]} title={`Mapped ${f.interpretation.toLowerCase()}`} simpleTitle={displayName(f.category, true)} id={f.id} kind="Mapped line (USGS)" />
+      <Head cats={[cat]} title={`Mapped ${f.interpretation.toLowerCase()}`} simpleTitle={displayName(f.category)} id={f.id} kind="Mapped line (USGS)" />
       <Glance
         cats={[cat]}
         concern={pit ? 'A line of collapse pits mapped by the USGS from orbit. Pit edges can be steep and their depth is unknown.' : 'A long trough between faults (a graben), mapped by the USGS from orbit. Steep walls and drops may lie along it.'}
@@ -704,7 +696,7 @@ function PointView({ ctx, onPick, onClose }: { ctx: HazardContext; onPick(s: Haz
     <>
       <header className="hz-d-head">
         <div>
-          <p className="hz-eyebrow">Selected point</p>
+          <p className="hz-eyebrow">Latitude &amp; Longitude</p>
           <h2 className="hz-d-title">{formatCoord(p.at, 3)}</h2>
         </div>
       </header>
@@ -826,7 +818,7 @@ function DuneView({ ctx, f, data, at, onClose }: { ctx: HazardContext; f: DuneFe
   const imgs = [f.images.themisIR && `THEMIS IR ${f.images.themisIR}`, f.images.themisVIS && `THEMIS VIS ${f.images.themisVIS}`, f.images.moc && `MOC ${f.images.moc}`].filter(Boolean);
   return (
     <>
-      <Head cats={[cat]} title={`Mapped dune field ${f.duneId}`} simpleTitle={`${displayName('S', true)}: dune field ${f.duneId}`} id={f.id} kind="Mapped outline (USGS)" />
+      <Head cats={[cat]} title={`Mapped dune field ${f.duneId}`} simpleTitle={`Dune field ${f.duneId}`} id={f.id} kind="Mapped outline (USGS)" />
       <Glance
         cats={[cat]}
         concern={`A field of ${f.types.length ? f.types.join(', ').toLowerCase() : 'unclassified'} dunes${f.areaKm2 ? `, about ${Math.round(f.areaKm2)} km²` : ''}: loose sand of unknown strength, with locally steep dune slopes.`}

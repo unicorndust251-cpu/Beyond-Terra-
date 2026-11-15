@@ -6,6 +6,7 @@ import {
   requestHazardFocus,
   useHazardState,
   usePlannedRoute,
+  usePlannedRouteTotals,
   useRouteHazardReport,
   type HazardCode,
 } from '../../shared';
@@ -17,7 +18,7 @@ import { swatchUrl } from '../patterns';
 let lastShown: HazardCode[] = TERRAIN_CODES;
 
 /**
- * Simple mode: show hazards, choose a hazard type, check the route. Every control maps onto
+ * The main hazard controls: show hazards, choose a hazard type, check the route. Every control maps onto
  * the existing categories and route assessment; nothing here is a new classification.
  */
 export default function SimpleHazards({ ctx }: { ctx: HazardContext }) {
@@ -59,13 +60,13 @@ export default function SimpleHazards({ ctx }: { ctx: HazardContext }) {
             </button>
           ))}
         </div>
-        {on && !group && <p className="hz-muted">A custom selection is set under Advanced Details.</p>}
+        {on && !group && <p className="hz-muted">A custom selection is set under More Details.</p>}
         {on && (
           <ul className="hz-simple__chips" aria-label="Hazards on the map">
             {shownTerrain.map((c) => (
               <li key={c}>
                 <img src={swatchUrl(c)} alt="" width={12} height={12} />
-                {displayName(c, true)}
+                {displayName(c)}
               </li>
             ))}
           </ul>
@@ -80,6 +81,7 @@ export default function SimpleHazards({ ctx }: { ctx: HazardContext }) {
 function CheckRoute({ ctx }: { ctx: HazardContext }) {
   const route = usePlannedRoute();
   const report = useRouteHazardReport();
+  const totals = usePlannedRouteTotals();
   const [checked, setChecked] = useState<string | null>(null);
   // A changed route needs checking again
   useEffect(() => {
@@ -117,6 +119,20 @@ function CheckRoute({ ctx }: { ctx: HazardContext }) {
   return (
     <section className="hz-simple__route" aria-label="Check my route">
       <h3>Check My Route</h3>
+      <dl className="hz-route-figs">
+        <div>
+          <dt>Distance</dt>
+          <dd>{totals ? fmtKm(totals.distanceKm) : '—'}</dd>
+        </div>
+        <div>
+          <dt>Travel time</dt>
+          <dd>{totals ? fmtHours(totals.travelHours) : '—'}</dd>
+        </div>
+        <div>
+          <dt>With tasks</dt>
+          <dd>{totals ? fmtHours(totals.totalHours) : '—'}</dd>
+        </div>
+      </dl>
       <button type="button" className="hz-btn hz-btn--wide" onClick={run}>
         Check My Route
       </button>
@@ -134,7 +150,7 @@ function CheckRoute({ ctx }: { ctx: HazardContext }) {
                   <li key={h.id}>
                     <img src={swatchUrl(h.code)} alt="" width={14} height={14} />
                     <span>
-                      {displayName(h.code, true)} · about {h.fromKm === h.toKm ? h.fromKm.toFixed(1) : `${h.fromKm.toFixed(1)}–${h.toKm.toFixed(1)}`} km from the start
+                      {displayName(h.code)} · about {h.fromKm === h.toKm ? h.fromKm.toFixed(1) : `${h.fromKm.toFixed(1)}–${h.toKm.toFixed(1)}`} km from the start
                     </span>
                     <button type="button" className="hz-link" onClick={() => requestHazardFocus(h.at)}>
                       Show
@@ -145,7 +161,7 @@ function CheckRoute({ ctx }: { ctx: HazardContext }) {
             </>
           ) : untestable.length ? (
             <p className="hz-result-line hz-result-line--unknown">
-              <strong>Insufficient data</strong> · some hazard layers could not be checked ({untestable.map((c) => displayName(c.code, true)).join(', ')}).
+              <strong>Insufficient data</strong> · some hazard layers could not be checked ({untestable.map((c) => displayName(c.code)).join(', ')}).
             </p>
           ) : (
             <p className="hz-result-line hz-result-line--clear">
@@ -153,7 +169,15 @@ function CheckRoute({ ctx }: { ctx: HazardContext }) {
             </p>
           )}
           {ready && untestable.length > 0 && hits.length > 0 && (
-            <p className="hz-muted">Not checked: {untestable.map((c) => displayName(c.code, true)).join(', ')} (data unavailable).</p>
+            <p className="hz-muted">Not checked: {untestable.map((c) => displayName(c.code)).join(', ')} (data unavailable).</p>
+          )}
+          {ready && report.checks.some((c) => c.state === 'excluded') && (
+            <p className="hz-muted">Excluded by you (More Details → Display &amp; route): {report.checks.filter((c) => c.state === 'excluded').map((c) => c.name).join(', ')}.</p>
+          )}
+          {ready && report.slope && (
+            <p className="hz-muted">
+              Under the line: {fmtKm(report.slope.steepKm)} above {report.slope.thresholdDeg}° · {fmtKm(report.slope.belowKm)} below · {fmtKm(report.slope.unavailableKm)} without slope data.
+            </p>
           )}
           <p className="hz-muted">
             This is not a safety rating. Rocks smaller than the image resolution, local slopes and unmapped hazards are not covered, and most terrain is unassessed at
@@ -163,4 +187,12 @@ function CheckRoute({ ctx }: { ctx: HazardContext }) {
       )}
     </section>
   );
+}
+
+const fmtKm = (km: number) => `${km < 10 ? km.toFixed(2) : km.toFixed(1)} km`;
+function fmtHours(h: number) {
+  if (!Number.isFinite(h)) return '—';
+  const total = Math.round(h * 60);
+  const hh = Math.floor(total / 60);
+  return hh ? `${hh} h ${total % 60} min` : `${total % 60} min`;
 }

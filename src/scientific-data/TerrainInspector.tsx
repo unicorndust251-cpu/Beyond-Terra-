@@ -15,6 +15,10 @@ export default function TerrainInspector() {
   const bridge = useMapBridge();
   const selected = useSelectedLocation();
   const displaySettings = useDisplaySettings();
+  const coords = selected
+    ? `${formatLatitude(selected.coordinate.latitude, 3)}, ${formatLongitude(selected.coordinate.longitudeEast, displaySettings.longitude, 3)}`
+    : '';
+  const title = selected?.name ?? coords;
   const [result, setResult] = useState<TerrainInspection | null>(null);
   const [loading, setLoading] = useState(false);
   const [visible, setVisible] = useState(false);
@@ -31,8 +35,14 @@ export default function TerrainInspector() {
       setResult(r);
       setLoading(false);
     });
-    if (bridge) marker.current = bridge.addMarker(MARKER_ID, selected.coordinate, { label: selected.name ?? 'Selected point', color: '#c58b70' });
-  }, [selected, bridge]);
+  }, [selected]);
+
+  useEffect(() => {
+    if (!selected || !bridge) return undefined;
+    marker.current?.remove();
+    marker.current = bridge.addMarker(MARKER_ID, selected.coordinate, { label: title, color: '#c58b70' });
+    return () => marker.current?.remove();
+  }, [bridge, selected, title]);
 
   const close = () => {
     request.current++;
@@ -49,13 +59,7 @@ export default function TerrainInspector() {
     return () => document.removeEventListener('keydown', onKey);
   }, [visible]);
 
-  useEffect(() => () => marker.current?.remove(), []);
-
   if (!selected) return null;
-
-  const title = selected.name ?? 'Selected point';
-  const { latitude, longitudeEast } = selected.coordinate;
-  const coords = `${formatLatitude(latitude, 3)}, ${formatLongitude(longitudeEast, displaySettings.longitude, 3)}`;
 
   if (!visible) {
     return (
@@ -67,12 +71,15 @@ export default function TerrainInspector() {
   }
 
   return (
-    <section className="sd-card" aria-label={`${title}, selected point`}>
+    <section className="sd-card" aria-label="Latitude & Longitude">
       <header className="sd-card__head">
         <PinIcon />
         <div className="sd-card__title">
-          <h2 title={title}>{title}</h2>
-          <p className="sd-card__coords">{coords}</p>
+          <p className="sd-card__eyebrow">Latitude &amp; Longitude</p>
+          <h2 className="sd-card__coordline" title={coords}>
+            {coords}
+          </h2>
+          {selected.name && <p className="sd-card__place">{selected.name}</p>}
         </div>
         <button type="button" className="sd-card__close" onClick={close} aria-label="Close" title="Close">
           <svg viewBox="0 0 20 20" aria-hidden="true">
@@ -90,7 +97,7 @@ export default function TerrainInspector() {
           ))}
         </dl>
       ) : (
-        <Readings key={`${latitude},${longitudeEast}`} r={result} />
+        <Readings key={`${selected.coordinate.latitude},${selected.coordinate.longitudeEast}`} r={result} />
       )}
     </section>
   );
@@ -152,7 +159,7 @@ function Readings({ r }: { r: TerrainInspection }) {
       </Row>
 
       <Row label="Hazards">
-        {slope ? <span className={steep ? 'sd-warn' : undefined}>{steep ? 'Steep slope' : 'No steep slopes'}</span> : <Unavailable />}
+        {slope ? <span className={steep ? 'sd-warn' : undefined}>{steep ? 'Steep slope' : 'No mapped steep slopes detected'}</span> : <Unavailable />}
       </Row>
     </dl>
   );

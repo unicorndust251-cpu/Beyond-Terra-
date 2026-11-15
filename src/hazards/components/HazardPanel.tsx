@@ -8,7 +8,6 @@ import {
   useHazardState,
   useMissionConstraints,
   usePlannedRoute,
-  useUiMode,
   type HazardCode,
   type MarsCoordinate,
   type SlopeLimitSource,
@@ -46,10 +45,8 @@ const observationsOf = (code: HazardCode) => OBSERVATIONS.filter((o) => o.catego
 export default function HazardPanel({ ctx }: { ctx: HazardContext }) {
   const hz = useHazardState();
   const [tab, setTab] = useState<Tab>('layers');
-  const simple = useUiMode() === 'simple';
-  // Advanced Details: folded in Simple mode (opened on request), always open in Advanced mode
-  const [advOpen, setAdvOpen] = useState(false);
-  const showAdvanced = !simple || advOpen;
+  // More Details: every category, setting and observation, opened on request
+  const [showAdvanced, setAdvOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(isPhone);
   const [filter, setFilter] = useState<HazardCode | 'all'>('all');
   const [zoom, setZoom] = useState(() => ctx.map.getZoom());
@@ -111,22 +108,19 @@ export default function HazardPanel({ ctx }: { ctx: HazardContext }) {
         </button>
       </header>
 
-      {!collapsed &&
-        (simple ? (
-          <div className={`hz-panel__simple${showAdvanced ? ' has-advanced' : ''}`}>
-            {!showAdvanced && <SimpleHazards ctx={ctx} />}
-            <button type="button" className="hz-adv-toggle" aria-expanded={showAdvanced} onClick={() => setAdvOpen((o) => !o)}>
-              <svg viewBox="0 0 20 20" aria-hidden="true" className="hz-chev">
-                <path d="m7 5 5 5-5 5" />
-              </svg>
-              {showAdvanced ? 'Back to the simple view' : 'Advanced Details'}
-              {!showAdvanced && <small>All hazard categories, display and route settings, {OBSERVATIONS.length} observations, sources</small>}
-            </button>
-            {showAdvanced && advanced}
-          </div>
-        ) : (
-          advanced
-        ))}
+      {!collapsed && (
+        <div className={`hz-panel__simple${showAdvanced ? ' has-advanced' : ''}`}>
+          {!showAdvanced && <SimpleHazards ctx={ctx} />}
+          <button type="button" className="hz-adv-toggle" aria-expanded={showAdvanced} onClick={() => setAdvOpen((o) => !o)}>
+            <svg viewBox="0 0 20 20" aria-hidden="true" className="hz-chev">
+              <path d="m7 5 5 5-5 5" />
+            </svg>
+            {showAdvanced ? 'Hide details' : 'More Details'}
+            {!showAdvanced && <small>All hazard categories, display and route settings, {OBSERVATIONS.length} observations, sources</small>}
+          </button>
+          {showAdvanced && advanced}
+        </div>
+      )}
     </aside>
   );
 }

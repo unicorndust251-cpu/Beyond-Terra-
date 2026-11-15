@@ -1,14 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { SECTIONS, navigate, setUiMode, useUiMode, type Section } from '../shared';
+import { SECTIONS, navigate, type Section } from '../shared';
 import './MainNav.css';
 
 /**
  * The one main navigation, shown in the map's top bar, on the landmark globe and on the
- * Mars Dashboard: four destinations and the Simple / Advanced setting. On narrow screens the
- * destinations fold into a menu.
+ * Mars Dashboard. On narrow screens the destinations fold into a compact menu.
  */
 export default function MainNav({ current }: { current: Section }) {
-  const mode = useUiMode();
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -65,21 +63,6 @@ export default function MainNav({ current }: { current: Section }) {
             ))}
           </ul>
         )}
-      </div>
-      <div className="bt-mode" role="radiogroup" aria-label="Detail level">
-        {(['simple', 'advanced'] as const).map((m) => (
-          <button
-            key={m}
-            type="button"
-            role="radio"
-            aria-checked={mode === m}
-            className={mode === m ? 'is-active' : ''}
-            title={m === 'simple' ? 'Essential controls and plain-language labels' : 'Every scientific layer, setting, source and calculation'}
-            onClick={() => setUiMode(m)}
-          >
-            {m === 'simple' ? 'Simple' : 'Advanced'}
-          </button>
-        ))}
       </div>
     </div>
   );

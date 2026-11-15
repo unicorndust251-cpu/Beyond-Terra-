@@ -11,7 +11,6 @@ import {
   type LandmarkSource,
 } from '../shared/landmarks';
 import LandmarkThumb, { THUMB_CREDIT } from './LandmarkThumb';
-import { useUiMode } from '../shared';
 
 interface Props {
   landmark: Landmark;
@@ -64,7 +63,6 @@ function Section({ id, title, children, defaultOpen = false }: { id: string; tit
 
 /** Preview card, then the full Scientific Importance panel, for one landmark. */
 export default function LandmarkPanel({ landmark: l, expanded, onExpand, onSelect, onClose, onExploreOnMap, onPlanHere }: Props) {
-  const simple = useUiMode() === 'simple';
   const [copied, setCopied] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null);
   const i = LANDMARKS.findIndex((x) => x.id === l.id);
@@ -105,14 +103,12 @@ export default function LandmarkPanel({ landmark: l, expanded, onExpand, onSelec
           <h2 id="ex-panel-title" ref={heading} tabIndex={-1}>
             {l.name}
           </h2>
-          {(!simple || expanded) && (
-            <p className="ex-panel__coords">
-              {coords}
-              <button type="button" className="ex-link" onClick={copy}>
-                {copied ? 'Copied' : 'Copy'}
-              </button>
-            </p>
-            )}
+          <p className="ex-panel__coords">
+            {coords}
+            <button type="button" className="ex-link" onClick={copy}>
+              {copied ? 'Copied' : 'Copy'}
+            </button>
+          </p>
         </div>
         <button type="button" className="ex-icon" aria-label="Close landmark" onClick={onClose}>
           ×

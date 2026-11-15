@@ -57,7 +57,7 @@
 
 .hz-views button.is-active {
   background: var(--hz-button);
-  color: #fff;
+  color: #171413;
 }
 
 .hz-views button:focus-visible {
@@ -738,7 +738,7 @@
   border: 0;
   border-radius: 8px;
   background: var(--hz-button);
-  color: #fff;
+  color: #171413;
   font: 500 12.5px var(--hz-font);
   text-decoration: none;
   cursor: pointer;
@@ -2223,6 +2223,82 @@
   }
 }
 
+/* Consistent scientific-panel typography and lighter section rhythm */
+.hz-root {
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.hz-panel {
+  border-radius: 12px;
+  background: rgba(23, 20, 19, 0.97);
+  box-shadow: 0 10px 28px rgba(5, 5, 7, 0.34);
+}
+
+.hz-panel__title {
+  font-size: 19px;
+  line-height: 1.35;
+}
+
+.hz-panel__sub {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.hz-tabs button {
+  min-height: 34px;
+  font-size: 12px;
+}
+
+.hz-seg button.is-active {
+  background: rgba(99, 80, 74, 0.58);
+  box-shadow: inset 0 0 0 1px rgba(214, 163, 139, 0.28);
+}
+
+.hz-btn {
+  min-height: 36px;
+  height: auto;
+  font-size: 13px;
+}
+
+.hz-btn--sm {
+  min-height: 32px;
+  font-size: 12.5px;
+}
+
+.hz-drawer {
+  border-radius: 12px;
+  background: rgba(23, 20, 19, 0.98);
+  box-shadow: 0 10px 28px rgba(5, 5, 7, 0.36);
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+.hz-d-title {
+  font-size: 19px;
+}
+
+.hz-d-sec h3 {
+  font-size: 14px;
+}
+
+.hz-d-rows dt,
+.hz-d-rows dd {
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.hz-tb-search input {
+  font-size: 13.5px;
+}
+
+.hz-panel__body,
+.hz-panel__simple,
+.hz-drawer {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(214, 163, 139, 0.24) transparent;
+}
+
 /* ------------------------------------------- observation location markers */
 /* A fixed-size point symbol in the category colour: never a geographic area. */
 .hz-obs-pin span {
@@ -2619,6 +2695,10 @@
   cursor: pointer;
 }
 
+.hz-simple {
+  gap: 12px;
+}
+
 .hz-simple__label small {
   font-size: 11.5px;
   font-weight: 400;
@@ -2853,4 +2933,34 @@
   .hz-sci > summary::before {
     transition: none;
   }
+}
+
+.hz-simple__row {
+  padding: 10px 0;
+  border: 0;
+  border-bottom: 1px solid var(--hz-line);
+  border-radius: 0;
+  background: none;
+}
+
+.hz-simple__label small {
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.hz-simple__route {
+  padding: 12px 0 0;
+  border: 0;
+  border-top: 1px solid var(--hz-line);
+  border-radius: 0;
+  background: none;
+}
+
+.hz-simple__route h3 {
+  font-size: 15px;
+}
+
+.hz-seg--stack button {
+  min-height: 40px;
+  font-size: 13px;
 }

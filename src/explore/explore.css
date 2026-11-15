@@ -1,5 +1,4 @@
 /* Explore: the landmark globe. Poppins, the Beyond Terra palette, restrained orange markers. */
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
 .ex {
   --ex-bg: #171413;
@@ -65,10 +64,10 @@
 }
 
 .ex-top__brand {
-  font-family: 'Exo 2', 'Poppins', sans-serif;
+  font-family: 'Poppins', system-ui, -apple-system, 'Segoe UI', sans-serif;
   font-size: 15px;
-  font-weight: 800;
-  letter-spacing: 0.22em;
+  font-weight: 600;
+  letter-spacing: 0.16em;
 }
 
 .ex-top__nav {
