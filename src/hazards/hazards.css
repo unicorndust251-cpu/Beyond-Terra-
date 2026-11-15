@@ -2303,3 +2303,554 @@
 .hz-legend__toggle > span:first-child {
   white-space: nowrap;
 }
+
+/* ------------------------------------------------ notes at map locations */
+.hz-note-pin {
+  position: relative;
+}
+
+.hz-note-pin__dot {
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  background: var(--c, #cbd5e1);
+  box-shadow: 0 0 0 2px #171413;
+}
+
+.hz-note-pin__text {
+  position: absolute;
+  left: 16px;
+  top: -4px;
+  width: max-content;
+  max-width: 230px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border-left: 3px solid var(--c, #cbd5e1);
+  background: rgba(23, 20, 19, 0.9);
+  color: #f3e5dc;
+  font: 500 11px/1.35 'Poppins', system-ui, sans-serif;
+  white-space: normal;
+  pointer-events: none;
+}
+
+.hz-note-pin--stop .hz-note-pin__dot {
+  display: none;
+}
+
+.hz-note-pin--stop .hz-note-pin__text {
+  left: 14px;
+  top: 14px;
+}
+
+.hz-note-pin--node .hz-note-pin__dot {
+  inset: 0;
+  border-radius: 3px;
+  transform: rotate(45deg);
+}
+
+.hz-note-pin--sun .hz-note-pin__dot {
+  inset: -2px;
+  background: radial-gradient(circle, #fde68a 0 45%, var(--c) 46% 100%);
+}
+
+/* --------------------------------------------------------- status chips */
+.hz-status-chip {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: rgba(214, 163, 139, 0.2);
+  color: var(--hz-ivory);
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
+.hz-status-chip--vis {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--hz-line);
+  font-weight: 500;
+}
+
+.hz-statusbox p {
+  margin: 6px 0 0 !important;
+  font-weight: 400;
+}
+
+.hz-tone-box--error {
+  border-left-color: var(--hz-error);
+}
+
+.hz-tone-box--warn {
+  border-left-color: var(--hz-warn);
+}
+
+.hz-d-short {
+  margin: 0 0 4px;
+  color: var(--hz-text-2);
+}
+
+/* ---------------------------------------------------------------- forms */
+.hz-form {
+  display: grid;
+  gap: 10px;
+  margin: 8px 0;
+}
+
+.hz-numfield {
+  display: grid;
+  gap: 3px;
+  font-size: 12px;
+}
+
+.hz-numfield label {
+  color: var(--hz-text-2);
+}
+
+.hz-numfield__in {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hz-numfield__in input {
+  width: 110px;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid rgba(214, 163, 139, 0.35);
+  border-radius: 7px;
+  background: var(--hz-panel);
+  color: var(--hz-ivory);
+  font: 500 12.5px var(--hz-font);
+  outline: none;
+}
+
+.hz-numfield__in input:focus {
+  border-color: var(--hz-copper);
+}
+
+.hz-numfield__in input[aria-invalid='true'] {
+  border-color: var(--hz-error);
+}
+
+.hz-numfield__in span {
+  color: var(--hz-text-3);
+  font-size: 11.5px;
+}
+
+.hz-radios {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.hz-radios legend {
+  margin-bottom: 4px;
+  color: var(--hz-text-2);
+}
+
+.hz-radios input {
+  accent-color: var(--hz-button);
+}
+
+.hz-text--sm {
+  width: 86px;
+  height: 30px;
+}
+
+.hz-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.hz-table th {
+  padding: 4px 6px 4px 0;
+  text-align: left;
+  font-weight: 600;
+  color: var(--hz-text-3);
+  font-size: 11px;
+}
+
+.hz-table td {
+  padding: 6px 6px 6px 0;
+  border-top: 1px solid var(--hz-line);
+  vertical-align: top;
+}
+
+.hz-table .hz-numfield label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.hz-table .hz-numfield__in input {
+  width: 64px;
+}
+
+.hz-table--wide td,
+.hz-table--wide th {
+  font-size: 11px;
+}
+
+.hz-nodes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.hz-nodes li {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--hz-line);
+}
+
+.hz-addnode {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0;
+  font-size: 12px;
+}
+
+.hz-addnode label {
+  display: grid;
+  gap: 4px;
+  color: var(--hz-text-2);
+}
+
+.hz-other__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.hz-other__row .hz-numfield__in input {
+  width: 70px;
+}
+
+/* Notes that can share a point sit on different sides of it: stop notes below-right,
+   node notes to the left, measurement and Sun notes above-right */
+.hz-note-pin--node .hz-note-pin__text {
+  left: auto;
+  right: 18px;
+  top: -4px;
+  border-left: 0;
+  border-right: 3px solid var(--c);
+  text-align: right;
+}
+.hz-note-pin:not(.hz-note-pin--stop):not(.hz-note-pin--node) .hz-note-pin__text {
+  top: auto;
+  bottom: 14px;
+}
+
+@media (max-width: 640px) {
+  .hz-drawer {
+    background: #171413;
+  }
+}
+
+/* Explore Mars: a clean map. The planner and hazard overlays stay mounted (state kept) but hidden */
+.bt-map[data-bt-view='explore'] .mp-panel,
+.bt-map[data-bt-view='explore'] .mp-pick-hint,
+.bt-map[data-bt-view='explore'] .mp-sum,
+.bt-map[data-bt-view='explore'] .leaflet-btHazardArea-pane,
+.bt-map[data-bt-view='explore'] .leaflet-btHazardLines-pane,
+.bt-map[data-bt-view='explore'] .leaflet-btHazardSelection-pane,
+.bt-map[data-bt-view='explore'] .hz-obs-pin,
+.bt-map[data-bt-view='explore'] .hz-note-pin,
+.bt-map[data-bt-view='explore'] .hz-route-cross {
+  display: none !important;
+}
+
+/* =====================================================================
+   Simple mode: compact hazards panel, brief info panel, Map Key chip
+   ===================================================================== */
+.hz-panel__sub {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--hz-text-2);
+}
+
+.hz-panel__simple {
+  overflow-y: auto;
+  padding: 4px 16px 16px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--hz-line) transparent;
+}
+
+.hz-panel__simple.has-advanced {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0;
+}
+
+.hz-panel__simple.has-advanced .hz-adv-toggle {
+  margin: 4px 16px 8px;
+  width: auto;
+}
+
+.hz-simple {
+  display: grid;
+  gap: 14px;
+  padding-top: 6px;
+}
+
+.hz-simple__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(48, 39, 37, 0.6);
+  border: 1px solid var(--hz-line);
+}
+
+.hz-simple__label {
+  display: grid;
+  gap: 2px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.hz-simple__label small {
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--hz-text-2);
+}
+
+.hz-simple__types {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.hz-simple__types legend {
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.hz-simple__types:disabled {
+  opacity: 0.5;
+}
+
+.hz-seg--stack {
+  flex-direction: column;
+}
+
+.hz-seg--stack button {
+  min-height: 36px;
+  text-align: left;
+  padding: 0 12px;
+  font-size: 12.5px;
+}
+
+.hz-simple__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 11.5px;
+  color: var(--hz-text-2);
+}
+
+.hz-simple__chips li {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.hz-simple__chips img {
+  border-radius: 2px;
+}
+
+.hz-simple__route {
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(48, 39, 37, 0.6);
+  border: 1px solid var(--hz-line);
+}
+
+.hz-simple__route h3 {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.hz-simple__route > p {
+  margin: 0 0 10px;
+  font-size: 12.5px;
+  color: var(--hz-text-2);
+}
+
+.hz-btn--wide {
+  width: 100%;
+  justify-content: center;
+  height: 40px;
+  font-size: 13px;
+}
+
+.hz-simple__result {
+  margin-top: 10px;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.hz-simple__result p {
+  margin: 0 0 6px;
+}
+
+.hz-result-line {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border-left: 3px solid var(--hz-copper);
+  background: rgba(23, 20, 19, 0.6);
+}
+
+.hz-result-line--concern {
+  border-left-color: var(--hz-warn);
+}
+
+.hz-result-line--unknown {
+  border-left-color: var(--hz-text-3);
+}
+
+.hz-simple__hits {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+}
+
+.hz-simple__hits li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+}
+
+.hz-simple__hits li span {
+  flex: 1;
+}
+
+.hz-simple__hits img {
+  border-radius: 3px;
+}
+
+.hz-adv-toggle {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 2px 8px;
+  width: 100%;
+  margin-top: 14px;
+  padding: 10px 12px;
+  border: 1px dashed rgba(214, 163, 139, 0.35);
+  border-radius: 10px;
+  background: none;
+  color: var(--hz-ivory);
+  font: 600 12.5px var(--hz-font);
+  text-align: left;
+  cursor: pointer;
+}
+
+.hz-adv-toggle small {
+  grid-column: 2;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--hz-text-3);
+}
+
+.hz-adv-toggle:hover {
+  border-color: var(--hz-copper);
+}
+
+.hz-adv-toggle:focus-visible {
+  outline: 2px solid var(--hz-copper);
+  outline-offset: 2px;
+}
+
+/* ------------------------------------------------------ information panel */
+.hz-brief {
+  margin: 10px 0 8px;
+}
+
+.hz-brief__lead {
+  margin: 0 0 10px;
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+.hz-brief .hz-glance {
+  margin: 0;
+}
+
+.hz-sci {
+  margin-top: 10px;
+  border-top: 1px solid var(--hz-line);
+}
+
+.hz-sci > summary {
+  padding: 12px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--hz-copper);
+  cursor: pointer;
+  list-style: none;
+}
+
+.hz-sci > summary::-webkit-details-marker {
+  display: none;
+}
+
+.hz-sci > summary::before {
+  content: '▸';
+  display: inline-block;
+  margin-right: 8px;
+  transition: transform 0.15s ease;
+}
+
+.hz-sci[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.hz-sci > summary:focus-visible {
+  outline: 2px solid var(--hz-copper);
+  outline-offset: 2px;
+}
+
+.hz-more__body {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--hz-line);
+}
+
+/* ------------------------------------------------------------- map key */
+.hz-legend {
+  width: auto;
+  min-width: 150px;
+  max-width: 260px;
+}
+
+.hz-legend:not(:has(.hz-legend__body)) {
+  border-radius: 999px;
+}
+
+.hz-legend__toggle {
+  min-height: 34px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hz-sci > summary::before {
+    transition: none;
+  }
+}

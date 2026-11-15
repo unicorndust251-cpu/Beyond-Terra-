@@ -3,7 +3,8 @@ import HomePage, { type HomePhase } from './pages/HomePage';
 import MarsTrekSection from './components/MarsTrekSection';
 import MapReturnBar from './explore/MapReturnBar';
 import { prefersReducedMotion, shouldPlayIntro } from './intro/introGate';
-import { useMapBridge } from './shared';
+import { navRequestStore, patchHazardState, selectedLocationStore, useHazardState, useMapBridge } from './shared';
+import ExploreHub from './components/ExploreHub';
 // Starts tracking the inspected location (globe landmark or map point) from page load
 import './shared/focus';
 import { applyMarkerTheme } from './shared/landmarks/markerTheme';
@@ -148,21 +149,52 @@ export default function App() {
     setDashboardMounted(true);
     setOverlay('dashboard');
   };
+  const { view } = useHazardState();
+
+  // The main navigation: the globe and dashboard are overlays; the other sections are map views
+  useEffect(
+    () =>
+      navRequestStore.subscribe(() => {
+        const r = navRequestStore.get();
+        if (!r) return;
+        if (r.section === 'dashboard') {
+          setDashboardMounted(true);
+          setOverlay('dashboard');
+          return;
+        }
+        patchHazardState({ view: r.section });
+        if (r.section === 'explore' && r.globe) {
+          setExploreMounted(true);
+          setOverlay('explore');
+        } else setOverlay(null);
+      }),
+    [],
+  );
+
+  /** View a landmark on the map, or start planning there (the planner then offers Set as Start / Destination / Checkpoint). */
+  const showOnMap = (l: Landmark, plan: boolean) => {
+    setFlyRequest((r) => ({ landmark: l, n: (r?.n ?? 0) + 1 }));
+    if (plan) selectedLocationStore.set({ coordinate: landmarkCoordinate(l), name: l.name, source: 'landmark', landmarkId: l.id });
+    patchHazardState({ view: plan ? 'planner' : 'explore' });
+    setOverlay(null);
+  };
 
   return (
     <>
       {/* The map waits underneath, out of focus, loading while the globe is shown */}
       <MarsTrekSection load={phase !== 'intro'} revealed={stage !== 'globe'} onRevealStarted={() => setMapRevealStarted(true)} />
-      {stage === 'map' && !overlay && <MapReturnBar visitedGlobe={exploreMounted} onOpenGlobe={openExplore} onOpenDashboard={openDashboard} />}
+      {stage === 'map' && !overlay && <MapReturnBar visitedGlobe={exploreMounted} onOpenGlobe={openExplore} onOpenDashboard={openDashboard} hideControls />}
+      {stage === 'map' && !overlay && view === 'explore' && <ExploreHub visitedGlobe={exploreMounted} onOpenGlobe={openExplore} onPlanHere={(l) => showOnMap(l, true)} />}
       {exploreMounted && (
         <Suspense fallback={null}>
           <ExplorePage
             active={exploring}
-            onExploreOnMap={(l) => {
-              setFlyRequest((r) => ({ landmark: l, n: (r?.n ?? 0) + 1 }));
+            onExploreOnMap={(l) => showOnMap(l, false)}
+            onPlanHere={(l) => showOnMap(l, true)}
+            onOpenPlanner={() => {
+              patchHazardState({ view: 'planner' });
               setOverlay(null);
             }}
-            onOpenPlanner={() => setOverlay(null)}
             onOpenDashboard={openDashboard}
           />
         </Suspense>

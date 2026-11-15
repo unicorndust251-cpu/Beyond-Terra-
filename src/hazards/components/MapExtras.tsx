@@ -6,11 +6,11 @@ import {
   usePlannedRoute,
   usePlannedRouteTotals,
   useRouteHazardReport,
+  useUiMode,
 } from '../../shared';
-import { CATEGORY_BY_CODE, DRAWABLE } from '../categories';
+import { CATEGORY_BY_CODE, DRAWABLE, displayName } from '../categories';
 import { swatchUrl } from '../patterns';
 
-const isPhone = () => window.matchMedia?.('(max-width: 640px)').matches ?? false;
 
 const KIND: Partial<Record<string, string>> = {
   L: 'NASA location markers only',
@@ -22,13 +22,21 @@ const KIND: Partial<Record<string, string>> = {
   F: 'Mapped line (trough axis)',
   P: 'Mapped line (pit chain axis)',
   SL: 'Shaded cells with outline',
+  V: 'Night side for the planned time (striped); subsolar point',
+  T: 'Nothing drawn: no observations loaded',
+  R: 'Measurement site marker only',
+  C: 'Configured antennas; blocked route stretches',
+  N: 'Dashed rings of your stated uncertainty at stops',
+  E: 'Energy notes at route stops',
+  M: 'Arrival-time notes at route stops',
   U: 'Grey crosshatch over all terrain',
 };
 
 /** Compact, expandable key in the map corner: what is drawn now, and the map symbols. */
 export function MapLegend({ shifted }: { shifted: boolean }) {
   const hz = useHazardState();
-  const [open, setOpen] = useState(() => !isPhone());
+  const [open, setOpen] = useState(false);
+  const simple = useUiMode() === 'simple';
   // Fold away when an information panel opens, so the map stays visible; the user can reopen it
   useEffect(() => {
     if (shifted) setOpen(false);
@@ -37,7 +45,7 @@ export function MapLegend({ shifted }: { shifted: boolean }) {
   return (
     <div className={`hz-legend${shifted ? ' is-shifted' : ''}`}>
       <button type="button" className="hz-legend__toggle" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
-        <span>Map legend</span>
+        <span>Map Key</span>
         <span className="hz-legend__mini" aria-hidden="true">
           {shown.slice(0, 5).map((c) => (
             <img key={c} src={swatchUrl(c)} alt="" width={12} height={12} />
@@ -49,21 +57,21 @@ export function MapLegend({ shifted }: { shifted: boolean }) {
       </button>
       {open && (
         <div className="hz-legend__body">
-          <p className="hz-legend__h">Hazards drawn now</p>
+          <p className="hz-legend__h">On the map now</p>
           {shown.length ? (
             <ul>
               {shown.map((c) => (
                 <li key={c}>
                   <img className="hz-swatch hz-swatch--sm" src={swatchUrl(c)} alt="" width={16} height={16} />
                   <span>
-                    {CATEGORY_BY_CODE[c].name}
-                    <small>{KIND[c]}</small>
+                    {displayName(c, simple)}
+                    {!simple && <small>{KIND[c]}</small>}
                   </span>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="hz-muted">No hazard layer is shown. Switch one on under Hazard layers.</p>
+            <p className="hz-muted">No hazards are shown. Turn on Show Hazards.</p>
           )}
           <p className="hz-legend__h">Symbols</p>
           <ul>
@@ -118,7 +126,7 @@ export function RouteStrip() {
   if (!route || route.stops.length < 2) {
     return (
       <div className="hz-strip is-empty">
-        <p>No route planned. Plan one in the Mission Planner and it is tested against the mapped layers here.</p>
+        <p>Create a mission route to check for mapped hazards.</p>
         <button type="button" className="hz-btn hz-btn--ghost hz-btn--sm" onClick={() => patchHazardState({ view: 'planner' })}>
           Open Mission Planner
         </button>

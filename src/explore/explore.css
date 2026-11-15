@@ -854,3 +854,14 @@
     bottom: calc(env(safe-area-inset-bottom, 0px) + 40px);
   }
 }
+
+/* Landmark card preview: two labelled sentences from the catalogue */
+.ex-panel__k {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #d6a38b;
+}

@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState, type CSSProperties } from 'react';
 import {
   normalizeLongitudeEast,
+  patchHazardState,
   plannedRouteStore,
   plannedRouteTotalsStore,
+  missionConstraintsStore,
   selectedLocationStore,
   useMapBridge,
   useSelectedLocation,
@@ -10,7 +12,9 @@ import {
   type MarsCoordinate,
   type SelectedLocation,
 } from '../../shared';
-import { durationSummary, initialMissionState, missionReducer, routeMetrics, routeStatus, routeStops, type StopKey } from '../model';
+import { durationSummary, equipmentSummary, initialMissionState, missionReducer, routeMetrics, routeStatus, routeStops, type StopKey } from '../model';
+import { CARRIER_LABELS, STATUS_LABELS, type Carrier } from '../loadout';
+import { TASKS } from '../data/science';
 import ExplorationPanel from '../exploration/ExplorationPanel';
 import { useExploration } from '../exploration/useExploration';
 import { activeMissionStore } from '../missionBridge';
@@ -24,11 +28,11 @@ import { ReviewSection } from './TasksAndReview';
 import '../missionPlanner.css';
 
 type Tab = 'route' | 'equipment' | 'summary' | 'saved';
-const TABS: { id: Tab; label: string }[] = [
-  { id: 'route', label: 'Route' },
-  { id: 'equipment', label: 'Equipment' },
-  { id: 'summary', label: 'Summary' },
-  { id: 'saved', label: 'Saved' },
+const TABS: { id: Tab; label: string; hint: string }[] = [
+  { id: 'route', label: '1 Route', hint: 'Step 1: choose a start, a destination and any checkpoints, on the map or from landmarks.' },
+  { id: 'equipment', label: '2 Prepare', hint: 'Step 2: pack equipment and assign it to the crew or rover.' },
+  { id: 'summary', label: '3 Review', hint: 'Step 3: review distance, time and hazards, then save your mission.' },
+  { id: 'saved', label: 'Saved', hint: 'Missions you have saved in this browser.' },
 ];
 
 /** A box around the points, unwrapped so routes crossing ±180° stay compact. */
@@ -122,6 +126,7 @@ export default function MissionPlannerPanel() {
       savedName: saved.current?.name ?? null,
       dirty: saved.dirty,
       openTab: (t) => {
+        patchHazardState({ view: 'planner' });
         showPanel(true);
         setTab(t);
       },
@@ -168,6 +173,68 @@ export default function MissionPlannerPanel() {
     );
   }, [hasRoute, metrics, duration, state.travelMode]);
   useEffect(() => () => plannedRouteTotalsStore.set(null), []);
+
+  // The planner's load and timeline, for the Hazards view's mission constraints (read-only there)
+  const constraints = useMemo(() => {
+    if (!hasRoute) return null;
+    const stops = routeStops(state).filter((st) => st.location);
+    const eq = equipmentSummary(state);
+    const minutesAt = (key: string) => {
+      const here = duration.timings.filter((t) => t.stop === key);
+      return here.some((t) => t.minutes === null) ? null : here.reduce((a, t) => a + (t.minutes ?? 0), 0);
+    };
+    return {
+      crew: state.crew,
+      travelMode: state.travelMode,
+      speedKmh: metrics.speedKmh,
+      availableHours: duration.availableHours,
+      travelHours: duration.travelHours,
+      taskHours: duration.taskHours,
+      totalHours: duration.totalHours,
+      marginHours: duration.marginHours,
+      unknownTasks: duration.unknownTasks,
+      returnKm: metrics.totalKm,
+      returnHours: metrics.travelHours,
+      stops: stops.map((st, i) => ({
+        key: st.key,
+        label: st.label,
+        name: st.location!.name,
+        coordinate: st.location!.coordinate,
+        legKm: i === 0 ? null : metrics.segments[i - 1]?.km ?? null,
+        taskMinutes: minutesAt(st.key),
+        tasks: (state.tasks[st.key] ?? []).map((id) => TASKS[id]?.name ?? id),
+      })),
+      carriers: (Object.entries(eq.byCarrier) as [Carrier, number][]).map(([c, kg]) => ({ label: CARRIER_LABELS[c], kg })),
+      knownKg: eq.knownKg,
+      unknownMassItems: eq.unknownItems,
+      unallocatedKg: eq.unallocatedKg,
+      inSuitKg: eq.inSuitKg,
+      suitMassAssumptionKg: state.suitMassAssumptionKg,
+      items: state.loadout.map((item) => {
+        const minutesByStop: Record<string, number> = {};
+        let unknownTime = false;
+        duration.timings.forEach((t) =>
+          t.activities
+            .filter((a) => a.itemUid === item.uid)
+            .forEach((a) => {
+              if (a.minutes === null) unknownTime = true;
+              else minutesByStop[a.stop] = (minutesByStop[a.stop] ?? 0) + a.minutes;
+            }),
+        );
+        return {
+          uid: item.uid,
+          name: item.name,
+          quantity: item.fields.quantity.value ?? 0,
+          unitMassKg: item.fields.unitMassKg.value,
+          massStatus: STATUS_LABELS[item.fields.unitMassKg.status],
+          minutesByStop,
+          unknownTime,
+        };
+      }),
+    };
+  }, [hasRoute, state, metrics, duration]);
+  useEffect(() => missionConstraintsStore.set(constraints), [constraints]);
+  useEffect(() => () => missionConstraintsStore.set(null), []);
 
   // The route preview astronaut, kept here (above the tabs) so tab changes never interrupt it
   const exploration = useExploration(state);
@@ -329,6 +396,7 @@ export default function MissionPlannerPanel() {
                 </button>
               ))}
             </div>
+            <p className="mp-step-hint">{TABS.find((t) => t.id === tab)!.hint}</p>
             <div className="mp-panel__body" id="mp-tabpanel" role="tabpanel" aria-labelledby={`mp-tab-${tab}`}>
               {tab === 'route' && (
                 <RouteSection

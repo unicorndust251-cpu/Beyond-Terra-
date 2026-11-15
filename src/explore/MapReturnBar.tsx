@@ -9,6 +9,8 @@ interface Props {
   visitedGlobe: boolean;
   onOpenGlobe: () => void;
   onOpenDashboard: () => void;
+  /** Keep only the landmark pin (the buttons are shown elsewhere). */
+  hideControls?: boolean;
 }
 
 /**
@@ -17,7 +19,7 @@ interface Props {
  * by ID), never the clicked pixel; the pin owns its click, so the map's own click handler
  * does not also fire. The mission planner then offers Set as Start / Destination / Checkpoint.
  */
-export default function MapReturnBar({ visitedGlobe, onOpenGlobe, onOpenDashboard }: Props) {
+export default function MapReturnBar({ visitedGlobe, onOpenGlobe, onOpenDashboard, hideControls }: Props) {
   const landmark = useSelectedLandmark();
   const bridge = useMapBridge();
 
@@ -43,6 +45,8 @@ export default function MapReturnBar({ visitedGlobe, onOpenGlobe, onOpenDashboar
     return () => handle.remove();
   }, [bridge, landmark]);
 
+  // The globe and dashboard are reached from the main navigation and the Explore Mars card
+  if (hideControls) return null;
   return (
     <div className="ex-return" role="region" aria-label="Landmark globe">
       {landmark && (

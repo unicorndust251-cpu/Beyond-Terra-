@@ -10,6 +10,9 @@ import {
   patchHazardState,
   toMapLatLng,
   useHazardState,
+  useMissionConstraints,
+  useUiMode,
+  usePlannedRoute,
   type HazardSelection,
   type MarsCoordinate,
 } from '../shared';
@@ -39,6 +42,8 @@ import {
   type StructureData,
 } from './structures';
 import { useRouteHazards } from './useRouteHazards';
+import { useEnvInputs } from './env/inputs';
+import { useEnvLayers } from './env/useEnvLayers';
 import { categoryName } from './categories';
 import './hazards.css';
 
@@ -94,6 +99,7 @@ export default function HazardsLayer() {
   const [hover, setHover] = useState<{ x: number; y: number; label: string } | null>(null);
   const [cursor, setCursor] = useState<MarsCoordinate | null>(null);
   const inHazards = hz.view === 'hazards';
+  const uiMode = useUiMode();
 
   /* ---------------------------------------------------------------- data */
   useEffect(() => {
@@ -332,7 +338,7 @@ export default function HazardsLayer() {
     if (!sel) return undefined;
     const near = map.getCenter().lng;
     const layers: L.Layer[] = [];
-    const crosshairAt = sel.kind === 'observation' ? OBSERVATION_BY_ID[sel.id]?.observationCentre : sel.at;
+    const crosshairAt = sel.kind === 'observation' ? OBSERVATION_BY_ID[sel.id]?.observationCentre : sel.kind === 'category' ? undefined : sel.at;
     if (sel.kind === 'feature' && sel.id.startsWith('MGD3-') && dunes.state === 'ready') {
       const f = dunes.data.features.find((x) => x.id === sel.id);
       if (f) layers.push(selectedDuneOverlay(f, near));
@@ -373,7 +379,13 @@ export default function HazardsLayer() {
   }, [map, selKey, structures, dunes, slopeCell, reduced]);
 
   // The planner's route, tested against the mapped layers (both views)
-  useRouteHazards(map, structures, slopeStore, dunes, hz.slopeThresholdDeg, hz.routeExcluded);
+  const envInputs = useEnvInputs();
+  const snapshot = useMissionConstraints();
+  const plannedRoute = usePlannedRoute();
+  useRouteHazards(map, structures, slopeStore, dunes, hz.slopeThresholdDeg, hz.routeExcluded, envInputs.comm, hz.active);
+
+  // Environmental conditions and mission constraints, on the shared map (both views)
+  useEnvLayers({ map, active: hz.active, plannedTime: hz.plannedTime, shading, dem: slopeStore, inputs: envInputs, snapshot, route: plannedRoute });
 
   // "Show on map" from the route summary: open the point in the Hazards view
   useEffect(
@@ -391,7 +403,7 @@ export default function HazardsLayer() {
   useEffect(() => {
     const p = lastPoint.current;
     const s = hazardStore.get().selection;
-    if (p && s && s.kind !== 'observation') inspectPoint(p.at);
+    if (p && s && (s.kind === 'feature' || s.kind === 'point')) inspectPoint(p.at);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeKey, hz.slopeThresholdDeg]);
 
@@ -417,10 +429,10 @@ export default function HazardsLayer() {
   if (!inHazards) return null;
   return (
     <div className="hz-root">
-      <HazardToolbar ctx={ctx} />
+      <HazardToolbar ctx={ctx} simple={uiMode === 'simple'} />
       <HazardPanel ctx={ctx} />
       <MapLegend shifted={!!sel} />
-      <RouteStrip />
+      {uiMode === 'advanced' && <RouteStrip />}
       {sel && <HazardDrawer ctx={ctx} selection={sel} onClose={() => closeSelection(setPoint, setSlopeCell)} onPick={(s) => pick(s, setSlopeCell, point)} />}
       {hover && (
         <div className="hz-hover" style={{ transform: `translate(${hover.x + 14}px, ${hover.y + 14}px)` }} aria-hidden="true">

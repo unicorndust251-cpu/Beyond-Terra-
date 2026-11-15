@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { HazardCode } from '../../shared';
-import { CATEGORIES, CATEGORY_BY_CODE, DRAWABLE, HAS_EXTENT, categoryName } from '../categories';
+import { CATEGORIES, CATEGORY_BY_CODE, HAS_EXTENT, categoryName } from '../categories';
 import { NEAR_FIELD_KM, associateDunes, type DuneAssociation } from '../dunes';
 import type { HazardContext, LoadState } from '../HazardsLayer';
 import { OBSERVATIONS } from '../observations';
@@ -158,8 +158,7 @@ export function DataCheck({ ctx }: { ctx: HazardContext }) {
           </dl>
           <p className="hz-sub">No boundary data in this project</p>
           <p className="hz-muted">
-            {noExtentCats.map((c) => c.name).join(', ')}: their records appear only as location markers. Environmental conditions and mission constraints
-            ({CATEGORIES.filter((c) => !DRAWABLE.includes(c.code)).map((c) => c.name).join(', ')}) have no dataset.
+            {noExtentCats.map((c) => c.name).join(', ')}: their records appear only as location markers. Temperature has no observations loaded; the other environmental and mission categories are calculated from Mars24, MOLA, one RAD measurement, the planner and your inputs (see each category’s details).
           </p>
 
           <h4>Failed loads</h4>

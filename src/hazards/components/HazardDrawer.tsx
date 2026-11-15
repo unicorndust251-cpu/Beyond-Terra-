@@ -1,6 +1,6 @@
-﻿import { useState, useEffect, useRef, type ReactNode } from 'react';
-import { patchHazardState, toMapLatLng, usePlannedRoute, useHazardState, type HazardSelection, type MarsCoordinate } from '../../shared';
-import { AVAILABILITY_LABEL, CATEGORY_BY_CODE, categoryName, type HazardCategory } from '../categories';
+import { useState, useEffect, useRef, type ReactNode } from 'react';
+import { patchHazardState, toMapLatLng, usePlannedRoute, useHazardState, useUiMode, type HazardSelection, type MarsCoordinate } from '../../shared';
+import { AVAILABILITY_LABEL, CATEGORY_BY_CODE, categoryName, displayName, type HazardCategory } from '../categories';
 import { formatCoord } from '../coordinateInput';
 import type { HazardContext } from '../HazardsLayer';
 import { OBSERVATION_BY_ID, type HazardObservationRecord, type Sourced } from '../observations';
@@ -10,6 +10,7 @@ import { SLOPE_CELL_KM, type SlopeCell } from '../slopeCells';
 import { drawnLengthKm, featureBounds, type StructureData, type StructureFeature } from '../structures';
 import { NEAR_FIELD_KM, associateDunes, type DuneData, type DuneFeature } from '../dunes';
 import { ImageViewer, RouteInteraction, useMissionActions, type Action } from './RouteLinks';
+import CategoryView from '../env/CategoryDetails';
 
 interface Props {
   ctx: HazardContext;
@@ -33,7 +34,9 @@ export default function HazardDrawer({ ctx, selection, onClose, onPick }: Props)
   }, [onClose]);
 
   let body: ReactNode;
-  if (selection.kind === 'observation') {
+  if (selection.kind === 'category') {
+    body = <CategoryView ctx={ctx} code={selection.code} onClose={onClose} />;
+  } else if (selection.kind === 'observation') {
     const o = OBSERVATION_BY_ID[selection.id];
     body = o ? <ObservationView ctx={ctx} o={o} onClose={onClose} /> : <p>Unknown observation.</p>;
   } else if (selection.kind === 'point') {
@@ -46,17 +49,17 @@ export default function HazardDrawer({ ctx, selection, onClose, onPick }: Props)
       ) : ctx.dunes.state === 'error' ? (
         <p className="hz-callout hz-callout--error">The USGS dune-field outlines could not be loaded: {ctx.dunes.message}</p>
       ) : (
-        <p className="hz-muted">Loading dune fieldâ€¦</p>
+        <p className="hz-muted">Loading dune field…</p>
       );
   } else if (selection.id.startsWith('SL:')) {
-    body = ctx.slopeCell ? <SlopeView ctx={ctx} cell={ctx.slopeCell} at={selection.at} onClose={onClose} /> : <p className="hz-muted">Loading slope cellâ€¦</p>;
+    body = ctx.slopeCell ? <SlopeView ctx={ctx} cell={ctx.slopeCell} at={selection.at} onClose={onClose} /> : <p className="hz-muted">Loading slope cell…</p>;
   } else {
     const f = ctx.structures.state === 'ready' ? ctx.structures.data.features.find((x) => x.id === selection.id) : undefined;
     body =
       f && ctx.structures.state === 'ready' ? (
         <LineView ctx={ctx} f={f} data={ctx.structures.data} at={selection.at} onClose={onClose} />
       ) : (
-        <p className="hz-muted">Loading featureâ€¦</p>
+        <p className="hz-muted">Loading feature…</p>
       );
   }
 
@@ -75,13 +78,14 @@ export default function HazardDrawer({ ctx, selection, onClose, onPick }: Props)
 
 /* ------------------------------------------------------------------ pieces */
 
-function Head({ cats, title, id, kind }: { cats: HazardCategory[]; title: string; id: string; kind: string }) {
+export function Head({ cats, title, id, kind, simpleTitle }: { cats: HazardCategory[]; title: string; id: string; kind: string; simpleTitle?: string }) {
+  const simple = useUiMode() === 'simple';
   return (
     <header className="hz-d-head">
       <img className="hz-swatch" src={swatchUrl(cats[0].code)} alt="" width={32} height={32} />
       <div>
-        <p className="hz-eyebrow">{cats.map((c) => c.name).join(' + ')}</p>
-        <h2 className="hz-d-title">{title}</h2>
+        <p className="hz-eyebrow">{cats.map((c) => displayName(c.code, simple)).join(' + ')}</p>
+        <h2 className="hz-d-title">{simple && simpleTitle ? simpleTitle : title}</h2>
         <p className="hz-d-sub">
           <span className="hz-chip">{kind}</span> <span className="hz-id">{id}</span>
         </p>
@@ -90,33 +94,54 @@ function Head({ cats, title, id, kind }: { cats: HazardCategory[]; title: string
   );
 }
 
-/** The three questions, answered before any detail. */
-function Glance({ concern, evidence, cats }: { concern: ReactNode; evidence: ReactNode; cats: HazardCategory[] }) {
-  const jump = () => document.getElementById('hz-crew')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+/** The brief: what it is, why it matters, what the crew can do. Detail follows in Scientific Details. */
+export function Glance({ concern, evidence, cats }: { concern: ReactNode; evidence: ReactNode; cats: HazardCategory[] }) {
+  const simple = useUiMode() === 'simple';
+  const jump = () => {
+    const sci = document.getElementById('hz-sci') as HTMLDetailsElement | null;
+    if (sci) sci.open = true;
+    requestAnimationFrame(() => document.getElementById('hz-crew')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  };
   return (
-    <dl className="hz-glance">
-      <div>
-        <dt>What is this concern?</dt>
-        <dd>{concern}</dd>
-      </div>
-      <div>
-        <dt>Where is the evidence?</dt>
-        <dd>{evidence}</dd>
-      </div>
-      <div>
-        <dt>What options does the crew have?</dt>
-        <dd>
-          {cats[0].responses[0]}{' '}
-          <button type="button" className="hz-link" onClick={jump}>
-            All options
-          </button>
-        </dd>
-      </div>
-    </dl>
+    <div className="hz-brief">
+      <p className="hz-brief__lead">{concern}</p>
+      <dl className="hz-glance">
+        <div>
+          <dt>Why it matters</dt>
+          <dd>{cats[0].whyItMatters}</dd>
+        </div>
+        <div>
+          <dt>What can the crew do?</dt>
+          <dd>
+            {cats[0].responses[0]}{' '}
+            <button type="button" className="hz-link" onClick={jump}>
+              All options
+            </button>
+          </dd>
+        </div>
+        {!simple && (
+          <div>
+            <dt>Where is the evidence?</dt>
+            <dd>{evidence}</dd>
+          </div>
+        )}
+      </dl>
+    </div>
   );
 }
 
-function Section({ n, title, id, children }: { n: number; title: string; id?: string; children: ReactNode }) {
+/** The numbered scientific sections, folded in Simple mode and open in Advanced mode. */
+export function SciDetails({ children }: { children: ReactNode }) {
+  const simple = useUiMode() === 'simple';
+  return (
+    <details className="hz-sci" id="hz-sci" open={!simple}>
+      <summary>Scientific Details</summary>
+      {children}
+    </details>
+  );
+}
+
+export function Section({ n, title, id, children }: { n: number; title: string; id?: string; children: ReactNode }) {
   return (
     <section className={`hz-d-sec${id === 'hz-crew' ? ' hz-d-sec--crew' : ''}`} id={id}>
       <h3>
@@ -130,7 +155,7 @@ function Section({ n, title, id, children }: { n: number; title: string; id?: st
   );
 }
 
-function Rows({ rows }: { rows: [string, ReactNode][] }) {
+export function Rows({ rows }: { rows: [string, ReactNode][] }) {
   return (
     <dl className="hz-d-rows">
       {rows.map(([k, v]) => (
@@ -155,7 +180,7 @@ function src<T extends ReactNode>(s: Sourced<T>, missing = 'Not stated on the so
 
 const NA = (text: string) => <span className="hz-unavailable">{text}</span>;
 
-function CategoryRows({ cats }: { cats: HazardCategory[] }) {
+export function CategoryRows({ cats }: { cats: HazardCategory[] }) {
   return (
     <ul className="hz-list hz-list--plain">
       {cats.map((c) => (
@@ -167,7 +192,7 @@ function CategoryRows({ cats }: { cats: HazardCategory[] }) {
   );
 }
 
-function Checks({ cats, extra }: { cats: HazardCategory[]; extra?: string[] }) {
+export function Checks({ cats, extra }: { cats: HazardCategory[]; extra?: string[] }) {
   const items = [...new Set([...cats.flatMap((c) => c.checks), ...(extra ?? [])])];
   return (
     <ul className="hz-list">
@@ -179,7 +204,7 @@ function Checks({ cats, extra }: { cats: HazardCategory[]; extra?: string[] }) {
 }
 
 /** Section 6: the crew's options, made prominent. */
-function CrewOptions({ cats }: { cats: HazardCategory[] }) {
+export function CrewOptions({ cats }: { cats: HazardCategory[] }) {
   return (
     <>
       {cats.map((c) => (
@@ -204,7 +229,7 @@ function CrewOptions({ cats }: { cats: HazardCategory[] }) {
 }
 
 /** Section 7: an assessed alternative where data exists; otherwise the honest options. */
-function Alternatives({ cats }: { cats: HazardCategory[] }) {
+export function Alternatives({ cats }: { cats: HazardCategory[] }) {
   const route = usePlannedRoute();
   const hasRoute = !!route && route.stops.length >= 2;
   return (
@@ -232,43 +257,72 @@ function Alternatives({ cats }: { cats: HazardCategory[] }) {
   );
 }
 
-function Actions({ actions }: { actions: Action[] }) {
+function ActionButton({ a, primary }: { a: Action; primary?: boolean }) {
+  return a.href && !a.disabled ? (
+    <a className={`hz-btn${primary ? '' : ' hz-btn--ghost'}`} href={a.href} target="_blank" rel="noreferrer">
+      {a.label}
+      <span className="sr-only"> (opens in a new tab)</span>
+    </a>
+  ) : (
+    <button
+      type="button"
+      className={`hz-btn${primary ? '' : ' hz-btn--ghost'}${a.pressed ? ' is-on' : ''}`}
+      onClick={a.onClick}
+      disabled={!!a.disabled}
+      title={a.disabled}
+      aria-pressed={a.pressed}
+    >
+      {a.label}
+    </button>
+  );
+}
+
+const SECONDARY = ['View NASA imagery', 'View Source'];
+
+/**
+ * The panel's actions: the main one (Add to Mission where it applies), the source and imagery
+ * when they are available, and everything else under More options with any reason it is
+ * unavailable. Every existing action stays reachable.
+ */
+export function Actions({ actions }: { actions: Action[] }) {
+  const [more, setMore] = useState(false);
+  const relabel = (a: Action): Action =>
+    a.label === 'Save to Mission' ? { ...a, label: 'Add to Mission' } : a;
+  const list = actions.map(relabel);
+  const primary =
+    list.find((a) => !a.disabled && (a.label === 'Add to Mission' || a.label === 'Remove from Mission')) ?? list.find((a) => !a.disabled && a.label !== 'Close');
+  const secondary = list.filter((a) => a !== primary && !a.disabled && SECONDARY.includes(a.label));
+  const rest = list.filter((a) => a !== primary && !secondary.includes(a));
   return (
-    <>
-      <section className="hz-d-actions" aria-label="Actions">
-        <div className="hz-actions">
-        {actions.map((a) =>
-          a.href && !a.disabled ? (
-            <a key={a.label} className="hz-btn" href={a.href} target="_blank" rel="noreferrer">
-              {a.label}
-              <span className="sr-only"> (opens in a new tab)</span>
-            </a>
-          ) : (
-            <button
-              key={a.label}
-              type="button"
-              className={`hz-btn${a.pressed ? ' is-on' : ''}`}
-              onClick={a.onClick}
-              disabled={!!a.disabled}
-              title={a.disabled}
-              aria-pressed={a.pressed}
-            >
-              {a.label}
-            </button>
-          ),
+    <section className="hz-d-actions" aria-label="Actions">
+      <div className="hz-actions">
+        {primary && <ActionButton a={primary} primary />}
+        {secondary.map((a) => (
+          <ActionButton key={a.label} a={a} />
+        ))}
+        {rest.length > 0 && (
+          <button type="button" className="hz-btn hz-btn--ghost hz-more" aria-expanded={more} onClick={() => setMore((m) => !m)}>
+            More options
+          </button>
         )}
-        </div>
-      </section>
-      <div className="hz-d-reasons">
-        {actions
-          .filter((a) => a.disabled)
-          .map((a) => (
-            <p key={a.label} className="hz-disabled-reason">
-              <strong>{a.label}:</strong> {a.disabled}
-            </p>
-          ))}
       </div>
-    </>
+      {more && (
+        <div className="hz-more__body">
+          <div className="hz-actions">
+            {rest.map((a) => (
+              <ActionButton key={a.label} a={a} />
+            ))}
+          </div>
+          {rest
+            .filter((a) => a.disabled)
+            .map((a) => (
+              <p key={a.label} className="hz-disabled-reason">
+                <strong>{a.label}:</strong> {a.disabled}
+              </p>
+            ))}
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -281,10 +335,10 @@ function ObservationView({ ctx, o, onClose }: { ctx: HazardContext; o: HazardObs
   const mission = useMissionActions({
     id: o.id,
     code: o.categories[0],
-    title: `${o.id} Â· ${o.name}`,
+    title: `${o.id} · ${o.name}`,
     at: o.observationCentre,
     sourceUrl: o.sourceUrl,
-    status: 'Observation available Â· boundary not yet mapped',
+    status: 'Observation available · boundary not yet mapped',
   });
   const date = o.observationDate.value ?? o.publicationDate.value;
   return (
@@ -293,14 +347,14 @@ function ObservationView({ ctx, o, onClose }: { ctx: HazardContext; o: HazardObs
         <ImageViewer
           src={o.imageUrl}
           alt={`${o.id}: ${o.name}`}
-          caption={[o.imageId.value, o.instrument.value, o.credit.value].filter(Boolean).join(' Â· ') || o.name}
+          caption={[o.imageId.value, o.instrument.value, o.credit.value].filter(Boolean).join(' · ') || o.name}
           sourceUrl={o.sourceUrl}
           onClose={() => setViewing(false)}
         />
       )}
       <Head cats={cats} title={o.name} id={o.id} kind="NASA observation" />
       <p className="hz-callout">
-        <strong>Observation available â€” boundary not mapped.</strong> The marker shows where the image was taken; this record has no outline of its own, so
+        <strong>Observation available — boundary not mapped.</strong> The marker shows where the image was taken; this record has no outline of its own, so
         no area is drawn for it.
       </p>
       {o.categories.includes('S') && <DuneContext ctx={ctx} o={o} />}
@@ -323,6 +377,7 @@ function ObservationView({ ctx, o, onClose }: { ctx: HazardContext; o: HazardObs
         }
       />
 
+      <SciDetails>
       <Section n={1} title="Hazard name and category">
         <Rows
           rows={[
@@ -353,7 +408,7 @@ function ObservationView({ ctx, o, onClose }: { ctx: HazardContext; o: HazardObs
         <p className="hz-muted">Current condition: unknown. This record has not been assessed for a crew visit.</p>
       </Section>
       <Section n={5} title="What to check before proceeding">
-        <Checks cats={cats} extra={['The featureâ€™s extent on the ground: it is not mapped from this record.']} />
+        <Checks cats={cats} extra={['The feature’s extent on the ground: it is not mapped from this record.']} />
       </Section>
       <Section n={6} title="What can the crew do?" id="hz-crew">
         <CrewOptions cats={cats} />
@@ -395,6 +450,7 @@ function ObservationView({ ctx, o, onClose }: { ctx: HazardContext; o: HazardObs
           {o.imageUrl && <li>The NASA image is context only: it is not georeferenced or aligned to this map.</li>}
         </ul>
       </Section>
+      </SciDetails>
       <Actions
         actions={[
           { label: 'View Source', href: o.sourceUrl },
@@ -419,17 +475,17 @@ function LineView({ ctx, f, data, at, onClose }: { ctx: HazardContext; f: Struct
   const mission = useMissionActions({
     id: f.id,
     code: f.category,
-    title: `${f.id} Â· ${f.interpretation}`,
+    title: `${f.id} · ${f.interpretation}`,
     at: hit?.nearest ?? at,
     sourceUrl: data.url,
     status: 'USGS SIM 3292 mapped axis (line; width not mapped)',
   });
   return (
     <>
-      <Head cats={[cat]} title={`Mapped ${f.interpretation.toLowerCase()}`} id={f.id} kind="Mapped line (USGS)" />
+      <Head cats={[cat]} title={`Mapped ${f.interpretation.toLowerCase()}`} simpleTitle={displayName(f.category, true)} id={f.id} kind="Mapped line (USGS)" />
       <Glance
         cats={[cat]}
-        concern={`The axis of ${pit ? 'a chain of pit craters' : 'a graben, a fault-bounded trough'}: steep walls and drops may lie along it.`}
+        concern={pit ? 'A line of collapse pits mapped by the USGS from orbit. Pit edges can be steep and their depth is unknown.' : 'A long trough between faults (a graben), mapped by the USGS from orbit. Steep walls and drops may lie along it.'}
         evidence={
           <>
             USGS global geologic map of Mars (SIM 3292), {data.scale}.{' '}
@@ -439,10 +495,11 @@ function LineView({ ctx, f, data, at, onClose }: { ctx: HazardContext; f: Struct
           </>
         }
       />
+      <SciDetails>
       <Section n={1} title="Hazard name and category">
         <Rows
           rows={[
-            ['Feature', `${f.interpretation}, mapped as a line`],
+            ['Feature', `Mapped ${f.interpretation.toLowerCase()} — USGS feature ${f.id}`],
             ['Category', <CategoryRows cats={[cat]} />],
             ['Preservation (USGS)', f.preservation],
             ['Size class (USGS)', f.dimension],
@@ -460,7 +517,7 @@ function LineView({ ctx, f, data, at, onClose }: { ctx: HazardContext; f: Struct
       <Section n={3} title="What was mapped">
         <p>
           The USGS global geologic map interprets this line as the axis of {pit ? 'a chain of pit craters' : 'a graben, a fault-bounded trough'}. The line marks
-          the troughâ€™s centre; its walls and width are not mapped.
+          the trough’s centre; its walls and width are not mapped.
         </p>
       </Section>
       <Section n={4} title="Why it matters for this mission">
@@ -505,10 +562,11 @@ function LineView({ ctx, f, data, at, onClose }: { ctx: HazardContext; f: Struct
           <li>No confidence value is provided by the source.</li>
         </ul>
       </Section>
+      </SciDetails>
       <Actions
         actions={[
           { label: 'View Source', href: data.url },
-          { label: 'View NASA imagery', disabled: 'No image is linked to this mapped line; the mapâ€™s own imagery is underneath.' },
+          { label: 'View NASA imagery', disabled: 'No image is linked to this mapped line; the map’s own imagery is underneath.' },
           { label: 'Focus Map', onClick: focus },
           ...mission,
           { label: 'Close', onClick: onClose },
@@ -529,25 +587,26 @@ function SlopeView({ ctx, cell, at, onClose }: { ctx: HazardContext; cell: Slope
   const mission = useMissionActions({
     id: `SL:${cell.i}:${cell.j}`,
     code: 'SL',
-    title: `Steep slope ${cell.slopeDeg.toFixed(1)}Â° (MOLA cell)`,
+    title: `Steep slope ${cell.slopeDeg.toFixed(1)}° (MOLA cell)`,
     at: cell.centre,
     sourceUrl: store?.source,
-    status: `Derived: ${cell.slopeDeg.toFixed(1)}Â° over 3.7 km; highlight limit ${hz.slopeThresholdDeg}Â°`,
+    status: `Derived: ${cell.slopeDeg.toFixed(1)}° over 3.7 km; highlight limit ${hz.slopeThresholdDeg}°`,
   });
   return (
     <>
-      <Head cats={[cat]} title={`Slope ${cell.slopeDeg.toFixed(1)}Â°, above your ${hz.slopeThresholdDeg}Â° limit`} id={`MOLA cell ${cell.i}, ${cell.j}`} kind="Derived from elevation model" />
+      <Head cats={[cat]} title={`Slope ${cell.slopeDeg.toFixed(1)}°, above your ${hz.slopeThresholdDeg}° limit`} id={`MOLA cell ${cell.i}, ${cell.j}`} kind="Derived from elevation model" />
       <Glance
         cats={[cat]}
-        concern={`Ground averaging ${cell.slopeDeg.toFixed(1)}Â° across a ${SLOPE_CELL_KM} km cell, steeper than the planning limit you set.`}
-        evidence="Calculated from NASA MOLA laser altimetry (Mars Global Surveyor, 1997â€“2001)."
+        concern={`Ground averaging ${cell.slopeDeg.toFixed(1)}° across a ${SLOPE_CELL_KM} km cell, steeper than the planning limit you set.`}
+        evidence="Calculated from NASA MOLA laser altimetry (Mars Global Surveyor, 1997–2001)."
       />
+      <SciDetails>
       <Section n={1} title="Hazard name and category">
         <Rows
           rows={[
             ['Feature', 'Elevation-model cell above the slope limit'],
             ['Category', <CategoryRows cats={[cat]} />],
-            ['Classification', `${cell.slopeDeg.toFixed(1)}Â° is above ${hz.slopeThresholdDeg}Â° (your limit)`],
+            ['Classification', `${cell.slopeDeg.toFixed(1)}° is above ${hz.slopeThresholdDeg}° (your limit)`],
           ]}
         />
       </Section>
@@ -556,7 +615,7 @@ function SlopeView({ ctx, cell, at, onClose }: { ctx: HazardContext; cell: Slope
           rows={[
             ['Selected point', formatCoord(at, 3)],
             ['Cell centre', formatCoord(cell.centre, 4)],
-            ['Cell edges', `${cell.bounds.south.toFixed(4)}Â° to ${cell.bounds.north.toFixed(4)}Â° latitude; ${lon(cell.bounds.west)} to ${lon(cell.bounds.east)}`],
+            ['Cell edges', `${cell.bounds.south.toFixed(4)}° to ${cell.bounds.north.toFixed(4)}° latitude; ${lon(cell.bounds.west)} to ${lon(cell.bounds.east)}`],
           ]}
         />
       </Section>
@@ -581,10 +640,10 @@ function SlopeView({ ctx, cell, at, onClose }: { ctx: HazardContext; cell: Slope
       <Section n={9} title="Source, observation date and limitations">
         <Rows
           rows={[
-            ['Agency / mission', 'NASA Â· Mars Global Surveyor'],
+            ['Agency / mission', 'NASA · Mars Global Surveyor'],
             ['Instrument', 'MOLA (Mars Orbiter Laser Altimeter)'],
             ['Dataset', store ? `${store.dataSetId}, ${store.product}` : null],
-            ['Observation dates', '1997â€“2001 (mapping mission)'],
+            ['Observation dates', '1997–2001 (mapping mission)'],
             ['Resolution', `${store?.pixelsPerDegree ?? 16} px per degree, ${SLOPE_CELL_KM} km cells`],
             ['Method', 'Slope from neighbouring cells on the sphere; each cell classified on its own value; outlines follow cell edges'],
             [
@@ -604,10 +663,11 @@ function SlopeView({ ctx, cell, at, onClose }: { ctx: HazardContext; cell: Slope
           <li>Confidence is not quantified.</li>
         </ul>
       </Section>
+      </SciDetails>
       <Actions
         actions={[
           { label: 'View Source', href: store?.source, disabled: store ? undefined : 'Elevation data not loaded.' },
-          { label: 'View NASA imagery', disabled: 'No separate image is linked to an elevation cell; the mapâ€™s own imagery is underneath.' },
+          { label: 'View NASA imagery', disabled: 'No separate image is linked to an elevation cell; the map’s own imagery is underneath.' },
           { label: 'Focus Map', onClick: focus },
           ...mission,
           { label: 'Close', onClick: onClose },
@@ -623,17 +683,17 @@ function PointView({ ctx, onPick, onClose }: { ctx: HazardContext; onPick(s: Haz
   const threshold = useHazardState().slopeThresholdDeg;
   const mission = useMissionActions(null);
   const p = ctx.point;
-  if (!p) return <p className="hz-muted">Checkingâ€¦</p>;
+  if (!p) return <p className="hz-muted">Checking…</p>;
   const slope = p.slope;
   const candidates: { label: string; sel: HazardSelection; code: 'F' | 'P' | 'SL' | 'S' }[] = [
     ...p.dunes.map((f) => ({ label: `USGS dune field ${f.duneId}`, sel: { kind: 'feature' as const, id: f.id, at: p.at }, code: 'S' as const })),
     ...p.lines.map((h) => ({
-      label: `${h.feature.interpretation} Â· ${h.feature.id}`,
+      label: `${h.feature.interpretation} · ${h.feature.id}`,
       sel: { kind: 'feature' as const, id: h.feature.id, at: p.at },
       code: h.feature.category,
     })),
     ...(slope.state === 'classified'
-      ? [{ label: `Slope cell ${slope.cell.slopeDeg.toFixed(1)}Â°`, sel: { kind: 'feature' as const, id: `SL:${slope.cell.i}:${slope.cell.j}`, at: p.at }, code: 'SL' as const }]
+      ? [{ label: `Slope cell ${slope.cell.slopeDeg.toFixed(1)}°`, sel: { kind: 'feature' as const, id: `SL:${slope.cell.i}:${slope.cell.j}`, at: p.at }, code: 'SL' as const }]
       : []),
   ];
 
@@ -650,7 +710,7 @@ function PointView({ ctx, onPick, onClose }: { ctx: HazardContext; onPick(s: Haz
       </header>
       {slope.state === 'pending' ? (
         <p className="hz-muted" role="status">
-          Checking the layers at this pointâ€¦
+          Checking the layers at this point…
         </p>
       ) : candidates.length > 1 ? (
         <>
@@ -661,7 +721,7 @@ function PointView({ ctx, onPick, onClose }: { ctx: HazardContext; onPick(s: Haz
                 <button type="button" className="hz-result" onClick={() => onPick(c.sel)}>
                   <img className="hz-swatch hz-swatch--sm" src={swatchUrl(c.code)} alt="" width={16} height={16} />
                   <span className="hz-result__title">
-                    {categoryName(c.code)} Â· {c.label}
+                    {categoryName(c.code)} · {c.label}
                   </span>
                 </button>
               </li>
@@ -682,10 +742,10 @@ function PointView({ ctx, onPick, onClose }: { ctx: HazardContext; onPick(s: Haz
                 slope.state === 'inactive'
                   ? 'Layer hidden: show Steep Slopes to test this point'
                   : slope.state === 'below'
-                    ? `${slope.cell.slopeDeg.toFixed(1)}Â°, below your ${threshold}Â° limit`
+                    ? `${slope.cell.slopeDeg.toFixed(1)}°, below your ${threshold}° limit`
                     : slope.state === 'unavailable'
                       ? `Assessment unavailable: ${slope.reason}`
-                      : 'â€”',
+                      : '—',
               ],
               ['Fractures & Fault Troughs, Pits & Depressions', lineCoverage ? 'No mapped line within reach of the tap' : 'Assessment unavailable: lines not loaded'],
               [
@@ -694,7 +754,7 @@ function PointView({ ctx, onPick, onClose }: { ctx: HazardContext; onPick(s: Haz
                   ? 'Not inside a mapped USGS dune field (small fields are not in that database)'
                   : ctx.dunes.state === 'error'
                     ? `Assessment unavailable: ${ctx.dunes.message}`
-                    : 'Loading dune-field outlinesâ€¦',
+                    : 'Loading dune-field outlines…',
               ],
               ['Other categories', 'No mapped boundary: not assessed here'],
             ]}
@@ -718,7 +778,7 @@ function PointView({ ctx, onPick, onClose }: { ctx: HazardContext; onPick(s: Haz
 /* ------------------------------------------------------------- dune field */
 
 function DuneContext({ ctx, o }: { ctx: HazardContext; o: HazardObservationRecord }) {
-  if (ctx.dunes.state === 'loading') return <p className="hz-muted">Checking the USGS dune-field outlines near this locationâ€¦</p>;
+  if (ctx.dunes.state === 'loading') return <p className="hz-muted">Checking the USGS dune-field outlines near this location…</p>;
   if (ctx.dunes.state === 'error') return <p className="hz-callout hz-callout--error">USGS dune-field outlines unavailable: {ctx.dunes.message}</p>;
   const a = associateDunes(ctx.dunes.data, o.observationCentre);
   const open = (f: DuneFeature) => {
@@ -728,7 +788,7 @@ function DuneContext({ ctx, o }: { ctx: HazardContext; o: HazardObservationRecor
   if (a.kind === 'none' || !a.field)
     return (
       <p className="hz-callout">
-        <strong>No mapped dune field within {NEAR_FIELD_KM} km.</strong> The nearest USGS MGDÂ³ outline is about {Math.round(a.distanceKm)} km away. That database leaves out
+        <strong>No mapped dune field within {NEAR_FIELD_KM} km.</strong> The nearest USGS MGD³ outline is about {Math.round(a.distanceKm)} km away. That database leaves out
         small dune fields, so this does not mean there are no dunes here; the dunes in this image are simply not outlined.
       </p>
     );
@@ -736,12 +796,12 @@ function DuneContext({ ctx, o }: { ctx: HazardContext; o: HazardObservationRecor
     <p className="hz-callout">
       {a.kind === 'inside' ? (
         <>
-          <strong>This location lies inside a mapped dune field</strong> (USGS MGDÂ³ {a.field.duneId}). The fieldâ€™s outline is drawn on the map; it is the databaseâ€™s
-          outline, not this imageâ€™s footprint.
+          <strong>This location lies inside a mapped dune field</strong> (USGS MGD³ {a.field.duneId}). The field’s outline is drawn on the map; it is the database’s
+          outline, not this image’s footprint.
         </>
       ) : (
         <>
-          <strong>A mapped dune field lies about {a.distanceKm.toFixed(1)} km from this location</strong> (USGS MGDÂ³ {a.field.duneId}). It may or may not be the
+          <strong>A mapped dune field lies about {a.distanceKm.toFixed(1)} km from this location</strong> (USGS MGD³ {a.field.duneId}). It may or may not be the
           dunes in this image: the image has no footprint to compare.
         </>
       )}{' '}
@@ -761,15 +821,15 @@ function DuneView({ ctx, f, data, at, onClose }: { ctx: HazardContext; f: DuneFe
     title: `USGS dune field ${f.duneId}`,
     at: centre,
     sourceUrl: data.url,
-    status: 'USGS MGDÂ³ mapped dune-field outline',
+    status: 'USGS MGD³ mapped dune-field outline',
   });
   const imgs = [f.images.themisIR && `THEMIS IR ${f.images.themisIR}`, f.images.themisVIS && `THEMIS VIS ${f.images.themisVIS}`, f.images.moc && `MOC ${f.images.moc}`].filter(Boolean);
   return (
     <>
-      <Head cats={[cat]} title={`Mapped dune field ${f.duneId}`} id={f.id} kind="Mapped outline (USGS)" />
+      <Head cats={[cat]} title={`Mapped dune field ${f.duneId}`} simpleTitle={`${displayName('S', true)}: dune field ${f.duneId}`} id={f.id} kind="Mapped outline (USGS)" />
       <Glance
         cats={[cat]}
-        concern={`A field of ${f.types.length ? f.types.join(', ').toLowerCase() : 'unclassified'} dunes${f.areaKm2 ? `, about ${Math.round(f.areaKm2)} kmÂ²` : ''}: loose sand of unknown strength, with locally steep dune slopes.`}
+        concern={`A field of ${f.types.length ? f.types.join(', ').toLowerCase() : 'unclassified'} dunes${f.areaKm2 ? `, about ${Math.round(f.areaKm2)} km²` : ''}: loose sand of unknown strength, with locally steep dune slopes.`}
         evidence={
           <>
             USGS Mars Global Digital Dune Database, outlined on THEMIS images.{' '}
@@ -779,6 +839,7 @@ function DuneView({ ctx, f, data, at, onClose }: { ctx: HazardContext; f: DuneFe
           </>
         }
       />
+      <SciDetails>
       <Section n={1} title="Hazard name and category">
         <Rows
           rows={[
@@ -805,7 +866,7 @@ function DuneView({ ctx, f, data, at, onClose }: { ctx: HazardContext; f: DuneFe
         <Rows
           rows={[
             ['Mapping confidence', f.confidenceText ? `${f.confidence}: ${f.confidenceText}` : NA('Not recorded')],
-            ['Area (database)', f.areaKm2 != null ? `${f.areaKm2.toFixed(1)} kmÂ²` : null],
+            ['Area (database)', f.areaKm2 != null ? `${f.areaKm2.toFixed(1)} km²` : null],
             ['Host crater diameter', f.craterDiameterKm ? `${f.craterDiameterKm.toFixed(1)} km` : NA('Not in a mapped crater')],
           ]}
         />
@@ -831,7 +892,7 @@ function DuneView({ ctx, f, data, at, onClose }: { ctx: HazardContext; f: DuneFe
             ['Agency', 'USGS Astrogeology Science Center, with NASA support'],
             ['Dataset', data.source],
             ['Images used', imgs.length ? imgs.join('; ') : NA('Not listed')],
-            ['Observation dates', NA('Not given per field: THEMIS and MOC images acquired 1997â€“2006')],
+            ['Observation dates', NA('Not given per field: THEMIS and MOC images acquired 1997–2006')],
             ['Coverage', data.coverage],
             ['Frame', data.frame],
             [
@@ -850,10 +911,11 @@ function DuneView({ ctx, f, data, at, onClose }: { ctx: HazardContext; f: DuneFe
           <li>Ground strength, dune heights and slip-face slopes are not mapped here.</li>
         </ul>
       </Section>
+      </SciDetails>
       <Actions
         actions={[
           { label: 'View Source', href: data.url },
-          { label: 'View NASA imagery', disabled: 'The database lists THEMIS/MOC image IDs (section 9) but links no image file; the mapâ€™s own imagery is underneath.' },
+          { label: 'View NASA imagery', disabled: 'The database lists THEMIS/MOC image IDs (section 9) but links no image file; the map’s own imagery is underneath.' },
           { label: 'Focus Map', onClick: () => ctx.locateDune(f) },
           ...mission,
           { label: 'Close', onClick: onClose },

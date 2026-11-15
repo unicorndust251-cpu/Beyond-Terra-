@@ -11,6 +11,7 @@ import {
   type LandmarkSource,
 } from '../shared/landmarks';
 import LandmarkThumb, { THUMB_CREDIT } from './LandmarkThumb';
+import { useUiMode } from '../shared';
 
 interface Props {
   landmark: Landmark;
@@ -19,6 +20,8 @@ interface Props {
   onSelect: (id: string) => void;
   onClose: () => void;
   onExploreOnMap: (landmark: Landmark) => void;
+  /** Go to the map with this landmark selected for the mission plan. */
+  onPlanHere?: (landmark: Landmark) => void;
 }
 
 /**
@@ -60,7 +63,8 @@ function Section({ id, title, children, defaultOpen = false }: { id: string; tit
 }
 
 /** Preview card, then the full Scientific Importance panel, for one landmark. */
-export default function LandmarkPanel({ landmark: l, expanded, onExpand, onSelect, onClose, onExploreOnMap }: Props) {
+export default function LandmarkPanel({ landmark: l, expanded, onExpand, onSelect, onClose, onExploreOnMap, onPlanHere }: Props) {
+  const simple = useUiMode() === 'simple';
   const [copied, setCopied] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null);
   const i = LANDMARKS.findIndex((x) => x.id === l.id);
@@ -101,7 +105,7 @@ export default function LandmarkPanel({ landmark: l, expanded, onExpand, onSelec
           <h2 id="ex-panel-title" ref={heading} tabIndex={-1}>
             {l.name}
           </h2>
-          <p className="ex-panel__coords">
+          <p className="ex-panel__coords" hidden={simple && !expanded}>
             {coords}
             <button type="button" className="ex-link" onClick={copy}>
               {copied ? 'Copied' : 'Copy'}
@@ -115,7 +119,18 @@ export default function LandmarkPanel({ landmark: l, expanded, onExpand, onSelec
 
       <div className="ex-panel__scroll">
         {!expanded && <LandmarkThumb landmark={l} />}
-        {!expanded && <p className="ex-panel__summary">{l.importance}</p>}
+        {!expanded && (
+          <>
+            <p className="ex-panel__summary">
+              <span className="ex-panel__k">What it is</span>
+              {l.terrain}
+            </p>
+            <p className="ex-panel__summary">
+              <span className="ex-panel__k">Why scientists study it</span>
+              {l.importance}
+            </p>
+          </>
+        )}
         {l.qualification && (
           <p className="ex-panel__qual">
             <strong>About this coordinate:</strong> {l.qualification}
@@ -237,16 +252,21 @@ export default function LandmarkPanel({ landmark: l, expanded, onExpand, onSelec
       </div>
 
       <footer className="ex-panel__actions">
-        <button type="button" className="ex-btn" onClick={() => onExploreOnMap(l)}>
-          Explore on Mars Trek
+        <button type="button" className="ex-btn" onClick={() => onExploreOnMap(l)} title="Fly the Mars Trek map to this landmark">
+          View on Map
         </button>
+        {onPlanHere && (
+          <button type="button" className="ex-btn ex-btn--ghost" onClick={() => onPlanHere(l)} title="Open the Mission Planner with this landmark ready to set as start, destination or checkpoint">
+            Plan Mission Here
+          </button>
+        )}
         {expanded ? (
           <button type="button" className="ex-btn ex-btn--ghost" onClick={() => onExpand(false)}>
             Back to preview
           </button>
         ) : (
           <button type="button" className="ex-btn ex-btn--ghost" onClick={() => onExpand(true)}>
-            View Scientific Importance
+            Scientific details
           </button>
         )}
         <div className="ex-panel__nav">

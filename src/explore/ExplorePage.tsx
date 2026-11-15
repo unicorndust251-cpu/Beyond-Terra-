@@ -10,6 +10,7 @@ import {
 } from '../shared/landmarks';
 import { markerTheme } from '../shared/landmarks/markerTheme';
 import LandmarkPanel from './LandmarkPanel';
+import MainNav from '../components/MainNav';
 import { MarsGlobe } from './marsGlobe';
 import './explore.css';
 
@@ -18,6 +19,8 @@ interface Props {
   active: boolean;
   onExploreOnMap: (landmark: Landmark) => void;
   onOpenPlanner: () => void;
+  /** Go to the map with this landmark selected for the mission plan. */
+  onPlanHere: (l: Landmark) => void;
   onOpenDashboard: () => void;
 }
 
@@ -29,7 +32,10 @@ function focusDistance(l: Landmark): number {
 }
 
 /** The Explore page: catalogue, interactive globe and Scientific Importance panel. */
-export default function ExplorePage({ active, onExploreOnMap, onOpenPlanner, onOpenDashboard }: Props) {
+export default function ExplorePage({ active, onExploreOnMap, onPlanHere, onOpenPlanner, onOpenDashboard }: Props) {
+  // Kept for callers; the main navigation now handles these destinations
+  void onOpenPlanner;
+  void onOpenDashboard;
   const root = useRef<HTMLDivElement>(null);
   const host = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -83,17 +89,7 @@ export default function ExplorePage({ active, onExploreOnMap, onOpenPlanner, onO
     <div ref={root} className={`ex${selected ? ' has-selection' : ''}${expanded ? ' is-expanded' : ''}`} aria-hidden={!active}>
       <header className="ex-top">
         <span className="ex-top__brand">BEYOND TERRA</span>
-        <nav className="ex-top__nav" aria-label="Sections">
-          <button type="button" className="is-active" aria-current="page">
-            Explore
-          </button>
-          <button type="button" onClick={onOpenPlanner}>
-            Mission Planner
-          </button>
-          <button type="button" onClick={onOpenDashboard}>
-            Mars Dashboard
-          </button>
-        </nav>
+        <MainNav current="explore" />
       </header>
 
       <aside className={`ex-cat${catalogueOpen ? ' is-open' : ''}`} aria-label="Landmark catalogue">
@@ -203,6 +199,7 @@ export default function ExplorePage({ active, onExploreOnMap, onOpenPlanner, onO
               setExpanded(false);
             }}
             onExploreOnMap={onExploreOnMap}
+            onPlanHere={onPlanHere}
           />
         </div>
       )}

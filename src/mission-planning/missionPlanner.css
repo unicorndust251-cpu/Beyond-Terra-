@@ -2661,3 +2661,11 @@
   height: 9px;
   margin-top: 0;
 }
+
+/* One line of guidance under the step tabs */
+.mp-step-hint {
+  margin: 8px 18px 0;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: rgba(243, 229, 220, 0.62);
+}

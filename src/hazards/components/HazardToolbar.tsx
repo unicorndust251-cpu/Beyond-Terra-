@@ -1,27 +1,51 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { locationCoordinate, searchLocations } from '../../science/locations';
-import { fromEast360, patchHazardState, toMapLatLng, useHazardState } from '../../shared';
-import { categoryName } from '../categories';
-import { formatCoord, looksLikeCoordinate, parseCoordinateText } from '../coordinateInput';
-import type { HazardContext } from '../HazardsLayer';
-import { searchObservations } from '../observations';
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { locationCoordinate, searchLocations } from "../../science/locations";
+import {
+  fromEast360,
+  patchHazardState,
+  toMapLatLng,
+  useHazardState,
+} from "../../shared";
+import { categoryName } from "../categories";
+import {
+  formatCoord,
+  looksLikeCoordinate,
+  parseCoordinateText,
+} from "../coordinateInput";
+import type { HazardContext } from "../HazardsLayer";
+import { searchObservations } from "../observations";
 
 /**
  * The Hazards view's top bar: find a place or observation, go to typed coordinates, and
  * set the date and time the excursion is planned for.
  */
-export default function HazardToolbar({ ctx }: { ctx: HazardContext }) {
+export default function HazardToolbar({
+  ctx,
+  simple,
+}: {
+  ctx: HazardContext;
+  simple?: boolean;
+}) {
   const [more, setMore] = useState(false);
   return (
     <div className="hz-toolbar" role="search" aria-label="Find a location">
       <SearchBox ctx={ctx} />
-      <button type="button" className="hz-tb-morebtn" aria-expanded={more} onClick={() => setMore((m) => !m)}>
-        Coordinates &amp; time
-      </button>
-      <div className={`hz-tb-extra${more ? ' is-open' : ''}`}>
-        <CoordinateEntry ctx={ctx} />
-        <PlannedTime />
-      </div>
+      {!simple && (
+        <button
+          type="button"
+          className="hz-tb-morebtn"
+          aria-expanded={more}
+          onClick={() => setMore((m) => !m)}
+        >
+          Coordinates &amp; time
+        </button>
+      )}
+      {!simple && (
+        <div className={`hz-tb-extra${more ? " is-open" : ""}`}>
+          <CoordinateEntry ctx={ctx} />
+          <PlannedTime />
+        </div>
+      )}
     </div>
   );
 }
@@ -29,27 +53,37 @@ export default function HazardToolbar({ ctx }: { ctx: HazardContext }) {
 /* ------------------------------------------------------------------ search */
 
 function SearchBox({ ctx }: { ctx: HazardContext }) {
-  const [q, setQ] = useState('');
+  const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
   const id = useId();
   const box = useRef<HTMLDivElement>(null);
   const coordinate = looksLikeCoordinate(q) ? parseCoordinateText(q) : null;
-  const places = useMemo(() => (q.trim() && !coordinate ? searchLocations(q).slice(0, 4) : []), [q, coordinate]);
-  const records = useMemo(() => (q.trim() && !coordinate ? searchObservations(q).slice(0, 6) : []), [q, coordinate]);
+  const places = useMemo(
+    () => (q.trim() && !coordinate ? searchLocations(q).slice(0, 4) : []),
+    [q, coordinate],
+  );
+  const records = useMemo(
+    () => (q.trim() && !coordinate ? searchObservations(q).slice(0, 6) : []),
+    [q, coordinate],
+  );
 
   useEffect(() => {
-    const onDown = (e: PointerEvent) => !box.current?.contains(e.target as Node) && setOpen(false);
-    document.addEventListener('pointerdown', onDown);
-    return () => document.removeEventListener('pointerdown', onDown);
+    const onDown = (e: PointerEvent) =>
+      !box.current?.contains(e.target as Node) && setOpen(false);
+    document.addEventListener("pointerdown", onDown);
+    return () => document.removeEventListener("pointerdown", onDown);
   }, []);
 
   const done = () => {
     setOpen(false);
-    setQ('');
+    setQ("");
   };
   const goPlace = (i: number) => {
     const loc = places[i];
-    ctx.map.setView(toMapLatLng(locationCoordinate(loc), ctx.map.getCenter().lng), Math.max(ctx.map.getZoom(), 6));
+    ctx.map.setView(
+      toMapLatLng(locationCoordinate(loc), ctx.map.getCenter().lng),
+      Math.max(ctx.map.getZoom(), 6),
+    );
     done();
   };
 
@@ -77,8 +111,8 @@ function SearchBox({ ctx }: { ctx: HazardContext }) {
           setOpen(true);
         }}
         onKeyDown={(e) => {
-          if (e.key === 'Escape') return setOpen(false);
-          if (e.key !== 'Enter') return;
+          if (e.key === "Escape") return setOpen(false);
+          if (e.key !== "Enter") return;
           if (coordinate?.ok) {
             ctx.inspectPoint(coordinate.coordinate, { centre: true });
             done();
@@ -104,20 +138,40 @@ function SearchBox({ ctx }: { ctx: HazardContext }) {
                 done();
               }}
             >
-              <span className="hz-result__title">Check hazards at {formatCoord(coordinate.coordinate, Math.max(coordinate.latDecimals, coordinate.lonDecimals))}</span>
-              <span className="hz-result__meta">Typed coordinate · {coordinate.east360.toFixed(Math.max(coordinate.lonDecimals, 0))}° E (0–360)</span>
+              <span className="hz-result__title">
+                Check hazards at{" "}
+                {formatCoord(
+                  coordinate.coordinate,
+                  Math.max(coordinate.latDecimals, coordinate.lonDecimals),
+                )}
+              </span>
+              <span className="hz-result__meta">
+                Typed coordinate ·{" "}
+                {coordinate.east360.toFixed(
+                  Math.max(coordinate.lonDecimals, 0),
+                )}
+                ° E (0–360)
+              </span>
             </button>
           )}
           {places.length > 0 && <p className="hz-tb-group">Places</p>}
           {places.map((loc, i) => (
-            <button key={loc.id} type="button" className="hz-result" onClick={() => goPlace(i)}>
+            <button
+              key={loc.id}
+              type="button"
+              className="hz-result"
+              onClick={() => goPlace(i)}
+            >
               <span className="hz-result__title">{loc.name}</span>
               <span className="hz-result__meta">
-                {loc.category} · {formatCoord(locationCoordinate(loc), 2)} · centres the map
+                {loc.category} · {formatCoord(locationCoordinate(loc), 2)} ·
+                centres the map
               </span>
             </button>
           ))}
-          {records.length > 0 && <p className="hz-tb-group">Hazard observations</p>}
+          {records.length > 0 && (
+            <p className="hz-tb-group">Hazard observations</p>
+          )}
           {records.map((o) => (
             <button
               key={o.id}
@@ -132,11 +186,16 @@ function SearchBox({ ctx }: { ctx: HazardContext }) {
                 <span className="hz-id">{o.id}</span> {o.name}
               </span>
               <span className="hz-result__meta">
-                {categoryName(o.categories[0])} · {o.centreText.latitude}, {o.centreText.longitude}
+                {categoryName(o.categories[0])} · {o.centreText.latitude},{" "}
+                {o.centreText.longitude}
               </span>
             </button>
           ))}
-          {!coordinate && places.length === 0 && records.length === 0 && <p className="hz-muted hz-tb-empty">Nothing matches “{q.trim()}”.</p>}
+          {!coordinate && places.length === 0 && records.length === 0 && (
+            <p className="hz-muted hz-tb-empty">
+              Nothing matches “{q.trim()}”.
+            </p>
+          )}
         </div>
       )}
     </div>
@@ -146,16 +205,18 @@ function SearchBox({ ctx }: { ctx: HazardContext }) {
 /* ------------------------------------------------------------- coordinates */
 
 function CoordinateEntry({ ctx }: { ctx: HazardContext }) {
-  const [lat, setLat] = useState('');
-  const [lon, setLon] = useState('');
+  const [lat, setLat] = useState("");
+  const [lon, setLon] = useState("");
   const [error, setError] = useState<string | null>(null);
   const latId = useId();
   const lonId = useId();
   const go = () => {
     const la = Number(lat);
     const lo = Number(lon);
-    if (lat.trim() === '' || !Number.isFinite(la) || la < -90 || la > 90) return setError('Latitude must be between −90 (S) and 90 (N).');
-    if (lon.trim() === '' || !Number.isFinite(lo) || lo < 0 || lo > 360) return setError('Longitude must be between 0 and 360 °E.');
+    if (lat.trim() === "" || !Number.isFinite(la) || la < -90 || la > 90)
+      return setError("Latitude must be between −90 (S) and 90 (N).");
+    if (lon.trim() === "" || !Number.isFinite(lo) || lo < 0 || lo > 360)
+      return setError("Longitude must be between 0 and 360 °E.");
     setError(null);
     ctx.inspectPoint(fromEast360(la, lo), { centre: true });
   };
@@ -169,9 +230,22 @@ function CoordinateEntry({ ctx }: { ctx: HazardContext }) {
       aria-label="Go to coordinates"
     >
       <label htmlFor={latId}>Lat °N</label>
-      <input id={latId} inputMode="decimal" value={lat} placeholder="−8.6" onChange={(e) => setLat(e.target.value.replace('−', '-'))} aria-describedby={error ? `${latId}-err` : undefined} />
+      <input
+        id={latId}
+        inputMode="decimal"
+        value={lat}
+        placeholder="−8.6"
+        onChange={(e) => setLat(e.target.value.replace("−", "-"))}
+        aria-describedby={error ? `${latId}-err` : undefined}
+      />
       <label htmlFor={lonId}>Lon °E</label>
-      <input id={lonId} inputMode="decimal" value={lon} placeholder="315.7" onChange={(e) => setLon(e.target.value.replace('−', '-'))} />
+      <input
+        id={lonId}
+        inputMode="decimal"
+        value={lon}
+        placeholder="315.7"
+        onChange={(e) => setLon(e.target.value.replace("−", "-"))}
+      />
       <button type="submit" className="hz-btn hz-btn--sm">
         Go
       </button>
@@ -195,8 +269,10 @@ function PlannedTime() {
       <input
         id={id}
         type="datetime-local"
-        value={plannedTime ?? ''}
-        onChange={(e) => patchHazardState({ plannedTime: e.target.value || null })}
+        value={plannedTime ?? ""}
+        onChange={(e) =>
+          patchHazardState({ plannedTime: e.target.value || null })
+        }
         title="Recorded for the plan. No dated dust, lighting, temperature or radiation data is loaded, so it changes no layer yet."
       />
     </div>

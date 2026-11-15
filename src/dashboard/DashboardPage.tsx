@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { selectedLocationStore, useMapBridge, type MarsCoordinate, type SelectedLocation } from '../shared';
+import { selectedLocationStore, useMapBridge, useUiMode, type MarsCoordinate, type SelectedLocation } from '../shared';
 import { useFocusedLocation } from '../shared/focus';
 import {
   formatLandmarkCoordinates,
@@ -26,6 +26,7 @@ import {
 } from '../mission-planning/model';
 import { quadrangleAt } from '../science/workspace/quadrangles';
 import MetricCard from './MetricCard';
+import MainNav from '../components/MainNav';
 import EnvironmentCard from './environment/EnvironmentCard';
 import { loadIndex, loadSol, middayOf, roverCoordinate, type MedaIndex } from './environment/meda';
 import { useMedaObservations } from './environment/useMeda';
@@ -71,6 +72,7 @@ const HELP: Array<[string, string]> = [
 
 /** The Mars Dashboard: location, terrain, solar time and the active mission in one view. */
 export default function DashboardPage({ active, onOpenMap, onOpenExplore }: Props) {
+  const simple = useUiMode() === 'simple';
   const root = useRef<HTMLDivElement>(null);
   const focus = useFocusedLocation();
   const mission = useActiveMission();
@@ -205,17 +207,7 @@ export default function DashboardPage({ active, onOpenMap, onOpenExplore }: Prop
     <div ref={root} className="md" aria-hidden={!active}>
       <header className="md-top">
         <span className="md-top__brand">BEYOND TERRA</span>
-        <nav className="md-top__nav" aria-label="Sections">
-          <button type="button" onClick={onOpenExplore}>
-            Explore
-          </button>
-          <button type="button" onClick={onOpenMap}>
-            Mission Planner
-          </button>
-          <button type="button" className="is-active" aria-current="page">
-            Mars Dashboard
-          </button>
-        </nav>
+        <MainNav current="dashboard" />
       </header>
 
       <main className="md-main">
@@ -308,11 +300,21 @@ export default function DashboardPage({ active, onOpenMap, onOpenExplore }: Prop
           <p className="md-empty">Choose a landmark, enter coordinates, or select a point on the map to see its dashboard.</p>
         ) : (
           <>
-            <div className="md-row md-row--six">
+            <h2 className="md-h2 md-h2--group">Location &amp; Terrain</h2>
+            <div className="md-row md-row--auto">
               <MetricCard title="Location" v={locationValue} />
               <MetricCard title="Elevation" v={tv.elevation} />
               <MetricCard title="Slope" v={tv.slope} />
               <MetricCard title="Surface Material" v={tv.material} />
+            </div>
+            {error && <p className="md-error">Terrain data could not be loaded: {error}</p>}
+
+            <h2 className="md-h2 md-h2--group">Mars Conditions</h2>
+            <SolarCyclePanel selectedUtc={utcMs} selectedMode={timeMode} latitude={c.latitude} longitudeEast={c.longitudeEast} />
+
+            <div className="md-row md-row--auto">
+              <MetricCard title="Local Mars Time" v={timeValue} />
+              <MetricCard title="Martian Season" v={seasonValue} />
               <EnvironmentCard
                 field="airTemperatureC"
                 title="Air Temperature"
@@ -329,14 +331,6 @@ export default function DashboardPage({ active, onOpenMap, onOpenExplore }: Prop
                 state={meda.state}
                 onRetry={meda.retry}
               />
-            </div>
-            {error && <p className="md-error">Terrain data could not be loaded: {error}</p>}
-
-            <SolarCyclePanel selectedUtc={utcMs} selectedMode={timeMode} latitude={c.latitude} longitudeEast={c.longitudeEast} />
-
-            <div className="md-row md-row--five">
-              <MetricCard title="Local Mars Time" v={timeValue} />
-              <MetricCard title="Martian Season" v={seasonValue} />
               <EnvironmentCard
                 field="windSpeedMs"
                 title="Wind Speed"
@@ -394,7 +388,7 @@ export default function DashboardPage({ active, onOpenMap, onOpenExplore }: Prop
                 </ul>
               </Section>
 
-              <Section title="Terrain and Surface" defaultOpen>
+              <Section title="Terrain and Surface" defaultOpen={!simple}>
                 <dl className="md-facts md-num">
                   <div>
                     <dt>Elevation</dt>
@@ -515,7 +509,7 @@ export default function DashboardPage({ active, onOpenMap, onOpenExplore }: Prop
           </>
         )}
 
-        <h2 className="md-h2">Mission</h2>
+        <h2 className="md-h2">Mission Overview</h2>
         {!hasMission || !m || !metrics || !duration || !eq ? (
           <div className="md-mission-empty">
             <p>

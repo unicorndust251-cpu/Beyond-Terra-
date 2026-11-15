@@ -6,6 +6,9 @@ import {
   greatCircleDistanceM,
   patchHazardState,
   useHazardState,
+  useMissionConstraints,
+  usePlannedRoute,
+  useUiMode,
   type HazardCode,
   type MarsCoordinate,
   type SlopeLimitSource,
@@ -28,6 +31,12 @@ import { swatchUrl } from '../patterns';
 import { SLOPE_CELL_KM, SLOPE_MIN_ZOOM } from '../slopeCells';
 import { ImageViewer } from './RouteLinks';
 import { DataCheck } from './DataCheck';
+import SimpleHazards from './SimpleHazards';
+import { useEnvInputs } from '../env/inputs';
+import { envStatus } from '../env/status';
+
+/** Categories whose details (inputs, calculation, sources) open in the information panel. */
+const ENV_CODES: HazardCode[] = ['V', 'T', 'R', 'C', 'N', 'E', 'M', 'U'];
 
 type Tab = 'layers' | 'settings' | 'observations';
 
@@ -37,6 +46,10 @@ const observationsOf = (code: HazardCode) => OBSERVATIONS.filter((o) => o.catego
 export default function HazardPanel({ ctx }: { ctx: HazardContext }) {
   const hz = useHazardState();
   const [tab, setTab] = useState<Tab>('layers');
+  const simple = useUiMode() === 'simple';
+  // Advanced Details: folded in Simple mode (opened on request), always open in Advanced mode
+  const [advOpen, setAdvOpen] = useState(false);
+  const showAdvanced = !simple || advOpen;
   const [collapsed, setCollapsed] = useState(isPhone);
   const [filter, setFilter] = useState<HazardCode | 'all'>('all');
   const [zoom, setZoom] = useState(() => ctx.map.getZoom());
@@ -53,12 +66,37 @@ export default function HazardPanel({ ctx }: { ctx: HazardContext }) {
     setTab('observations');
   };
 
+  const advanced = (
+    <>
+      <div className="hz-tabs" role="tablist" aria-label="Hazard panel sections">
+        {(
+          [
+            ['layers', 'Hazard layers'],
+            ['settings', 'Display & route'],
+            ['observations', `Observations (${OBSERVATIONS.length})`],
+          ] as const
+        ).map(([id, label]) => (
+          <button key={id} type="button" role="tab" aria-selected={tab === id} className={tab === id ? 'is-active' : ''} onClick={() => setTab(id)}>
+            {label}
+          </button>
+        ))}
+      </div>
+      {/* keyed by tab, so each tab opens at its top */}
+      <div className="hz-panel__body" role="tabpanel" key={tab}>
+        {tab === 'layers' && <Layers ctx={ctx} zoom={zoom} onViewObservations={viewObservations} />}
+        {tab === 'settings' && <Settings ctx={ctx} />}
+        {tab === 'observations' && <Observations ctx={ctx} filter={filter} setFilter={setFilter} />}
+      </div>
+      <Readout ctx={ctx} selectedObservation={hz.selection?.kind === 'observation' ? hz.selection.id : null} />
+    </>
+  );
+
   return (
     <aside className={`hz-panel${collapsed ? ' is-collapsed' : ''}`} aria-label="Hazard layers and observations">
       <header className="hz-panel__head">
         <div>
-          <p className="hz-eyebrow">Hazards</p>
-          <h2 className="hz-panel__title">Mars hazard map</h2>
+          <h2 className="hz-panel__title">Mars Hazards</h2>
+          <p className="hz-panel__sub">Explore terrain risks and check your mission route.</p>
         </div>
         <button
           type="button"
@@ -73,30 +111,22 @@ export default function HazardPanel({ ctx }: { ctx: HazardContext }) {
         </button>
       </header>
 
-      {!collapsed && (
-        <>
-          <div className="hz-tabs" role="tablist" aria-label="Hazard panel sections">
-            {(
-              [
-                ['layers', 'Hazard layers'],
-                ['settings', 'Display & route'],
-                ['observations', `Observations (${OBSERVATIONS.length})`],
-              ] as const
-            ).map(([id, label]) => (
-              <button key={id} type="button" role="tab" aria-selected={tab === id} className={tab === id ? 'is-active' : ''} onClick={() => setTab(id)}>
-                {label}
-              </button>
-            ))}
+      {!collapsed &&
+        (simple ? (
+          <div className={`hz-panel__simple${showAdvanced ? ' has-advanced' : ''}`}>
+            {!showAdvanced && <SimpleHazards ctx={ctx} />}
+            <button type="button" className="hz-adv-toggle" aria-expanded={showAdvanced} onClick={() => setAdvOpen((o) => !o)}>
+              <svg viewBox="0 0 20 20" aria-hidden="true" className="hz-chev">
+                <path d="m7 5 5 5-5 5" />
+              </svg>
+              {showAdvanced ? 'Back to the simple view' : 'Advanced Details'}
+              {!showAdvanced && <small>All hazard categories, display and route settings, {OBSERVATIONS.length} observations, sources</small>}
+            </button>
+            {showAdvanced && advanced}
           </div>
-          {/* keyed by tab, so each tab opens at its top */}
-          <div className="hz-panel__body" role="tabpanel" key={tab}>
-            {tab === 'layers' && <Layers ctx={ctx} zoom={zoom} onViewObservations={viewObservations} />}
-            {tab === 'settings' && <Settings ctx={ctx} />}
-            {tab === 'observations' && <Observations ctx={ctx} filter={filter} setFilter={setFilter} />}
-          </div>
-          <Readout ctx={ctx} selectedObservation={hz.selection?.kind === 'observation' ? hz.selection.id : null} />
-        </>
-      )}
+        ) : (
+          advanced
+        ))}
     </aside>
   );
 }
@@ -107,7 +137,12 @@ type Tone = 'ok' | 'warn' | 'error' | 'muted';
 
 function useLayerStatus(ctx: HazardContext, zoom: number) {
   const hz = useHazardState();
-  return (cat: HazardCategory): { text: string; tone: Tone; retry?: () => void } => {
+  const inputs = useEnvInputs();
+  const snapshot = useMissionConstraints();
+  const route = usePlannedRoute();
+  return (cat: HazardCategory): { text: string; tone: Tone; retry?: () => void; label?: string } => {
+    const env = envStatus(cat.code, { plannedTime: hz.plannedTime, dem: ctx.slopeStore, retryDem: ctx.retrySlope, inputs, snapshot, route, commReady: true });
+    if (env) return { text: env.text, tone: env.tone, retry: env.retry, label: env.status };
     if (cat.code === 'F' || cat.code === 'P') {
       if (ctx.structures.state === 'loading') return { text: 'Loading USGS map lines…', tone: 'muted' };
       if (ctx.structures.state === 'error') return { text: `Could not load the mapped lines: ${ctx.structures.message}`, tone: 'error', retry: ctx.retryStructures };
@@ -146,7 +181,7 @@ function Layers({ ctx, zoom, onViewObservations }: { ctx: HazardContext; zoom: n
   return (
     <div className="hz-layers">
       <p className="hz-note">
-        <strong>Shown / Hidden</strong> changes only what is drawn on the map. Route testing is set separately under <em>Display &amp; route</em>.
+        Choose which hazards appear on the map. Route checks are set separately under <em>Display &amp; route</em>.
       </p>
       {GROUPS.map((g) => {
         const cats = CATEGORIES.filter((c) => c.group === g.id);
@@ -194,9 +229,10 @@ function CategoryRow({
   onViewObservations,
 }: {
   cat: HazardCategory;
-  status: { text: string; tone: Tone; retry?: () => void };
+  status: { text: string; tone: Tone; retry?: () => void; label?: string };
   onViewObservations(code: HazardCode): void;
 }) {
+  const hasDetails = ENV_CODES.includes(cat.code);
   const hz = useHazardState();
   const [more, setMore] = useState(false);
   const id = useId();
@@ -230,7 +266,7 @@ function CategoryRow({
         </label>
       </div>
       <div className="hz-cat__meta">
-        <span className={`hz-avail hz-avail--${cat.availability}`}>{AVAILABILITY_LABEL[cat.availability]}</span>
+        <span className={`hz-avail hz-avail--${cat.availability}`}>{status.label ?? AVAILABILITY_LABEL[cat.availability]}</span>
         <span className={`hz-tone--${status.tone}`} id={`${id}-s`}>
           {status.text}
         </span>
@@ -246,9 +282,15 @@ function CategoryRow({
             View observations ({nObs})
           </button>
         )}
-        <button type="button" className="hz-link" aria-expanded={more} onClick={() => setMore((m) => !m)}>
-          {more ? 'Less' : 'About this layer'}
-        </button>
+        {hasDetails ? (
+          <button type="button" className="hz-link" onClick={() => patchHazardState({ selection: { kind: 'category', code: cat.code } })}>
+            View details
+          </button>
+        ) : (
+          <button type="button" className="hz-link" aria-expanded={more} onClick={() => setMore((m) => !m)}>
+            {more ? 'Less' : 'About this layer'}
+          </button>
+        )}
       </div>
       {more && (
         <div className="hz-cat__more">
@@ -584,7 +626,7 @@ function nearestNamed(c: MarsCoordinate) {
 /** Cursor, selected point, observation location and nearest named feature: four separate things. */
 function Readout({ ctx, selectedObservation }: { ctx: HazardContext; selectedObservation: string | null }) {
   const hz = useHazardState();
-  const selectedAt = hz.selection && hz.selection.kind !== 'observation' ? hz.selection.at : null;
+  const selectedAt = hz.selection && (hz.selection.kind === 'feature' || hz.selection.kind === 'point') ? hz.selection.at : null;
   const obs = selectedObservation ? OBSERVATION_BY_ID[selectedObservation] : null;
   const ref = selectedAt ?? obs?.observationCentre ?? null;
   const near = ref ? nearestNamed(ref) : null;

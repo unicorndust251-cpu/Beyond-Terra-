@@ -1001,3 +1001,12 @@
     animation: none;
   }
 }
+
+/* Grouped metric rows (Location & Terrain, Mars Conditions): wrap to the space available */
+.md-row--auto {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.md-h2--group {
+  margin-top: 18px;
+}

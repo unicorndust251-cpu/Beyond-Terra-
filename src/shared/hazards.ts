@@ -9,7 +9,7 @@ import type { MarsCoordinate } from './types';
  * categories or the selected hazard without importing the hazards module).
  */
 
-export type AppView = 'planner' | 'hazards';
+export type AppView = 'explore' | 'planner' | 'hazards';
 
 /** Category codes of the hazard key (project design choices, not NASA symbology). */
 export type HazardCode = 'L' | 'S' | 'B' | 'P' | 'F' | 'G' | 'I' | 'D' | 'SL' | 'V' | 'T' | 'R' | 'C' | 'N' | 'E' | 'M' | 'U';
@@ -21,7 +21,9 @@ export type HazardSelection =
   /** A mapped feature (a USGS structure line or a derived slope cell), with the tapped point. */
   | { kind: 'feature'; id: string; at: MarsCoordinate }
   /** A tapped or typed point with no single feature chosen yet (zero or several candidates). */
-  | { kind: 'point'; at: MarsCoordinate };
+  | { kind: 'point'; at: MarsCoordinate }
+  /** A category's own details (its data, inputs and calculation), opened from the key. */
+  | { kind: 'category'; code: HazardCode };
 
 export interface HazardState {
   view: AppView;
@@ -54,7 +56,7 @@ export const SLOPE_LIMIT_SOURCE_LABEL: Record<SlopeLimitSource, string> = {
 };
 
 export const HAZARD_DEFAULTS: HazardState = {
-  view: 'planner',
+  view: 'explore',
   active: ['L', 'S', 'B', 'P', 'F', 'G', 'I', 'D', 'SL'],
   fillOpacity: 0.2,
   slopeThresholdDeg: 8,
@@ -109,6 +111,62 @@ export interface PlannedRouteTotals {
 }
 
 export const plannedRouteTotalsStore = createStore<PlannedRouteTotals | null>(null);
+
+/**
+ * The planner's own load and time figures, published unchanged so the Hazards module can show
+ * mission constraints (load, return time, energy schedule) without importing the planner.
+ * null values are unknown, never zero.
+ */
+export interface MissionConstraintsSnapshot {
+  crew: number;
+  travelMode: string;
+  speedKmh: number;
+  availableHours: number;
+  travelHours: number;
+  /** Known task time only */
+  taskHours: number;
+  totalHours: number;
+  marginHours: number;
+  /** Scheduled tasks whose time is unknown */
+  unknownTasks: number;
+  /** The planner's same-line return estimate (not included in its total) */
+  returnKm: number;
+  returnHours: number;
+  stops: {
+    key: string;
+    label: string;
+    name?: string;
+    coordinate: MarsCoordinate;
+    /** Distance of the leg arriving here (null for the start) */
+    legKm: number | null;
+    /** Known task minutes here; null if any task here has an unknown time */
+    taskMinutes: number | null;
+    tasks: string[];
+  }[];
+  carriers: { label: string; kg: number }[];
+  knownKg: number;
+  unknownMassItems: string[];
+  unallocatedKg: number;
+  inSuitKg: number;
+  suitMassAssumptionKg: number | null;
+  items: {
+    uid: string;
+    name: string;
+    quantity: number;
+    unitMassKg: number | null;
+    massStatus: string;
+    /** Planned operating minutes per stop key, from the planner's task schedule */
+    minutesByStop: Record<string, number>;
+    /** True if the item is scheduled somewhere with an unknown time */
+    unknownTime: boolean;
+  }[];
+}
+
+export const missionConstraintsStore = createStore<MissionConstraintsSnapshot | null>(null);
+
+export function useMissionConstraints(): MissionConstraintsSnapshot | null {
+  return useStore(missionConstraintsStore);
+}
 
 export function usePlannedRouteTotals(): PlannedRouteTotals | null {
   return useStore(plannedRouteTotalsStore);
