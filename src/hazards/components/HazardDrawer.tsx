@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { patchHazardState, toMapLatLng, usePlannedRoute, useHazardState, type HazardSelection, type MarsCoordinate } from '../../shared';
-import { AVAILABILITY_LABEL, CATEGORY_BY_CODE, categoryName, displayName, type HazardCategory } from '../categories';
+import { AVAILABILITY_LABEL, CATEGORY_BY_CODE, displayName, type HazardCategory } from '../categories';
 import { formatCoord } from '../coordinateInput';
 import type { HazardContext } from '../HazardsLayer';
 import { OBSERVATION_BY_ID, type HazardObservationRecord, type Sourced } from '../observations';
@@ -40,7 +40,7 @@ export default function HazardDrawer({ ctx, selection, onClose, onPick }: Props)
     const o = OBSERVATION_BY_ID[selection.id];
     body = o ? <ObservationView ctx={ctx} o={o} onClose={onClose} /> : <p>Unknown observation.</p>;
   } else if (selection.kind === 'point') {
-    body = <PointView ctx={ctx} onPick={onPick} onClose={onClose} />;
+    body = <PointView ctx={ctx} at={selection.at} onPick={onPick} />;
   } else if (selection.id.startsWith('MGD3-')) {
     const f = ctx.dunes.state === 'ready' ? ctx.dunes.data.features.find((x) => x.id === selection.id) : undefined;
     body =
@@ -64,7 +64,12 @@ export default function HazardDrawer({ ctx, selection, onClose, onPick }: Props)
   }
 
   return (
-    <section ref={ref} className="hz-drawer" aria-label="Hazard information" tabIndex={-1}>
+    <section
+      ref={ref}
+      className={`hz-drawer${selection.kind === 'point' ? ' hz-drawer--location' : ''}`}
+      aria-label={selection.kind === 'point' ? 'Location inspection' : 'Hazard information'}
+      tabIndex={-1}
+    >
       <span className="hz-drawer__grip" aria-hidden="true" />
       <button type="button" className="hz-icon-btn hz-drawer__close" aria-label="Close" onClick={onClose}>
         <svg viewBox="0 0 20 20" aria-hidden="true">
@@ -671,99 +676,252 @@ function SlopeView({ ctx, cell, at, onClose }: { ctx: HazardContext; cell: Slope
 
 /* --------------------------------------------------------------------- point */
 
-function PointView({ ctx, onPick, onClose }: { ctx: HazardContext; onPick(s: HazardSelection): void; onClose(): void }) {
-  const threshold = useHazardState().slopeThresholdDeg;
+interface PointCandidate {
+  id: string;
+  label: string;
+  sel: HazardSelection;
+  code: 'F' | 'P' | 'SL' | 'S';
+}
+
+interface PointFinding {
+  code: 'F' | 'P' | 'SL' | 'S';
+  detail: string;
+  candidates?: PointCandidate[];
+}
+
+function PointView({ ctx, at, onPick }: { ctx: HazardContext; at: MarsCoordinate; onPick(s: HazardSelection): void }) {
+  const hazard = useHazardState();
   const mission = useMissionActions(null);
-  const p = ctx.point;
-  if (!p) return <p className="hz-muted">Checking…</p>;
-  const slope = p.slope;
-  const candidates: { label: string; sel: HazardSelection; code: 'F' | 'P' | 'SL' | 'S' }[] = [
-    ...p.dunes.map((f) => ({ label: `USGS dune field ${f.duneId}`, sel: { kind: 'feature' as const, id: f.id, at: p.at }, code: 'S' as const })),
-    ...p.lines.map((h) => ({
+  const p = ctx.point?.at.latitude === at.latitude && ctx.point.at.longitudeEast === at.longitudeEast ? ctx.point : null;
+  const slope = p?.slope;
+  const candidates: PointCandidate[] = [
+    ...(p?.dunes.map((f) => ({
+      id: f.id,
+      label: `USGS dune field ${f.duneId}`,
+      sel: { kind: 'feature' as const, id: f.id, at },
+      code: 'S' as const,
+    })) ?? []),
+    ...(p?.lines.map((h) => ({
+      id: h.feature.id,
       label: `${h.feature.interpretation} · ${h.feature.id}`,
-      sel: { kind: 'feature' as const, id: h.feature.id, at: p.at },
+      sel: { kind: 'feature' as const, id: h.feature.id, at },
       code: h.feature.category,
-    })),
-    ...(slope.state === 'classified'
-      ? [{ label: `Slope cell ${slope.cell.slopeDeg.toFixed(1)}°`, sel: { kind: 'feature' as const, id: `SL:${slope.cell.i}:${slope.cell.j}`, at: p.at }, code: 'SL' as const }]
+    })) ?? []),
+    ...(slope?.state === 'classified'
+      ? [{ id: `SL:${slope.cell.i}:${slope.cell.j}`, label: `Slope cell ${slope.cell.slopeDeg.toFixed(1)}°`, sel: { kind: 'feature' as const, id: `SL:${slope.cell.i}:${slope.cell.j}`, at }, code: 'SL' as const }]
       : []),
   ];
+  const findings: PointFinding[] = [];
 
-  const lineCoverage = ctx.structures.state === 'ready';
-  const slopeAssessed = slope.state === 'below' || slope.state === 'classified';
+  for (const code of ['F', 'P'] as const) {
+    if (!hazard.active.includes(code)) {
+      findings.push({ code, detail: 'Not assessed — layer hidden.' });
+    } else if (!p || ctx.structures.state === 'loading') {
+      findings.push({ code, detail: 'Checking mapped line data…' });
+    } else if (ctx.structures.state === 'error') {
+      findings.push({ code, detail: `Not assessed — ${ctx.structures.message}` });
+    } else {
+      const matches = candidates.filter((candidate) => candidate.code === code);
+      findings.push({
+        code,
+        detail: matches.length ? 'Mapped feature detected within the tested reach.' : 'No mapped feature detected within the tested reach.',
+        candidates: matches,
+      });
+    }
+  }
+
+  if (!hazard.active.includes('SL')) {
+    findings.push({ code: 'SL', detail: 'Not assessed — layer hidden.' });
+  } else if (!slope || slope.state === 'pending') {
+    findings.push({ code: 'SL', detail: 'Checking the MOLA slope cell…' });
+  } else if (slope.state === 'inactive') {
+    findings.push({ code: 'SL', detail: 'Not assessed — layer hidden.' });
+  } else if (slope.state === 'unavailable') {
+    findings.push({ code: 'SL', detail: `Not assessed — ${slope.reason}` });
+  } else if (slope.state === 'classified') {
+    findings.push({
+      code: 'SL',
+      detail: `MOLA slope is ${slope.cell.slopeDeg.toFixed(1)}°; this cell meets the selected ${hazard.slopeThresholdDeg}° threshold.`,
+      candidates: candidates.filter((candidate) => candidate.code === 'SL'),
+    });
+  } else {
+    findings.push({
+      code: 'SL',
+      detail: `No steep-slope cell detected: ${slope.cell.slopeDeg.toFixed(1)}° is below the selected ${hazard.slopeThresholdDeg}° threshold.`,
+    });
+  }
+
+  if (!hazard.active.includes('S')) {
+    findings.push({ code: 'S', detail: 'Not assessed — layer hidden.' });
+  } else if (!p || ctx.dunes.state === 'loading') {
+    findings.push({ code: 'S', detail: 'Checking mapped dune-field outlines…' });
+  } else if (ctx.dunes.state === 'error') {
+    findings.push({ code: 'S', detail: `Not assessed — ${ctx.dunes.message}` });
+  } else {
+    const matches = candidates.filter((candidate) => candidate.code === 'S');
+    findings.push({
+      code: 'S',
+      detail: matches.length ? 'Location intersects a mapped USGS dune field.' : 'No mapped intersection detected.',
+      candidates: matches,
+    });
+  }
+
+  const found = candidates.length > 0;
+  const pending = findings.some((finding) => finding.detail.startsWith('Checking'));
+  const assessed = findings.some((finding) => !finding.detail.startsWith('Not assessed') && !finding.detail.startsWith('Checking'));
+  const assessment = found
+    ? 'Mapped feature detected within the tested reach.'
+    : pending
+      ? 'Assessment in progress.'
+      : assessed
+        ? 'No mapped hazard detected in the available, tested layers.'
+        : 'No active, available mapped layer could assess this point.';
+  const details = mission.filter((action) => action.label !== 'Save to Mission');
+  const addAction = mission.find((action) => action.label === 'Save to Mission');
+  const sourceRows: [string, ReactNode][] = [];
+  if (ctx.structures.state === 'ready') {
+    sourceRows.push([
+      'USGS mapped lines',
+      <>
+        <a href={ctx.structures.data.url} target="_blank" rel="noreferrer">{ctx.structures.data.source}</a>; scale {ctx.structures.data.scale}; {ctx.structures.data.frame}.
+      </>,
+    ]);
+  }
+  if (ctx.dunes.state === 'ready') {
+    sourceRows.push([
+      'USGS dune fields',
+      <>
+        <a href={ctx.dunes.data.url} target="_blank" rel="noreferrer">{ctx.dunes.data.source}</a>; {ctx.dunes.data.coverage}
+      </>,
+    ]);
+  }
+  if (ctx.slopeStore.state === 'ready') {
+    const manifest = ctx.slopeStore.data.level.manifest;
+    sourceRows.push([
+      'MOLA elevation model',
+      <>
+        {manifest.source.startsWith('https://') ? <a href={manifest.source} target="_blank" rel="noreferrer">{manifest.dataSetId}</a> : manifest.dataSetId}
+        ; {manifest.pixelsPerDegree} px/degree, {manifest.mapScaleKm} km map scale; {manifest.verticalDatum}.
+      </>,
+    ]);
+  }
+  const categoryDetails = findings.map((finding) => [CATEGORY_BY_CODE[finding.code].name, finding.detail] as [string, ReactNode]);
 
   return (
-    <>
+    <div className="hz-location">
       <header className="hz-d-head">
         <div>
-          <p className="hz-eyebrow">Latitude &amp; Longitude</p>
-          <h2 className="hz-d-title">{formatCoord(p.at, 3)}</h2>
+          <p className="hz-eyebrow">Location inspection</p>
+          <h2 className="hz-d-title">Selected location</h2>
+          <p className="hz-location__coords">{formatCoord(at, 3)}</p>
         </div>
       </header>
-      {slope.state === 'pending' ? (
-        <p className="hz-muted" role="status">
-          Checking the layers at this point…
+      <section className="hz-location__assessment" aria-labelledby="hz-location-assessment-title">
+        <h3 id="hz-location-assessment-title">Assessment</h3>
+        <p role="status">
+          <span className={`hz-location__status${found ? ' is-found' : ''}`} aria-hidden="true" />
+          {assessment}
         </p>
-      ) : candidates.length > 1 ? (
-        <>
-          <p>Several mapped records overlap here. Choose one:</p>
-          <ul className="hz-pick">
-            {candidates.map((c) => (
-              <li key={c.label}>
-                <button type="button" className="hz-result" onClick={() => onPick(c.sel)}>
-                  <img className="hz-swatch hz-swatch--sm" src={swatchUrl(c.code)} alt="" width={16} height={16} />
-                  <span className="hz-result__title">
-                    {categoryName(c.code)} · {c.label}
-                  </span>
+        <p className="hz-location__caveat">No mapped finding is not evidence that the terrain is safe.</p>
+      </section>
+
+      <section className="hz-location__findings" aria-labelledby="hz-location-findings-title">
+        <h3 id="hz-location-findings-title">Hazard findings</h3>
+        <ul>
+          {findings.map((finding) => (
+            <li key={finding.code}>
+              <strong>{CATEGORY_BY_CODE[finding.code].name}</strong>
+              <span>{finding.detail}</span>
+              {finding.candidates?.map((candidate) => (
+                <button key={candidate.id} type="button" className="hz-location__record" onClick={() => onPick(candidate.sel)}>
+                  View mapped record: {candidate.label}
                 </button>
-              </li>
-            ))}
-          </ul>
-        </>
-      ) : (
-        <>
-          {lineCoverage || slopeAssessed ? (
-            <p className="hz-callout">No mapped hazard at this point in the available coverage.</p>
-          ) : (
-            <p className="hz-callout hz-callout--error">Assessment unavailable: the mapped layers have not loaded.</p>
-          )}
+              ))}
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <details className="hz-location__scientific">
+        <summary>Scientific details</summary>
+        <div className="hz-location__scientific-body">
           <Rows
             rows={[
+              ['Hazard categories', categoryDetails.length ? <Rows rows={categoryDetails} /> : 'No assessment results yet.'],
+              ['Observation ID', 'No observation record is attached to a coordinate inspection. NASA observation markers open their own sourced records.'],
+              ['Coordinates', formatCoord(at, 6)],
               [
-                'Steep Slopes',
-                slope.state === 'inactive'
-                  ? 'Layer hidden: show Steep Slopes to test this point'
-                  : slope.state === 'below'
-                    ? `${slope.cell.slopeDeg.toFixed(1)}°, below your ${threshold}° limit`
-                    : slope.state === 'unavailable'
-                      ? `Assessment unavailable: ${slope.reason}`
-                      : '—',
+                'Dataset resolution',
+                <>
+                  {CATEGORY_BY_CODE.F.name} and {CATEGORY_BY_CODE.P.name}: {ctx.structures.state === 'ready' ? ctx.structures.data.scale : 'USGS SIM 3292 mapped axes; dataset scale unavailable.'}
+                  <br />
+                  {CATEGORY_BY_CODE.S.name}: {ctx.dunes.state === 'ready' ? '100 m/px THEMIS mapping.' : 'USGS MGD³ mapped outlines; resolution unavailable.'}
+                  <br />
+                  {CATEGORY_BY_CODE.SL.name}: {ctx.slopeStore.state === 'ready' ? `${ctx.slopeStore.data.level.manifest.mapScaleKm} km map scale (${SLOPE_CELL_KM} km equatorial cells).` : `${SLOPE_CELL_KM} km equatorial cells; MOLA manifest unavailable.`}
+                </>,
               ],
-              ['Fractures & Fault Troughs, Pits & Depressions', lineCoverage ? 'No mapped line within reach of the tap' : 'Assessment unavailable: lines not loaded'],
               [
-                'Sand & Dunes',
-                ctx.dunes.state === 'ready'
-                  ? 'Not inside a mapped USGS dune field (small fields are not in that database)'
-                  : ctx.dunes.state === 'error'
-                    ? `Assessment unavailable: ${ctx.dunes.message}`
-                    : 'Loading dune-field outlines…',
+                'Assessment method',
+                <>
+                  USGS line axes are tested against the tap tolerance, not buffered into an area. Dune results use the mapped USGS outline. Steep slopes use the MOLA elevation bin and central-difference calculation against the selected threshold.
+                  {ctx.dunes.state === 'ready' && <> {ctx.dunes.data.method}</>}
+                </>,
               ],
-              ['Other categories', 'No mapped boundary: not assessed here'],
+              [
+                'Coverage limitations',
+                <>
+                  {CATEGORY_BY_CODE.F.mappingNote} {CATEGORY_BY_CODE.P.mappingNote} {ctx.dunes.state === 'ready' ? ctx.dunes.data.completeness : CATEGORY_BY_CODE.S.mappingNote} {CATEGORY_BY_CODE.SL.mappingNote} Other hazard categories have no mapped boundary here and are not assessed by this point test.
+                </>,
+              ],
+              ['Source references', sourceRows.length ? <Rows rows={sourceRows} /> : 'Dataset sources are not loaded.'],
+              [
+                'Technical hazard descriptions',
+                candidates.length
+                  ? candidates.map((candidate) => <p key={candidate.id}>{CATEGORY_BY_CODE[candidate.code].description} <span className="hz-muted">({candidate.label})</span></p>)
+                  : 'No mapped feature record was returned for this point.',
+              ],
+              ['Scientific caveat', 'This assessment covers only the mapped or modelled layers listed above. It does not assess walking-scale terrain or establish safety.'],
             ]}
           />
-          <p className="hz-muted">This is not a statement that the ground is safe: categories without mapped data are unknown here.</p>
-          <Actions
-            actions={[
-              { label: 'View Source', disabled: 'No record is selected at this point.' },
-              { label: 'View NASA imagery', disabled: 'No record is selected at this point.' },
-              { label: 'Focus Map', onClick: () => ctx.map.setView(toMapLatLng(p.at, ctx.map.getCenter().lng), Math.max(ctx.map.getZoom(), 7)) },
-              ...mission,
-              { label: 'Close', onClick: onClose },
-            ]}
-          />
-        </>
-      )}
-    </>
+        </div>
+      </details>
+
+      <div className="hz-location__actions" aria-label="Location actions">
+        <button
+          type="button"
+          className="hz-btn hz-location__focus"
+          onClick={() => ctx.map.setView(toMapLatLng(at, ctx.map.getCenter().lng), Math.max(ctx.map.getZoom(), 7))}
+        >
+          Focus Map
+        </button>
+        <details className="hz-location__options">
+          <summary>More options</summary>
+          <div className="hz-location__option-list">
+            {addAction && <UnavailableLocationAction label="Add to Mission" reason="Select a mapped feature to add its hazard record to the mission." />}
+            {details.map((action) => (
+              <UnavailableLocationAction key={action.label} label={action.label} reason={action.disabled ?? 'This action is not available for a coordinate-only inspection.'} />
+            ))}
+          </div>
+        </details>
+      </div>
+    </div>
+  );
+}
+
+function UnavailableLocationAction({ label, reason }: { label: string; reason: string }) {
+  const id = `hz-location-reason-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+  return (
+    <button
+      type="button"
+      className="hz-btn hz-btn--ghost hz-location__unavailable"
+      aria-disabled="true"
+      aria-describedby={id}
+      title={reason}
+      onClick={(event) => event.preventDefault()}
+    >
+      {label}
+      <span className="hz-sr-only" id={id}>{reason}</span>
+    </button>
   );
 }
 
