@@ -52,7 +52,7 @@ The tablet's screen always has the viewport's aspect ratio, and the raised table
 
 The opening has two versions, chosen automatically:
 
-**1. Third person, with an astronaut model (the intended opening).** Put a rigged astronaut at `public/models/astronaut.glb`, and the intro plays:
+**1. Third person, with an astronaut model (the intended opening).** Put a rigged astronaut at `public/models/explorer/astronaut.glb`, and the intro plays:
 - a three-quarter shot of the astronaut looking out over the plain, with a gentle head turn and breathing;
 - the astronaut raising the tablet in both hands while looking down at it, as Beyond Terra wakes on the screen;
 - the camera moving round over the right shoulder onto the screen until it fills the viewport, where the website takes over exactly as before.

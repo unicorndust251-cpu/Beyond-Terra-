@@ -13,4 +13,5 @@ Animations: "walk" (1.0 s, in place) and "run". No idle clip: the route preview 
 a standing pose from the walk cycle (see astronautView.ts).
 
 Used by the Missions route preview (src/mission-planning/exploration/astronautView.ts).
-Not used by the intro, which looks for /models/astronaut.glb.
+The intro uses a separate model path, /models/explorer/astronaut.glb, so it can remain
+independent of the route preview.

@@ -236,20 +236,7 @@ export default function HazardsLayer() {
       const finish = (slope: PointResult['slope']) => {
         const done = { ...result, slope };
         setPoint(done);
-        const cell = slope.state === 'classified' ? slope.cell : null;
-        const count = lines.length + duneHits.length + (cell ? 1 : 0);
-        if (count === 1) {
-          if (duneHits.length) {
-            patchHazardState({ selection: { kind: 'feature', id: duneHits[0].id, at } });
-          } else if (cell) {
-            setSlopeCell(cell);
-            patchHazardState({ selection: { kind: 'feature', id: `SL:${cell.i}:${cell.j}`, at } });
-          } else {
-            patchHazardState({ selection: { kind: 'feature', id: lines[0].feature.id, at } });
-          }
-        } else {
-          patchHazardState({ selection: { kind: 'point', at } });
-        }
+        patchHazardState({ selection: { kind: 'point', at } });
       };
 
       const d = slopeRef.current;

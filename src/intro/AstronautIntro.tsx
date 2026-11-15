@@ -26,9 +26,10 @@ declare global {
  * The cinematic opening: an astronaut stands on Mars, raises a field tablet showing
  * Beyond Terra, and the camera moves into the screen until the screen is the website.
  *
- * The astronaut is a rigged model from /models/astronaut.glb when one is supplied, and
- * otherwise the suit built in code. The sequence always plays through (there is no skip);
- * only a loading failure, an error or a lost WebGL context hand over to the site early.
+ * The astronaut is a rigged model from /models/explorer/astronaut.glb when one is
+ * supplied, and otherwise the suit built in code. The sequence always plays through (there
+ * is no skip); only a loading failure, an error or a lost WebGL context hand over to the
+ * site early.
  */
 export default function AstronautIntro({ onHandoff, onComplete }: AstronautIntroProps) {
   const rootRef = useRef<HTMLDivElement>(null);

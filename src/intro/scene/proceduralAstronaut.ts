@@ -5,7 +5,7 @@ import type { IntroFigure } from './thirdPersonScene';
 
 /**
  * The built-in astronaut (the suit modelled in code, see astronaut.ts), shown when no
- * rigged model is supplied at /models/astronaut.glb.
+ * rigged model is supplied at /models/explorer/astronaut.glb.
  */
 export class ProceduralAstronaut implements IntroFigure {
   readonly root: THREE.Group;
