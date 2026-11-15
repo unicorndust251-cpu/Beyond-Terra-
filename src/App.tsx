@@ -6,7 +6,11 @@ import { prefersReducedMotion, shouldPlayIntro } from './intro/introGate';
 import { useMapBridge } from './shared';
 // Starts tracking the inspected location (globe landmark or map point) from page load
 import './shared/focus';
+import { applyMarkerTheme } from './shared/landmarks/markerTheme';
 import { landmarkCoordinate, type Landmark } from './shared/landmarks';
+
+// Landmark marker colours for every view, from the one shared theme
+applyMarkerTheme();
 
 // The intro is loaded separately, so the website itself never waits for it
 const AstronautIntro = lazy(() => import('./intro/AstronautIntro'));

@@ -8,6 +8,7 @@ import {
   useSelectedLandmark,
   type Landmark,
 } from '../shared/landmarks';
+import { markerTheme } from '../shared/landmarks/markerTheme';
 import LandmarkPanel from './LandmarkPanel';
 import { MarsGlobe } from './marsGlobe';
 import './explore.css';
@@ -187,7 +188,7 @@ export default function ExplorePage({ active, onExploreOnMap, onOpenPlanner, onO
             ⟲
           </button>
         </div>
-        <p className="ex-hint">Drag to turn · scroll or pinch to zoom · select an orange marker</p>
+        <p className="ex-hint">Drag to turn · scroll or pinch to zoom · select {markerTheme().name === 'orange' ? 'an' : 'a'} {markerTheme().name} marker</p>
       </section>
 
       {selected && (
