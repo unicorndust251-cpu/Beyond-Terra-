@@ -261,7 +261,7 @@
 }
 
 /* A small, defined core: dark outline for bright terrain, a faint light rim for dark terrain,
-   and a soft, low-opacity halo. No bloom, flashing or pulsing. */
+   and a bright, soft glow around each marker. No flashing or pulsing. */
 .ex-marker__dot {
   position: absolute;
   left: 50%;
@@ -274,9 +274,12 @@
   border: 1.5px solid var(--bt-landmark-outline, #1e120c);
   box-shadow:
     0 0 0 1px rgba(243, 229, 220, 0.28),
-    0 0 0 4px var(--bt-landmark-halo, rgba(199, 101, 50, 0.28));
+    0 0 0 4px var(--bt-landmark-halo, rgba(199, 101, 50, 0.28)),
+    0 0 8px 3px var(--bt-landmark, #c76532),
+    0 0 18px 6px var(--bt-landmark-halo, rgba(199, 101, 50, 0.28));
   transition:
     transform 0.15s ease,
+    box-shadow 0.15s ease,
     background-color 0.15s ease;
 }
 
@@ -285,6 +288,11 @@
 .ex-marker.is-hovered .ex-marker__dot {
   transform: scale(1.25);
   background: var(--bt-landmark-hover, #e58a4b);
+  box-shadow:
+    0 0 0 1px rgba(243, 229, 220, 0.4),
+    0 0 0 4px var(--bt-landmark-halo, rgba(199, 101, 50, 0.28)),
+    0 0 10px 4px var(--bt-landmark-hover, #e58a4b),
+    0 0 24px 8px var(--bt-landmark-halo, rgba(199, 101, 50, 0.28));
 }
 
 .ex-marker.is-selected .ex-marker__dot {
@@ -292,7 +300,9 @@
   background: var(--bt-landmark-selected, #f2af72);
   box-shadow:
     0 0 0 1.5px rgba(243, 229, 220, 0.55),
-    0 0 0 5px var(--bt-landmark-halo-selected, rgba(242, 175, 114, 0.36));
+    0 0 0 5px var(--bt-landmark-halo-selected, rgba(242, 175, 114, 0.36)),
+    0 0 12px 5px var(--bt-landmark-selected, #f2af72),
+    0 0 28px 10px var(--bt-landmark-halo-selected, rgba(242, 175, 114, 0.36));
 }
 
 /* Names only on hover, focus or selection: 46 permanent labels would crowd the globe */
