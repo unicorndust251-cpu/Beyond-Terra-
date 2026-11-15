@@ -4,8 +4,7 @@ import MarsTrekSection from './components/MarsTrekSection';
 import MapReturnBar from './explore/MapReturnBar';
 import GroundPerspectiveHost from './ground/GroundPerspectiveHost';
 import { prefersReducedMotion, shouldPlayIntro } from './intro/introGate';
-import { navRequestStore, patchHazardState, selectedLocationStore, setMapLayersPanelOpen, useHazardState, useMapBridge, type MarsCoordinate } from './shared';
-import ExploreHub from './components/ExploreHub';
+import { navRequestStore, patchHazardState, selectedLocationStore, setMapLayersPanelOpen, useMapBridge, type MarsCoordinate } from './shared';
 // Starts tracking the inspected location (globe landmark or map point) from page load
 import './shared/focus';
 import { applyMarkerTheme } from './shared/landmarks/markerTheme';
@@ -171,7 +170,6 @@ export default function App() {
     setExploreMounted(true);
     setOverlay('explore');
   };
-  const { view } = useHazardState();
 
   // The main navigation: the globe and dashboard are overlays; the other sections are map views
   useEffect(
@@ -212,7 +210,6 @@ export default function App() {
       {/* The map waits underneath, out of focus, loading while the globe is shown */}
       <MarsTrekSection load={phase !== 'intro'} revealed={stage !== 'globe'} onRevealStarted={() => setMapRevealStarted(true)} />
       {stage === 'map' && !overlay && <MapReturnBar visitedGlobe={exploreMounted} onOpenGlobe={openExplore} hideControls />}
-      {stage === 'map' && !overlay && view === 'explore' && <ExploreHub onOpenGlobe={openExplore} onPlanHere={(l) => showOnMap(l, true)} />}
       {exploreMounted && (
         <Suspense fallback={null}>
           <ExplorePage
