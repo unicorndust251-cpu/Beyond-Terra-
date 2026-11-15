@@ -1,5 +1,5 @@
 /*
- * Scientific layers on the map: the Layers button (top left), the legend and credits
+ * Scientific layers on the map: the Layers panel, legend and credits
  * (bottom left). The top bar, search, menu and legend styles are in workspace/workspace.css.
  */
 .bt-sci {
@@ -39,7 +39,7 @@
   image-rendering: pixelated;
 }
 
-/* Top left, under the bar: the Layers button, and curvature sites when that layer is on */
+/* Top left, under the bar: the Layers panel, and curvature sites when that layer is on */
 .bt-sci-top {
   position: absolute;
   top: calc(var(--bt-topbar) + env(safe-area-inset-top, 0px) + 12px);

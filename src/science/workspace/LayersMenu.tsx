@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { setMapLayersPanelOpen, useMapLayersPanelOpen } from '../../shared';
 
 export type LoadStatus = 'idle' | 'loading' | 'ready' | 'partial' | 'error';
 
@@ -27,16 +28,14 @@ const GROUPS: LayerItem['group'][] = ['Surface', 'Terrain', 'Science'];
  * opacity and retry sit behind each layer's information button.
  */
 export default function LayersMenu({ items, onReset, footer }: { items: LayerItem[]; onReset(): void; footer?: ReactNode }) {
-  const [open, setOpen] = useState(false);
   const [infoKey, setInfoKey] = useState<string | null>(null);
   const root = useRef<HTMLDivElement>(null);
-  const active = items.filter((i) => i.on).length;
-  const busy = items.some((i) => i.on && i.status === 'loading');
+  const open = useMapLayersPanelOpen();
 
   useEffect(() => {
     if (!open) return undefined;
     const close = (e: Event) => {
-      if (e instanceof KeyboardEvent ? e.key === 'Escape' : !root.current?.contains(e.target as Node)) setOpen(false);
+      if (e instanceof KeyboardEvent ? e.key === 'Escape' : !root.current?.contains(e.target as Node)) setMapLayersPanelOpen(false);
     };
     document.addEventListener('pointerdown', close);
     document.addEventListener('keydown', close);
@@ -48,16 +47,6 @@ export default function LayersMenu({ items, onReset, footer }: { items: LayerIte
 
   return (
     <div className="bt-layers" ref={root}>
-      <button type="button" className={`bt-layers__button${open ? ' is-open' : ''}`} aria-expanded={open} aria-controls="bt-layers-menu" onClick={() => setOpen((o) => !o)}>
-        <svg viewBox="0 0 20 20" aria-hidden="true">
-          <path d="M10 3.5 3 7l7 3.5L17 7l-7-3.5ZM3 10.5l7 3.5 7-3.5M3 14l7 3.5 7-3.5" />
-        </svg>
-        Layers
-        <span className={`bt-layers__count${busy ? ' is-busy' : ''}`} aria-label={`${active} on`}>
-          {active}
-        </span>
-      </button>
-
       {open && (
         <div id="bt-layers-menu" className="bt-layers__menu" role="dialog" aria-label="Layers">
           {GROUPS.map((g) => {

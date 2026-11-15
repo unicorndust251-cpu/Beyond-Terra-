@@ -23,7 +23,15 @@ const STATUS_WORD: Record<DataStatus, string> = {
 /**
  * A thin top bar: logo, the region in view (USGS chart quadrangle), search and settings.
  */
-export default function TopBar({ map, search, statuses }: { map: L.Map; search: ReactNode; statuses: StatusItem[] }) {
+export default function TopBar({
+  map,
+  search,
+  statuses,
+}: {
+  map: L.Map;
+  search: ReactNode;
+  statuses: StatusItem[];
+}) {
   const [centre, setCentre] = useState(() => map.getCenter());
   useEffect(() => {
     const update = () => setCentre(map.getCenter());

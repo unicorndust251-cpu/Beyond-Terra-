@@ -136,7 +136,7 @@
   color: var(--bt-accent-soft, #d6a38b);
 }
 
-@media (max-width: 900px) {
+@media (max-width: 760px) {
   .bt-nav__tabs {
     display: none;
   }

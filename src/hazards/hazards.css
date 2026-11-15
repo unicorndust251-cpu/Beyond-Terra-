@@ -2177,8 +2177,7 @@
   }
 }
 
-/* Phones: keep the app's own bottom buttons (Explore Landmarks, Mars Dashboard) usable
-   by sitting above them; the information sheet covers them and the zoom controls */
+/* Phones: keep the map controls usable; the information sheet covers the zoom controls */
 @media (max-width: 640px) {
   .hz-strip,
   .hz-strip.is-empty {
@@ -2293,7 +2292,6 @@
 }
 
 .hz-panel__body,
-.hz-panel__simple,
 .hz-drawer {
   scrollbar-width: thin;
   scrollbar-color: rgba(214, 163, 139, 0.24) transparent;
@@ -2643,7 +2641,7 @@
 }
 
 /* =====================================================================
-   Simple mode: compact hazards panel, brief info panel, Map Key chip
+   Hazard controls and information panel
    ===================================================================== */
 .hz-panel__sub {
   margin: 2px 0 0;
@@ -2651,23 +2649,18 @@
   color: var(--hz-text-2);
 }
 
-.hz-panel__simple {
+.hz-panel__content {
+  min-height: 0;
   overflow-y: auto;
   padding: 4px 16px 16px;
   scrollbar-width: thin;
   scrollbar-color: var(--hz-line) transparent;
 }
 
-.hz-panel__simple.has-advanced {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  padding: 0;
-}
-
-.hz-panel__simple.has-advanced .hz-adv-toggle {
-  margin: 4px 16px 8px;
-  width: auto;
+.hz-panel__content .hz-panel__body {
+  flex: none;
+  overflow: visible;
+  padding: 8px 2px 12px;
 }
 
 .hz-simple {
@@ -2824,39 +2817,6 @@
 
 .hz-simple__hits img {
   border-radius: 3px;
-}
-
-.hz-adv-toggle {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: center;
-  gap: 2px 8px;
-  width: 100%;
-  margin-top: 14px;
-  padding: 10px 12px;
-  border: 1px dashed rgba(214, 163, 139, 0.35);
-  border-radius: 10px;
-  background: none;
-  color: var(--hz-ivory);
-  font: 600 12.5px var(--hz-font);
-  text-align: left;
-  cursor: pointer;
-}
-
-.hz-adv-toggle small {
-  grid-column: 2;
-  font-size: 11px;
-  font-weight: 400;
-  color: var(--hz-text-3);
-}
-
-.hz-adv-toggle:hover {
-  border-color: var(--hz-copper);
-}
-
-.hz-adv-toggle:focus-visible {
-  outline: 2px solid var(--hz-copper);
-  outline-offset: 2px;
 }
 
 /* ------------------------------------------------------ information panel */

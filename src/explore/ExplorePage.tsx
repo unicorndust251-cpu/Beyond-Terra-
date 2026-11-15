@@ -21,7 +21,6 @@ interface Props {
   onOpenPlanner: () => void;
   /** Go to the map with this landmark selected for the mission plan. */
   onPlanHere: (l: Landmark) => void;
-  onOpenDashboard: () => void;
 }
 
 /** Zoom to use when the globe turns to a landmark: closer for small features. */
@@ -32,10 +31,9 @@ function focusDistance(l: Landmark): number {
 }
 
 /** The Explore page: catalogue, interactive globe and Scientific Importance panel. */
-export default function ExplorePage({ active, onExploreOnMap, onPlanHere, onOpenPlanner, onOpenDashboard }: Props) {
+export default function ExplorePage({ active, onExploreOnMap, onPlanHere, onOpenPlanner }: Props) {
   // Kept for callers; the main navigation now handles these destinations
   void onOpenPlanner;
-  void onOpenDashboard;
   const root = useRef<HTMLDivElement>(null);
   const host = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);

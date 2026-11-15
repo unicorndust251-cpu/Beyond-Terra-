@@ -1,6 +1,6 @@
-import { createStore } from './store';
+import { createStore, useStore } from './store';
 
-/** The four destinations of the main navigation. */
+/** The four section destinations; Layers is a map-panel action, not a separate view. */
 export type Section = 'explore' | 'planner' | 'hazards' | 'dashboard';
 
 export const SECTIONS: { id: Section; label: string; hint: string }[] = [
@@ -10,12 +10,28 @@ export const SECTIONS: { id: Section; label: string; hint: string }[] = [
   { id: 'dashboard', label: 'Mars Dashboard', hint: 'Conditions, terrain and scientific information' },
 ];
 
-/**
- * A request to go to a section, handled by the app shell (which owns the globe and dashboard
- * overlays). `globe` opens the landmark globe within Explore Mars.
- */
-export const navRequestStore = createStore<{ section: Section; globe?: boolean; n: number } | null>(null);
+export type NavigationRequest =
+  | { type: 'section'; section: Section; globe?: boolean; n: number }
+  | { type: 'layers'; n: number };
+
+/** The app shell handles section and map-layer requests without recreating shared map state. */
+export const navRequestStore = createStore<NavigationRequest | null>(null);
+
+const mapLayersPanelStore = createStore(false);
+
+export function setMapLayersPanelOpen(open: boolean): void {
+  mapLayersPanelStore.set(open);
+}
+
+export function useMapLayersPanelOpen(): boolean {
+  return useStore(mapLayersPanelStore);
+}
 
 export function navigate(section: Section, opts: { globe?: boolean } = {}): void {
-  navRequestStore.set({ section, globe: opts.globe, n: (navRequestStore.get()?.n ?? 0) + 1 });
+  navRequestStore.set({ type: 'section', section, globe: opts.globe, n: (navRequestStore.get()?.n ?? 0) + 1 });
+}
+
+export function openMapLayersPanel(): void {
+  setMapLayersPanelOpen(true);
+  navRequestStore.set({ type: 'layers', n: (navRequestStore.get()?.n ?? 0) + 1 });
 }

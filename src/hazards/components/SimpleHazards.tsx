@@ -60,7 +60,7 @@ export default function SimpleHazards({ ctx }: { ctx: HazardContext }) {
             </button>
           ))}
         </div>
-        {on && !group && <p className="hz-muted">A custom selection is set under More Details.</p>}
+        {on && !group && <p className="hz-muted">A custom selection is set under Hazard layers.</p>}
         {on && (
           <ul className="hz-simple__chips" aria-label="Hazards on the map">
             {shownTerrain.map((c) => (
@@ -172,7 +172,7 @@ function CheckRoute({ ctx }: { ctx: HazardContext }) {
             <p className="hz-muted">Not checked: {untestable.map((c) => displayName(c.code)).join(', ')} (data unavailable).</p>
           )}
           {ready && report.checks.some((c) => c.state === 'excluded') && (
-            <p className="hz-muted">Excluded by you (More Details → Display &amp; route): {report.checks.filter((c) => c.state === 'excluded').map((c) => c.name).join(', ')}.</p>
+            <p className="hz-muted">Excluded by you (Display &amp; route): {report.checks.filter((c) => c.state === 'excluded').map((c) => c.name).join(', ')}.</p>
           )}
           {ready && report.slope && (
             <p className="hz-muted">
