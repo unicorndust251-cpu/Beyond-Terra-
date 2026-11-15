@@ -2973,10 +2973,10 @@
   --hz-location-muted: rgba(243, 229, 220, 0.64);
   --hz-location-peach: #d6a38b;
   top: calc(var(--hz-top) + 62px);
-  right: max(60px, env(safe-area-inset-right, 0px));
+  right: max(64px, env(safe-area-inset-right, 0px));
   bottom: 96px;
-  width: min(380px, calc(100vw - 448px));
-  max-height: calc(100dvh - var(--hz-top) - 158px);
+  width: min(380px, calc(100vw - 464px));
+  max-height: min(60dvh, calc(100dvh - var(--hz-top) - 158px));
   padding: 18px 18px 14px;
   border: 1px solid var(--hz-location-line);
   border-radius: 18px;
