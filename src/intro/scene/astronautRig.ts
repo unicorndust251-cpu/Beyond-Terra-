@@ -6,16 +6,18 @@ import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.j
 /**
  * A rigged, licensed astronaut model, posed procedurally for the opening.
  *
- * No model ships with the project. Put one at `public/models/astronaut.glb` (see README,
- * "The astronaut"): a realistic, rigged humanoid astronaut in glTF/GLB, with web-use rights.
- * When the file is missing or unsuitable, the intro falls back to the astronaut's-eye view.
+ * No model ships with the project. Put one at `public/models/explorer/astronaut.glb`
+ * (see README, "The astronaut"): a realistic, rigged humanoid astronaut in glTF/GLB,
+ * with web-use rights. When the file is missing or unsuitable, the intro falls back to the
+ * astronaut's-eye view.
  *
  * Bones are found by name, so common rigs work as they are (Mixamo, Unreal/UE mannequin,
  * Blender Rigify-style and most marketplace characters). The arms are posed with two-bone
  * IK towards the tablet's grips, so no particular bone orientation is assumed.
  */
 
-export const ASTRONAUT_MODEL_URL = '/models/astronaut.glb';
+export const ASTRONAUT_MODEL_URLS = ['/models/explorer/astronaut.glb', '/models/astronaut.glb'] as const;
+export const ASTRONAUT_MODEL_URL = ASTRONAUT_MODEL_URLS[0];
 /** Standing height the model is scaled to (m): a suited adult. */
 const SUITED_HEIGHT = 1.88;
 
@@ -136,14 +138,23 @@ export class AstronautRig {
     const draco = new DRACOLoader().setDecoderPath('/draco/');
     loader.setDRACOLoader(draco);
     loader.setMeshoptDecoder(MeshoptDecoder);
+    const candidates = [url, ...ASTRONAUT_MODEL_URLS.filter((candidate) => candidate !== url)];
+    let lastError: unknown;
     try {
-      const gltf = await loader.loadAsync(url);
-      const bones = findBones(gltf.scene);
-      const missing = REQUIRED.filter((k) => !bones[k]);
-      if (missing.length) throw new Error(`Astronaut model is missing bones: ${missing.join(', ')}`);
-      const rig = new AstronautRig(gltf.scene, bones);
-      renderer.compile(rig.root, new THREE.PerspectiveCamera());
-      return rig;
+      for (const candidate of candidates) {
+        try {
+          const gltf = await loader.loadAsync(candidate);
+          const bones = findBones(gltf.scene);
+          const missing = REQUIRED.filter((k) => !bones[k]);
+          if (missing.length) throw new Error(`Astronaut model is missing bones: ${missing.join(', ')}`);
+          const rig = new AstronautRig(gltf.scene, bones);
+          renderer.compile(rig.root, new THREE.PerspectiveCamera());
+          return rig;
+        } catch (error) {
+          lastError = error;
+        }
+      }
+      throw lastError ?? new Error(`Astronaut model failed to load: ${url}`);
     } finally {
       draco.dispose();
     }

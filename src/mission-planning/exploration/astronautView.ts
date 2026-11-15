@@ -13,8 +13,8 @@ import { FEET_AT, VIEW_SIZE } from './engine';
  * - the rigged model at /models/explorer/astronaut.glb: "Astronaut in Spacesuit" from
  *   Grab3D, CC0 (source and checks in public/models/explorer/LICENSE.txt). Its walk clip
  *   plays in place, driven by the route; it has no idle clip, so the standing pose is
- *   derived from the walk cycle. A separate path from the intro's /models/astronaut.glb,
- *   so the intro is unaffected;
+ *   derived from the walk cycle. It is kept separate from the intro's own model path so
+ *   the intro is unaffected;
  * - if that file is missing or unusable, a PLACEHOLDER: the intro's procedural suit with
  *   legs animated here by two-bone IK, labelled as a placeholder.
  *
